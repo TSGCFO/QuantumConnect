@@ -189,20 +189,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.user.claims.sub;
         const { title, description, meetingDate, transcript } = req.body;
 
-        const { summary, actionItems } = await summarizeMeeting(transcript);
+        // Try to generate AI summary, but don't fail if it doesn't work
+        let summary = "";
+        let actionItems: any[] = [];
+        
+        try {
+          const aiResult = await summarizeMeeting(transcript);
+          summary = aiResult.summary;
+          actionItems = aiResult.actionItems;
+        } catch (aiError) {
+          console.error("Error generating AI summary:", aiError);
+          // Create fallback summary from first 500 chars of transcript
+          summary = transcript && transcript.length > 500 
+            ? transcript.substring(0, 500) + "..." 
+            : transcript || "No summary available";
+          actionItems = [];
+        }
 
+        // Always create the meeting, even if AI processing failed
         const meeting = await storage.createMeeting({
           title,
           description,
           meetingDate: new Date(meetingDate),
           transcript,
           summary,
-          actionItems,
+          actionItems: actionItems.length > 0 ? actionItems : null,
           source: "manual",
           uploadedById: userId,
         });
 
-        // Create tasks from action items
+        // Create tasks from action items (only if we have them)
         if (actionItems && actionItems.length > 0) {
           for (const item of actionItems) {
             await storage.createTask({
@@ -407,6 +423,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   actionItems = aiResult.actionItems;
                 } catch (err) {
                   console.error("Error generating AI summary:", err);
+                  // Create fallback summary from first 500 chars of transcript
+                  summary = transcript.length > 500 
+                    ? transcript.substring(0, 500) + "..." 
+                    : transcript;
+                  actionItems = [];
                 }
               }
               
@@ -629,6 +650,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             actionItems = aiResult.actionItems;
           } catch (err) {
             console.error("Error generating AI summary:", err);
+            // Create fallback summary from first 500 chars of transcript
+            summary = transcript.length > 500 
+              ? transcript.substring(0, 500) + "..." 
+              : transcript;
+            actionItems = [];
           }
         }
         
