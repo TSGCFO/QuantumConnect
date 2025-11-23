@@ -143,7 +143,9 @@ export default function Tasks() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Priority</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Priority
+                </label>
                 <Select name="priority" defaultValue="medium">
                   <SelectTrigger data-testid="select-task-priority">
                     <SelectValue />
@@ -157,7 +159,9 @@ export default function Tasks() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Due Date</label>
+                <label className="text-sm font-medium mb-2 block">
+                  Due Date
+                </label>
                 <Input
                   type="date"
                   name="dueDate"
@@ -334,11 +338,11 @@ function TaskCard({
               </p>
             )}
           </div>
-          <Select
-            value={task.status}
-            onValueChange={onStatusChange}
-          >
-            <SelectTrigger className="w-36" data-testid={`select-status-${task.id}`}>
+          <Select value={task.status} onValueChange={onStatusChange}>
+            <SelectTrigger
+              className="w-36"
+              data-testid={`select-status-${task.id}`}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

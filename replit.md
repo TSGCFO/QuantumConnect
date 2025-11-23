@@ -15,6 +15,7 @@ Preferred communication style: Simple, everyday language.
 **Framework**: React with TypeScript using Vite as the build tool and development server.
 
 **UI Component System**: Built on shadcn/ui components (Radix UI primitives) with a custom design system following Microsoft Fluent Design principles. The component library emphasizes:
+
 - Consistent spacing using Tailwind's utility-first approach
 - Inter font family for clean, enterprise-grade typography
 - Responsive layouts with mobile-first breakpoints
@@ -27,6 +28,7 @@ Preferred communication style: Simple, everyday language.
 **Routing**: Wouter for lightweight client-side routing with role-based route protection (employee, manager, admin roles).
 
 **Key Design Decisions**:
+
 - No React Server Components (RSC) - traditional SPA approach for simpler deployment
 - Path aliases configured for clean imports (`@/` for client code, `@shared/` for shared types)
 - Separation of concerns: UI components isolated from business logic and API calls
@@ -36,22 +38,26 @@ Preferred communication style: Simple, everyday language.
 **Framework**: Express.js with TypeScript running on Node.js.
 
 **Development vs Production**:
+
 - Development mode uses Vite middleware for hot module replacement
 - Production serves pre-built static assets from dist/public directory
 - Separate entry points (`index-dev.ts` vs `index-prod.ts`) for environment-specific setup
 
-**Authentication & Authorization**: 
+**Authentication & Authorization**:
+
 - Replit Auth integration using OpenID Connect (OIDC) via Passport.js strategy
 - Session management with PostgreSQL-backed session store (`connect-pg-simple`)
 - Role-based access control (employee, manager, admin) enforced at route level
 - Session TTL of 1 week with secure, httpOnly cookies
 
 **API Design**:
+
 - RESTful endpoints organized by resource type (documents, tasks, meetings, emails, communications)
 - Activity logging middleware tracks user actions for audit trails
 - Multer middleware for file upload handling (in-memory storage)
 
 **Key Architectural Patterns**:
+
 - Storage abstraction layer separating database operations from route handlers
 - Centralized error handling and logging with formatted timestamps
 - Request/response interception for performance monitoring on `/api` routes
@@ -63,6 +69,7 @@ Preferred communication style: Simple, everyday language.
 **ORM**: Drizzle ORM providing type-safe database queries with schema-first approach.
 
 **Schema Design**:
+
 - **Users**: Core authentication table with role-based access (employee/manager/admin), department assignment, and profile metadata
 - **Documents**: Knowledge hub storage with category classification (policy/training/operational), file metadata, and search capabilities
 - **Tasks**: Task management with assignment, priority, status tracking, and due dates
@@ -77,6 +84,7 @@ Preferred communication style: Simple, everyday language.
 ### External Dependencies
 
 **Microsoft Graph API Integration**:
+
 - **Outlook**: Email synchronization with access to inbox, sent items, and metadata
 - **OneDrive**: Document storage and retrieval capabilities
 - **SharePoint**: Enterprise content management integration
@@ -84,12 +92,14 @@ Preferred communication style: Simple, everyday language.
 - Uncacheable client pattern ensures fresh access tokens per request
 
 **HubSpot API Integration**:
+
 - CRM communication logging (calls, emails, meetings, notes)
 - Contact and company association tracking
 - OAuth authentication via Replit Connectors with token refresh
 - API client initialization using `@hubspot/api-client` package
 
 **OpenAI GPT Integration**:
+
 - Model: GPT-5 for AI-powered features
 - **Meeting Summarization**: Analyzes transcripts to generate concise summaries and extract action items
 - **Document Q&A**: Answers questions about uploaded documents using RAG-like context
@@ -97,12 +107,14 @@ Preferred communication style: Simple, everyday language.
 - Error handling with fallback responses when AI processing fails
 
 **Replit Platform Services**:
+
 - **Replit Auth**: Authentication provider with OIDC integration
 - **Replit Connectors**: Managed OAuth flows for third-party integrations (Microsoft, HubSpot)
 - Environment variables for secure credential storage
 - Development tooling: Cartographer for code mapping, runtime error overlay, dev banner
 
 **UI Dependencies**:
+
 - Radix UI primitives for accessible, unstyled components
 - Lucide React for consistent iconography
 - React Hook Form with Zod validation for form management
@@ -110,6 +122,7 @@ Preferred communication style: Simple, everyday language.
 - Vaul for drawer components
 
 **Development Tools**:
+
 - TypeScript for type safety across frontend and backend
 - ESBuild for production backend bundling
 - PostCSS with Tailwind and Autoprefixer

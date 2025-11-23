@@ -21,7 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileText, Upload, Search, Download, MessageSquare } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  Search,
+  Download,
+  MessageSquare,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Document } from "@shared/schema";
@@ -140,7 +146,10 @@ export default function Knowledge() {
                       <CardTitle className="text-base">Answer</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm whitespace-pre-wrap" data-testid="text-ai-answer">
+                      <p
+                        className="text-sm whitespace-pre-wrap"
+                        data-testid="text-ai-answer"
+                      >
                         {aiAnswer}
                       </p>
                     </CardContent>
@@ -172,7 +181,9 @@ export default function Knowledge() {
               </DialogHeader>
               <form onSubmit={handleUpload} className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Title</label>
+                  <label className="text-sm font-medium mb-2 block">
+                    Title
+                  </label>
                   <Input
                     name="title"
                     placeholder="Document title"
@@ -244,7 +255,10 @@ export default function Knowledge() {
               />
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-48" data-testid="select-filter-category">
+              <SelectTrigger
+                className="w-48"
+                data-testid="select-filter-category"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -268,7 +282,11 @@ export default function Knowledge() {
       ) : filteredDocuments && filteredDocuments.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDocuments.map((doc) => (
-            <Card key={doc.id} className="hover-elevate" data-testid={`document-card-${doc.id}`}>
+            <Card
+              key={doc.id}
+              className="hover-elevate"
+              data-testid={`document-card-${doc.id}`}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <FileText className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />

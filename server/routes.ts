@@ -62,7 +62,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         const meetings = await storage.getMeetings();
         const recentMeetings = meetings.filter(
-          (m) => new Date(m.meetingDate) >= sevenDaysAgo
+          (m) => new Date(m.meetingDate) >= sevenDaysAgo,
         );
 
         res.json({
@@ -75,7 +75,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching dashboard stats:", error);
         res.status(500).json({ message: "Failed to fetch dashboard stats" });
       }
-    }
+    },
   );
 
   // Document routes
@@ -91,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching documents:", error);
         res.status(500).json({ message: "Failed to fetch documents" });
       }
-    }
+    },
   );
 
   app.post(
@@ -127,7 +127,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error uploading document:", error);
         res.status(500).json({ message: "Failed to upload document" });
       }
-    }
+    },
   );
 
   app.post("/api/documents/ask-ai", isAuthenticated, async (req, res) => {
@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching meetings:", error);
         res.status(500).json({ message: "Failed to fetch meetings" });
       }
-    }
+    },
   );
 
   app.post(
@@ -206,7 +206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error uploading meeting:", error);
         res.status(500).json({ message: "Failed to upload meeting" });
       }
-    }
+    },
   );
 
   // Task routes
@@ -223,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching tasks:", error);
         res.status(500).json({ message: "Failed to fetch tasks" });
       }
-    }
+    },
   );
 
   app.post(
@@ -251,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error creating task:", error);
         res.status(500).json({ message: "Failed to create task" });
       }
-    }
+    },
   );
 
   app.patch(
@@ -267,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error updating task:", error);
         res.status(500).json({ message: "Failed to update task" });
       }
-    }
+    },
   );
 
   // Email routes
@@ -284,7 +284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching emails:", error);
         res.status(500).json({ message: "Failed to fetch emails" });
       }
-    }
+    },
   );
 
   app.post(
@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .api("/me/messages")
           .top(50)
           .select(
-            "id,subject,from,toRecipients,ccRecipients,body,receivedDateTime,isRead,hasAttachments,importance,conversationId"
+            "id,subject,from,toRecipients,ccRecipients,body,receivedDateTime,isRead,hasAttachments,importance,conversationId",
           )
           .get();
 
@@ -314,8 +314,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               userId,
               subject: msg.subject,
               from: msg.from?.emailAddress?.address || "unknown",
-              to: msg.toRecipients?.map((r: any) => r.emailAddress?.address) || [],
-              cc: msg.ccRecipients?.map((r: any) => r.emailAddress?.address) || [],
+              to:
+                msg.toRecipients?.map((r: any) => r.emailAddress?.address) ||
+                [],
+              cc:
+                msg.ccRecipients?.map((r: any) => r.emailAddress?.address) ||
+                [],
               body: msg.body?.content || "",
               receivedAt: new Date(msg.receivedDateTime),
               isRead: msg.isRead,
@@ -332,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error syncing emails:", error);
         res.status(500).json({ message: "Failed to sync emails" });
       }
-    }
+    },
   );
 
   // HubSpot communication routes
@@ -348,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching communications:", error);
         res.status(500).json({ message: "Failed to fetch communications" });
       }
-    }
+    },
   );
 
   app.post(
@@ -361,7 +365,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const client = await getUncachableHubSpotClient();
 
         // Sync recent engagements
-        const engagements = await client.crm.objects.meetings.basicApi.getPage(50);
+        const engagements =
+          await client.crm.objects.meetings.basicApi.getPage(50);
 
         let syncedCount = 0;
         for (const engagement of engagements.results) {
@@ -371,11 +376,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.createHubspotCommunication({
               hubspotId,
               type: "meeting",
-              subject: engagement.properties?.hs_meeting_title || "Untitled Meeting",
+              subject:
+                engagement.properties?.hs_meeting_title || "Untitled Meeting",
               body: engagement.properties?.hs_meeting_body || "",
               occurredAt: new Date(
                 engagement.properties?.hs_meeting_start_time ||
-                  engagement.createdAt
+                  engagement.createdAt,
               ),
               ownerId: userId,
               metadata: engagement.properties,
@@ -389,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error syncing communications:", error);
         res.status(500).json({ message: "Failed to sync communications" });
       }
-    }
+    },
   );
 
   // Analytics routes (managers and admins only)
@@ -421,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching analytics:", error);
         res.status(500).json({ message: "Failed to fetch analytics" });
       }
-    }
+    },
   );
 
   // Admin routes (admins only)
@@ -444,7 +450,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error fetching users:", error);
         res.status(500).json({ message: "Failed to fetch users" });
       }
-    }
+    },
   );
 
   app.patch(
@@ -467,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error("Error updating user:", error);
         res.status(500).json({ message: "Failed to update user" });
       }
-    }
+    },
   );
 
   const httpServer = createServer(app);

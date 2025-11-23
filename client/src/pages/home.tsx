@@ -1,14 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FileText, CheckSquare, Mail, Users, TrendingUp, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  CheckSquare,
+  Mail,
+  Users,
+  TrendingUp,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import type { Task } from "@shared/schema";
 
 export default function Home() {
   const { user } = useAuth();
-  
+
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks/my-tasks"],
   });
@@ -23,9 +30,13 @@ export default function Home() {
   });
 
   const pendingTasks = tasks?.filter((t) => t.status === "pending") || [];
-  const overdueTasks = tasks?.filter(
-    (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "completed"
-  ) || [];
+  const overdueTasks =
+    tasks?.filter(
+      (t) =>
+        t.dueDate &&
+        new Date(t.dueDate) < new Date() &&
+        t.status !== "completed",
+    ) || [];
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -67,7 +78,10 @@ export default function Home() {
             {tasksLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="stat-pending-tasks">
+              <div
+                className="text-2xl font-bold"
+                data-testid="stat-pending-tasks"
+              >
                 {pendingTasks.length}
               </div>
             )}
@@ -86,13 +100,14 @@ export default function Home() {
             {statsLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="stat-unread-emails">
+              <div
+                className="text-2xl font-bold"
+                data-testid="stat-unread-emails"
+              >
                 {stats?.unreadEmails || 0}
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">
-              In your inbox
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">In your inbox</p>
           </CardContent>
         </Card>
 
@@ -107,13 +122,14 @@ export default function Home() {
             {statsLoading ? (
               <Skeleton className="h-8 w-20" />
             ) : (
-              <div className="text-2xl font-bold" data-testid="stat-recent-meetings">
+              <div
+                className="text-2xl font-bold"
+                data-testid="stat-recent-meetings"
+              >
                 {stats?.recentMeetings || 0}
               </div>
             )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Last 7 days
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Last 7 days</p>
           </CardContent>
         </Card>
       </div>
@@ -149,8 +165,8 @@ export default function Home() {
                             task.status === "completed"
                               ? "default"
                               : task.status === "in_progress"
-                              ? "secondary"
-                              : "outline"
+                                ? "secondary"
+                                : "outline"
                           }
                           className="text-xs"
                         >
@@ -159,7 +175,8 @@ export default function Home() {
                         {task.priority && (
                           <Badge
                             variant={
-                              task.priority === "urgent" || task.priority === "high"
+                              task.priority === "urgent" ||
+                              task.priority === "high"
                                 ? "destructive"
                                 : "secondary"
                             }
@@ -214,8 +231,9 @@ export default function Home() {
                       <p className="text-xs text-destructive">
                         Overdue by{" "}
                         {Math.floor(
-                          (new Date().getTime() - new Date(task.dueDate!).getTime()) /
-                            (1000 * 60 * 60 * 24)
+                          (new Date().getTime() -
+                            new Date(task.dueDate!).getTime()) /
+                            (1000 * 60 * 60 * 24),
                         )}{" "}
                         days
                       </p>

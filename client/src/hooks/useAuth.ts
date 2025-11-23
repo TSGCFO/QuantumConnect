@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { User } from "@shared/schema";
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery<User>({
+  const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ["/api/auth/user"],
     retry: false,
     staleTime: 5 * 60 * 1000,
@@ -13,6 +13,6 @@ export function useAuth() {
   return {
     user,
     isLoading,
-    isAuthenticated: !!user && !error,
+    isAuthenticated: !!user,
   };
 }

@@ -2,7 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, TrendingDown, CheckSquare, Clock, AlertCircle } from "lucide-react";
+import {
+  BarChart3,
+  TrendingUp,
+  TrendingDown,
+  CheckSquare,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   Select,
@@ -103,7 +110,10 @@ export default function Analytics() {
                 <CheckSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-total-tasks">
+                <div
+                  className="text-2xl font-bold"
+                  data-testid="stat-total-tasks"
+                >
                   {analytics.taskStats.total}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -120,7 +130,10 @@ export default function Analytics() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-completion-rate">
+                <div
+                  className="text-2xl font-bold"
+                  data-testid="stat-completion-rate"
+                >
                   {analytics.taskStats.completionRate.toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -137,7 +150,10 @@ export default function Analytics() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold" data-testid="stat-pending-tasks">
+                <div
+                  className="text-2xl font-bold"
+                  data-testid="stat-pending-tasks"
+                >
                   {analytics.taskStats.pending}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">

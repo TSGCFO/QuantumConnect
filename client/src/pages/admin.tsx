@@ -112,7 +112,9 @@ export default function Admin() {
           ) : users && users.length > 0 ? (
             <div className="space-y-3">
               {users.map((user) => {
-                const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
+                const initials =
+                  `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() ||
+                  "U";
                 return (
                   <div
                     key={user.id}
@@ -142,8 +144,8 @@ export default function Admin() {
                             user.role === "admin"
                               ? "destructive"
                               : user.role === "manager"
-                              ? "default"
-                              : "secondary"
+                                ? "default"
+                                : "secondary"
                           }
                           className="mb-1"
                         >
@@ -178,10 +180,7 @@ export default function Admin() {
       </Card>
 
       {editingUser && (
-        <Dialog
-          open={!!editingUser}
-          onOpenChange={() => setEditingUser(null)}
-        >
+        <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>

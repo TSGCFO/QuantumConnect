@@ -7,7 +7,7 @@ function getOpenAI(): OpenAI {
   if (!openai) {
     if (!process.env.OPENAI_API_KEY) {
       throw new Error(
-        "OpenAI API key not configured. Please provide your OPENAI_API_KEY."
+        "OpenAI API key not configured. Please provide your OPENAI_API_KEY.",
       );
     }
     openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -53,7 +53,7 @@ export async function summarizeMeeting(transcript: string): Promise<{
 
 export async function answerDocumentQuestion(
   question: string,
-  documents: Array<{ title: string; content: string }>
+  documents: Array<{ title: string; content: string }>,
 ): Promise<string> {
   try {
     const client = getOpenAI();

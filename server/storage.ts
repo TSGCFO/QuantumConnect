@@ -59,7 +59,7 @@ export interface IStorage {
 
   // HubSpot communication operations
   createHubspotCommunication(
-    comm: InsertHubspotCommunication
+    comm: InsertHubspotCommunication,
   ): Promise<HubspotCommunication>;
   getHubspotCommunications(): Promise<HubspotCommunication[]>;
   hubspotCommunicationExists(hubspotId: string): Promise<boolean>;
@@ -112,10 +112,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDocuments(): Promise<Document[]> {
-    return await db
-      .select()
-      .from(documents)
-      .orderBy(desc(documents.createdAt));
+    return await db.select().from(documents).orderBy(desc(documents.createdAt));
   }
 
   async getDocument(id: string): Promise<Document | undefined> {
@@ -129,25 +126,19 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(documents)
       .where(
-        sql`LOWER(${documents.title}) LIKE ${searchPattern} OR LOWER(${documents.description}) LIKE ${searchPattern} OR LOWER(${documents.content}) LIKE ${searchPattern}`
+        sql`LOWER(${documents.title}) LIKE ${searchPattern} OR LOWER(${documents.description}) LIKE ${searchPattern} OR LOWER(${documents.content}) LIKE ${searchPattern}`,
       )
       .orderBy(desc(documents.createdAt));
   }
 
   // Meeting operations
   async createMeeting(meetingData: InsertMeeting): Promise<Meeting> {
-    const [meeting] = await db
-      .insert(meetings)
-      .values(meetingData)
-      .returning();
+    const [meeting] = await db.insert(meetings).values(meetingData).returning();
     return meeting;
   }
 
   async getMeetings(): Promise<Meeting[]> {
-    return await db
-      .select()
-      .from(meetings)
-      .orderBy(desc(meetings.meetingDate));
+    return await db.select().from(meetings).orderBy(desc(meetings.meetingDate));
   }
 
   async getMeeting(id: string): Promise<Meeting | undefined> {
@@ -243,7 +234,7 @@ export class DatabaseStorage implements IStorage {
 
   // HubSpot communication operations
   async createHubspotCommunication(
-    commData: InsertHubspotCommunication
+    commData: InsertHubspotCommunication,
   ): Promise<HubspotCommunication> {
     const [comm] = await db
       .insert(hubspotCommunications)
@@ -288,13 +279,13 @@ export class DatabaseStorage implements IStorage {
     const total = allTasks.length;
     const completed = allTasks.filter((t) => t.status === "completed").length;
     const pending = allTasks.filter(
-      (t) => t.status === "pending" || t.status === "in_progress"
+      (t) => t.status === "pending" || t.status === "in_progress",
     ).length;
     const overdue = allTasks.filter(
       (t) =>
         t.dueDate &&
         new Date(t.dueDate) < new Date() &&
-        t.status !== "completed"
+        t.status !== "completed",
     ).length;
 
     return {

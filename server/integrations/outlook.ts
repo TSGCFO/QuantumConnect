@@ -15,8 +15,8 @@ async function getAccessToken() {
   const xReplitToken = process.env.REPL_IDENTITY
     ? "repl " + process.env.REPL_IDENTITY
     : process.env.WEB_REPL_RENEWAL
-    ? "depl " + process.env.WEB_REPL_RENEWAL
-    : null;
+      ? "depl " + process.env.WEB_REPL_RENEWAL
+      : null;
 
   if (!xReplitToken) {
     throw new Error("X_REPLIT_TOKEN not found for repl/depl");
@@ -31,7 +31,7 @@ async function getAccessToken() {
         Accept: "application/json",
         X_REPLIT_TOKEN: xReplitToken,
       },
-    }
+    },
   )
     .then((res) => res.json())
     .then((data) => data.items?.[0]);

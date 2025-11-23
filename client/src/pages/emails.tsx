@@ -68,7 +68,9 @@ export default function Emails() {
           variant="outline"
           data-testid="button-sync-emails"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
+          />
           {syncing ? "Syncing..." : "Sync Emails"}
         </Button>
       </div>
@@ -157,7 +159,9 @@ export default function Emails() {
         >
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{selectedEmail.subject || "(No subject)"}</DialogTitle>
+              <DialogTitle>
+                {selectedEmail.subject || "(No subject)"}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">

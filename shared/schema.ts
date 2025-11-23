@@ -26,7 +26,9 @@ export const sessions = pgTable(
 
 // User storage table for Replit Auth with role-based access control
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
@@ -43,7 +45,9 @@ export type User = typeof users.$inferSelect;
 
 // Documents in the knowledge hub
 export const documents = pgTable("documents", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
   category: varchar("category").notNull(), // policy, training, operational, other
@@ -76,7 +80,9 @@ export type Document = typeof documents.$inferSelect;
 
 // Meeting notes and recordings
 export const meetings = pgTable("meetings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
   meetingDate: timestamp("meeting_date").notNull(),
@@ -108,7 +114,9 @@ export type Meeting = typeof meetings.$inferSelect;
 
 // Tasks and action items
 export const tasks = pgTable("tasks", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   title: text("title").notNull(),
   description: text("description"),
   assignedToId: varchar("assigned_to_id").references(() => users.id),
@@ -144,7 +152,9 @@ export type Task = typeof tasks.$inferSelect;
 
 // Activity logs for tracking all portal interactions
 export const activityLogs = pgTable("activity_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
   action: varchar("action").notNull(), // login, logout, view_document, upload_document, etc.
   resourceType: varchar("resource_type"), // document, meeting, task, email, etc.
@@ -171,7 +181,9 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 
 // Email communications from Outlook
 export const emails = pgTable("emails", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   outlookId: varchar("outlook_id").unique().notNull(),
   userId: varchar("user_id").references(() => users.id),
   subject: text("subject"),
@@ -203,7 +215,9 @@ export type Email = typeof emails.$inferSelect;
 
 // HubSpot communications (client/prospect interactions)
 export const hubspotCommunications = pgTable("hubspot_communications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   hubspotId: varchar("hubspot_id").unique().notNull(),
   type: varchar("type").notNull(), // meeting, call, email, note
   contactName: text("contact_name"),
@@ -236,5 +250,4 @@ export const insertHubspotCommunicationSchema = createInsertSchema(
 export type InsertHubspotCommunication = z.infer<
   typeof insertHubspotCommunicationSchema
 >;
-export type HubspotCommunication =
-  typeof hubspotCommunications.$inferSelect;
+export type HubspotCommunication = typeof hubspotCommunications.$inferSelect;

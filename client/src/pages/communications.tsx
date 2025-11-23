@@ -62,7 +62,9 @@ export default function Communications() {
           variant="outline"
           data-testid="button-sync-communications"
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`}
+          />
           {syncing ? "Syncing..." : "Sync from HubSpot"}
         </Button>
       </div>
@@ -103,8 +105,8 @@ export default function Communications() {
                       comm.type === "meeting"
                         ? "default"
                         : comm.type === "call"
-                        ? "secondary"
-                        : "outline"
+                          ? "secondary"
+                          : "outline"
                     }
                   >
                     {comm.type}
@@ -150,9 +152,7 @@ export default function Communications() {
         <Card>
           <CardContent className="text-center py-12">
             <Users className="h-16 w-16 mx-auto mb-4 opacity-20" />
-            <p className="text-lg font-medium mb-2">
-              No communications found
-            </p>
+            <p className="text-lg font-medium mb-2">No communications found</p>
             <p className="text-muted-foreground mb-4">
               {searchQuery
                 ? "Try adjusting your search"
