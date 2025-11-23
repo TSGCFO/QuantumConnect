@@ -82,32 +82,114 @@ export async function getUserPrincipalName(): Promise<string> {
   }
 }
 
-// Get online meetings for a specific user by their email
+// Helper function to convert calendar events to meeting format
+function convertCalendarEventToMeeting(event: any) {
+  // Only process if it's an online meeting
+  if (!event.isOnlineMeeting || !event.onlineMeeting) {
+    return null;
+  }
+  
+  // Extract attendee emails
+  const participants = event.attendees?.map((attendee: any) => ({
+    email: attendee.emailAddress?.address,
+    name: attendee.emailAddress?.name,
+    status: attendee.status?.response,
+    type: attendee.type
+  })) || [];
+  
+  return {
+    id: event.id,
+    subject: event.subject || "Untitled Meeting",
+    startDateTime: event.start?.dateTime,
+    endDateTime: event.end?.dateTime,
+    createdDateTime: event.createdDateTime,
+    joinUrl: event.onlineMeeting?.joinUrl || event.onlineMeetingUrl,
+    participants: participants,
+    organizer: event.organizer?.emailAddress,
+    bodyPreview: event.bodyPreview,
+    location: event.location?.displayName,
+    isOnlineMeeting: true,
+    // Additional fields from the calendar event
+    meetingProvider: event.onlineMeetingProvider || "teamsForBusiness",
+    webLink: event.webLink,
+    categories: event.categories || [],
+    importance: event.importance,
+    isAllDay: event.isAllDay || false,
+    isCancelled: event.isCancelled || false,
+    responseStatus: event.responseStatus
+  };
+}
+
+// Get online meetings for a specific user by fetching calendar events
 export async function getUserOnlineMeetings(userPrincipalName?: string) {
   const client = await getTeamsAppClient();
   
   try {
-    // If no user specified, get current user's meetings
-    const userPath = userPrincipalName 
-      ? `/users/${userPrincipalName}/onlineMeetings`
-      : "/me/onlineMeetings";
+    const calendarPath = userPrincipalName 
+      ? `/users/${userPrincipalName}/calendar/events`
+      : "/me/calendar/events";
     
-    // Fetch all meetings from the past 2 years
+    // Fetch all events from the past 2 years to now
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const now = new Date();
+    
+    // Use $filter to get only online meetings
+    const filter = `isOnlineMeeting eq true and start/dateTime ge '${twoYearsAgo.toISOString()}' and start/dateTime le '${now.toISOString()}'`;
     
     const response = await client
-      .api(userPath)
-      .filter("startDateTime ge " + twoYearsAgo.toISOString())
-      .select("id,subject,startDateTime,endDateTime,participants,joinUrl,recordingContentUrl,transcripts,createdDateTime,chatInfo")
-      .orderby("startDateTime desc")
+      .api(calendarPath)
+      .filter(filter)
+      .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
+      .orderby("start/dateTime desc")
       .top(999) // Maximum limit for comprehensive sync
       .get();
     
-    return response.value || [];
+    const events = response.value || [];
+    
+    // Convert calendar events to meeting format
+    const meetings = events
+      .map(convertCalendarEventToMeeting)
+      .filter(Boolean); // Remove null values
+    
+    return meetings;
   } catch (error) {
-    console.error("Error fetching online meetings:", error);
-    return [];
+    console.error("Error fetching online meetings from calendar:", error);
+    
+    // Fallback to calendarView if calendar/events fails
+    try {
+      const calendarViewPath = userPrincipalName
+        ? `/users/${userPrincipalName}/calendarView`
+        : "/me/calendarView";
+      
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+      const now = new Date();
+      
+      const response = await client
+        .api(calendarViewPath)
+        .query({
+          startDateTime: twoYearsAgo.toISOString(),
+          endDateTime: now.toISOString(),
+          $filter: "isOnlineMeeting eq true"
+        })
+        .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
+        .orderby("start/dateTime desc")
+        .top(999)
+        .get();
+      
+      const events = response.value || [];
+      
+      // Convert calendar events to meeting format
+      const meetings = events
+        .map(convertCalendarEventToMeeting)
+        .filter(Boolean);
+      
+      return meetings;
+    } catch (fallbackError) {
+      console.error("Error fetching online meetings from calendarView:", fallbackError);
+      return [];
+    }
   }
 }
 
@@ -127,19 +209,23 @@ export async function getAllOnlineMeetings() {
     const users = usersResponse.value || [];
     const allMeetings = [];
     
-    // Fetch meetings for each user
+    // Fetch meetings for each user using calendar API
     for (const user of users) {
       if (!user.userPrincipalName) continue;
       
       try {
         const meetings = await getUserOnlineMeetings(user.userPrincipalName);
         
-        // Add user info to each meeting
+        // Add user info to each meeting if not already present
         const meetingsWithUser = meetings.map((meeting: any) => ({
           ...meeting,
-          organizerEmail: user.userPrincipalName,
-          organizerName: user.displayName,
-          organizerId: user.id
+          // Preserve organizer from calendar event if available, otherwise use user info
+          organizerEmail: meeting.organizer?.address || user.userPrincipalName,
+          organizerName: meeting.organizer?.name || user.displayName,
+          organizerId: user.id,
+          // Add the user who owns this calendar entry (might be different from organizer)
+          calendarOwnerEmail: user.userPrincipalName,
+          calendarOwnerName: user.displayName
         }));
         
         allMeetings.push(...meetingsWithUser);
@@ -149,12 +235,23 @@ export async function getAllOnlineMeetings() {
       }
     }
     
-    // Sort all meetings by date
-    allMeetings.sort((a, b) => 
-      new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime()
-    );
+    // Remove duplicates (same meeting might appear in multiple calendars)
+    const uniqueMeetings = new Map();
+    allMeetings.forEach((meeting) => {
+      // Use meeting ID as unique identifier
+      if (!uniqueMeetings.has(meeting.id)) {
+        uniqueMeetings.set(meeting.id, meeting);
+      }
+    });
     
-    return allMeetings;
+    // Convert map to array and sort by date
+    const sortedMeetings = Array.from(uniqueMeetings.values()).sort((a, b) => {
+      const dateA = new Date(a.startDateTime).getTime();
+      const dateB = new Date(b.startDateTime).getTime();
+      return dateB - dateA; // Descending order (newest first)
+    });
+    
+    return sortedMeetings;
   } catch (error) {
     console.error("Error fetching all organization meetings:", error);
     throw error;
