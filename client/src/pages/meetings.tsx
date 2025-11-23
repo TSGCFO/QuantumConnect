@@ -60,8 +60,14 @@ export default function Meetings() {
   };
 
   const uploadMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      await apiRequest("POST", "/api/meetings/upload", formData);
+    mutationFn: async (data: { 
+      title: string; 
+      description: string; 
+      meetingDate: string; 
+      transcript: string 
+    }) => {
+      const response = await apiRequest("POST", "/api/meetings/upload", data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/meetings"] });
@@ -113,7 +119,16 @@ export default function Meetings() {
   const handleUpload = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    uploadMutation.mutate(formData);
+    
+    // Convert FormData to plain object for JSON API
+    const data = {
+      title: formData.get('title') as string,
+      description: formData.get('description') as string,
+      meetingDate: formData.get('meetingDate') as string,
+      transcript: formData.get('transcript') as string,
+    };
+    
+    uploadMutation.mutate(data);
   };
 
   const getSourceIcon = (source: string) => {

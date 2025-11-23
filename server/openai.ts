@@ -20,6 +20,18 @@ export async function summarizeMeeting(transcript: string): Promise<{
   actionItems: any[];
 }> {
   try {
+    // Check if OpenAI is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.log("OpenAI API key not configured - using fallback summary");
+      // Return a basic summary without AI processing
+      return {
+        summary: transcript.length > 500 
+          ? transcript.substring(0, 500) + "..." 
+          : transcript,
+        actionItems: [],
+      };
+    }
+
     const client = getOpenAI();
     const response = await client.chat.completions.create({
       model: "gpt-5",
@@ -44,8 +56,11 @@ export async function summarizeMeeting(transcript: string): Promise<{
     };
   } catch (error) {
     console.error("Error summarizing meeting:", error);
+    // Provide a fallback that includes part of the transcript
     return {
-      summary: "Failed to generate summary",
+      summary: transcript.length > 500 
+        ? transcript.substring(0, 500) + "..." 
+        : transcript,
       actionItems: [],
     };
   }
