@@ -6,6 +6,16 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { summarizeMeeting, answerDocumentQuestion } from "./openai";
 import { getUncachableOutlookClient } from "./integrations/outlook";
 import { getUncachableHubSpotClient } from "./integrations/hubspot";
+import { 
+  getOnlineMeetings, 
+  getMeetingTranscript,
+  getUserTeams,
+  getTeamChannels,
+  getChannelMessages,
+  getUserChats,
+  getChatMessages,
+  getCalendarEvents
+} from "./integrations/teams";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -140,7 +150,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documents = await storage.getDocuments();
       const docsWithContent = documents.filter((d) => d.content);
 
-      const answer = await answerDocumentQuestion(question, docsWithContent);
+      // Map documents to the expected format for answerDocumentQuestion
+      const formattedDocs = docsWithContent.map(d => ({
+        title: d.title,
+        content: d.content || ''
+      }));
+
+      const answer = await answerDocumentQuestion(question, formattedDocs);
       res.json({ answer });
     } catch (error) {
       console.error("Error answering question:", error);
@@ -335,6 +351,326 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (error) {
         console.error("Error syncing emails:", error);
         res.status(500).json({ message: "Failed to sync emails" });
+      }
+    },
+  );
+
+  // Teams API routes
+  
+  // Sync Teams meetings with transcripts
+  app.get(
+    "/api/teams/sync",
+    isAuthenticated,
+    logActivity("sync_teams_meetings"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const meetings = await getOnlineMeetings();
+        
+        let syncedCount = 0;
+        let processedCount = 0;
+
+        for (const meeting of meetings) {
+          try {
+            // Check if meeting already exists
+            const existingMeetings = await storage.getMeetings();
+            const exists = existingMeetings.some(m => m.sourceId === meeting.id);
+            
+            if (!exists && meeting.subject) {
+              // Get transcript if available
+              let transcript = "";
+              let summary = "";
+              let actionItems: any[] = [];
+              
+              if (meeting.transcripts && meeting.transcripts.length > 0) {
+                for (const trans of meeting.transcripts) {
+                  try {
+                    const transcriptContent = await getMeetingTranscript(meeting.id, trans.id);
+                    if (transcriptContent) {
+                      // Convert stream to text if needed
+                      transcript = typeof transcriptContent === 'string' 
+                        ? transcriptContent 
+                        : transcriptContent.toString();
+                      break;
+                    }
+                  } catch (err) {
+                    console.error(`Error fetching transcript for meeting ${meeting.id}:`, err);
+                  }
+                }
+              }
+              
+              // Generate AI summary if we have transcript
+              if (transcript) {
+                try {
+                  const aiResult = await summarizeMeeting(transcript);
+                  summary = aiResult.summary;
+                  actionItems = aiResult.actionItems;
+                } catch (err) {
+                  console.error("Error generating AI summary:", err);
+                }
+              }
+              
+              // Store the meeting
+              const storedMeeting = await storage.createMeeting({
+                title: meeting.subject || "Teams Meeting",
+                description: `Teams meeting - ${meeting.joinUrl || 'No join URL'}`,
+                meetingDate: new Date(meeting.startDateTime),
+                transcript: transcript || null,
+                summary: summary || null,
+                actionItems: actionItems.length > 0 ? actionItems : null,
+                source: "teams",
+                sourceId: meeting.id,
+                uploadedById: userId,
+                attendees: meeting.participants?.attendees?.map((a: any) => a.identity?.user?.displayName).filter(Boolean) || [],
+              });
+              
+              // Create tasks from action items
+              if (actionItems && actionItems.length > 0) {
+                for (const item of actionItems) {
+                  await storage.createTask({
+                    title: item.title || item.task || item,
+                    description: `From Teams meeting: ${meeting.subject}`,
+                    priority: "medium",
+                    status: "pending",
+                    source: "ai_meeting",
+                    sourceId: storedMeeting.id,
+                    assignedToId: userId,
+                    assignedById: userId,
+                    dueDate: item.deadline ? new Date(item.deadline) : null,
+                  });
+                }
+              }
+              
+              syncedCount++;
+            }
+            processedCount++;
+          } catch (error) {
+            console.error(`Error processing meeting ${meeting.id}:`, error);
+          }
+        }
+        
+        res.json({ 
+          message: `Synced ${syncedCount} new Teams meetings, processed ${processedCount} total`,
+          synced: syncedCount,
+          processed: processedCount
+        });
+      } catch (error) {
+        console.error("Error syncing Teams meetings:", error);
+        res.status(500).json({ message: "Failed to sync Teams meetings" });
+      }
+    },
+  );
+
+  // Get Teams meetings
+  app.get(
+    "/api/teams/meetings",
+    isAuthenticated,
+    logActivity("view_teams_meetings"),
+    async (req, res) => {
+      try {
+        const meetings = await getOnlineMeetings();
+        
+        // Format meetings for response
+        const formattedMeetings = meetings.map((meeting: any) => ({
+          id: meeting.id,
+          subject: meeting.subject || "Untitled Meeting",
+          startDateTime: meeting.startDateTime,
+          endDateTime: meeting.endDateTime,
+          joinUrl: meeting.joinUrl,
+          hasTranscripts: meeting.transcripts && meeting.transcripts.length > 0,
+          participantCount: meeting.participants?.attendees?.length || 0,
+        }));
+        
+        res.json(formattedMeetings);
+      } catch (error) {
+        console.error("Error fetching Teams meetings:", error);
+        res.status(500).json({ message: "Failed to fetch Teams meetings" });
+      }
+    },
+  );
+
+  // Get Teams channels and messages
+  app.get(
+    "/api/teams/channels",
+    isAuthenticated,
+    logActivity("view_teams_channels"),
+    async (req, res) => {
+      try {
+        const teams = await getUserTeams();
+        const channelsWithMessages = [];
+        
+        for (const team of teams) {
+          const channels = await getTeamChannels(team.id);
+          
+          for (const channel of channels) {
+            const messages = await getChannelMessages(team.id, channel.id, 20);
+            
+            channelsWithMessages.push({
+              teamId: team.id,
+              teamName: team.displayName,
+              channelId: channel.id,
+              channelName: channel.displayName,
+              channelDescription: channel.description,
+              messageCount: messages.length,
+              recentMessages: messages.slice(0, 5).map((msg: any) => ({
+                id: msg.id,
+                body: msg.body?.content,
+                from: msg.from?.user?.displayName,
+                createdDateTime: msg.createdDateTime,
+                hasReplies: msg.replies && msg.replies.length > 0,
+              })),
+            });
+          }
+        }
+        
+        res.json(channelsWithMessages);
+      } catch (error) {
+        console.error("Error fetching Teams channels:", error);
+        res.status(500).json({ message: "Failed to fetch Teams channels" });
+      }
+    },
+  );
+
+  // Get Teams chat messages
+  app.get(
+    "/api/teams/chats",
+    isAuthenticated,
+    logActivity("view_teams_chats"),
+    async (req, res) => {
+      try {
+        const chats = await getUserChats(30);
+        const chatsWithMessages = [];
+        
+        for (const chat of chats.slice(0, 10)) { // Limit to 10 most recent chats
+          const messages = await getChatMessages(chat.id, 20);
+          
+          chatsWithMessages.push({
+            id: chat.id,
+            topic: chat.topic || "Unnamed chat",
+            chatType: chat.chatType,
+            lastUpdated: chat.lastUpdatedDateTime,
+            members: chat.members?.map((m: any) => m.displayName).filter(Boolean),
+            messageCount: messages.length,
+            recentMessages: messages.slice(0, 5).map((msg: any) => ({
+              id: msg.id,
+              body: msg.body?.content,
+              from: msg.from?.user?.displayName,
+              createdDateTime: msg.createdDateTime,
+              importance: msg.importance,
+            })),
+          });
+        }
+        
+        res.json(chatsWithMessages);
+      } catch (error) {
+        console.error("Error fetching Teams chats:", error);
+        res.status(500).json({ message: "Failed to fetch Teams chats" });
+      }
+    },
+  );
+
+  // Import a specific Teams meeting with transcript
+  app.post(
+    "/api/teams/import-meeting",
+    isAuthenticated,
+    logActivity("import_teams_meeting", "meeting"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const { meetingId } = req.body;
+        
+        if (!meetingId) {
+          return res.status(400).json({ message: "Meeting ID is required" });
+        }
+        
+        // Get meetings and find the specific one
+        const meetings = await getOnlineMeetings();
+        const meeting = meetings.find((m: any) => m.id === meetingId);
+        
+        if (!meeting) {
+          return res.status(404).json({ message: "Meeting not found" });
+        }
+        
+        // Check if already imported
+        const existingMeetings = await storage.getMeetings();
+        const exists = existingMeetings.some(m => m.sourceId === meetingId);
+        
+        if (exists) {
+          return res.status(400).json({ message: "Meeting already imported" });
+        }
+        
+        // Get transcript if available
+        let transcript = "";
+        let summary = "";
+        let actionItems: any[] = [];
+        
+        if (meeting.transcripts && meeting.transcripts.length > 0) {
+          for (const trans of meeting.transcripts) {
+            try {
+              const transcriptContent = await getMeetingTranscript(meeting.id, trans.id);
+              if (transcriptContent) {
+                // Convert stream to text if needed
+                transcript = typeof transcriptContent === 'string' 
+                  ? transcriptContent 
+                  : transcriptContent.toString();
+                break;
+              }
+            } catch (err) {
+              console.error(`Error fetching transcript:`, err);
+            }
+          }
+        }
+        
+        // Generate AI summary if we have transcript
+        if (transcript) {
+          try {
+            const aiResult = await summarizeMeeting(transcript);
+            summary = aiResult.summary;
+            actionItems = aiResult.actionItems;
+          } catch (err) {
+            console.error("Error generating AI summary:", err);
+          }
+        }
+        
+        // Store the meeting
+        const storedMeeting = await storage.createMeeting({
+          title: meeting.subject || "Teams Meeting",
+          description: `Teams meeting - ${meeting.joinUrl || 'No join URL'}`,
+          meetingDate: new Date(meeting.startDateTime),
+          transcript: transcript || null,
+          summary: summary || null,
+          actionItems: actionItems.length > 0 ? actionItems : null,
+          source: "teams",
+          sourceId: meeting.id,
+          uploadedById: userId,
+          attendees: meeting.participants?.attendees?.map((a: any) => a.identity?.user?.displayName).filter(Boolean) || [],
+        });
+        
+        // Create tasks from action items
+        if (actionItems && actionItems.length > 0) {
+          for (const item of actionItems) {
+            await storage.createTask({
+              title: item.title || item.task || item,
+              description: `From Teams meeting: ${meeting.subject}`,
+              priority: "medium",
+              status: "pending",
+              source: "ai_meeting",
+              sourceId: storedMeeting.id,
+              assignedToId: userId,
+              assignedById: userId,
+              dueDate: item.deadline ? new Date(item.deadline) : null,
+            });
+          }
+        }
+        
+        res.json({ 
+          message: "Meeting imported successfully",
+          meeting: storedMeeting,
+          tasksCreated: actionItems.length
+        });
+      } catch (error) {
+        console.error("Error importing Teams meeting:", error);
+        res.status(500).json({ message: "Failed to import Teams meeting" });
       }
     },
   );
