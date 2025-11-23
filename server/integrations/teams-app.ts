@@ -134,8 +134,8 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
     const now = new Date();
     
-    // Use $filter to get only online meetings
-    const filter = `isOnlineMeeting eq true and start/dateTime ge '${twoYearsAgo.toISOString()}' and start/dateTime le '${now.toISOString()}'`;
+    // Use $filter for date range only (isOnlineMeeting filter not supported by Graph API)
+    const filter = `start/dateTime ge '${twoYearsAgo.toISOString()}' and start/dateTime le '${now.toISOString()}'`;
     
     const response = await client
       .api(calendarPath)
@@ -147,8 +147,11 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
     
     const events = response.value || [];
     
+    // Filter client-side for online meetings only
+    const onlineMeetings = events.filter((event: any) => event.isOnlineMeeting === true);
+    
     // Convert calendar events to meeting format
-    const meetings = events
+    const meetings = onlineMeetings
       .map(convertCalendarEventToMeeting)
       .filter(Boolean); // Remove null values
     
@@ -170,8 +173,8 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
         .api(calendarViewPath)
         .query({
           startDateTime: twoYearsAgo.toISOString(),
-          endDateTime: now.toISOString(),
-          $filter: "isOnlineMeeting eq true"
+          endDateTime: now.toISOString()
+          // Removed $filter for isOnlineMeeting - not supported by Graph API
         })
         .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
         .orderby("start/dateTime desc")
@@ -180,8 +183,11 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
       
       const events = response.value || [];
       
+      // Filter client-side for online meetings only
+      const onlineMeetings = events.filter((event: any) => event.isOnlineMeeting === true);
+      
       // Convert calendar events to meeting format
-      const meetings = events
+      const meetings = onlineMeetings
         .map(convertCalendarEventToMeeting)
         .filter(Boolean);
       
