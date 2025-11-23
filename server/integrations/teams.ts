@@ -109,11 +109,16 @@ export async function getOnlineMeetings() {
   const client = await getUncachableTeamsClient();
   
   try {
+    // Fetch all meetings from the past 2 years to get complete history
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    
     const response = await client
       .api("/me/onlineMeetings")
-      .filter("startDateTime ge " + new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      .filter("startDateTime ge " + twoYearsAgo.toISOString())
       .select("id,subject,startDateTime,endDateTime,participants,joinUrl,recordingContentUrl,transcripts")
       .orderby("startDateTime desc")
+      .top(200) // Increase limit to get more meetings
       .get();
     
     return response.value || [];
@@ -211,7 +216,12 @@ export async function getCalendarEvents() {
   const client = await getUncachableTeamsClient();
   
   try {
-    const startDateTime = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    // Fetch all events from the past 2 years to get complete history
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    const startDateTime = twoYearsAgo.toISOString();
+    
+    // Include future events up to 30 days from now
     const endDateTime = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     
     const response = await client
@@ -222,7 +232,7 @@ export async function getCalendarEvents() {
       })
       .select("id,subject,start,end,location,attendees,onlineMeeting,isOnlineMeeting")
       .orderby("start/dateTime")
-      .top(100)
+      .top(500) // Increase limit to get more events
       .get();
     
     return response.value || [];
