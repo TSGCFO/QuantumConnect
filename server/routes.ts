@@ -6,16 +6,21 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { summarizeMeeting, answerDocumentQuestion } from "./openai";
 import { getUncachableOutlookClient } from "./integrations/outlook";
 import { getUncachableHubSpotClient } from "./integrations/hubspot";
-import { 
-  getOnlineMeetings, 
+// Import from the new teams-app module for application-level access
+import {
+  getUserPrincipalName,
+  getUserOnlineMeetings,
+  getAllOnlineMeetings,
   getMeetingTranscript,
+  getMeetingAttendanceReports,
+  getUserCalendarEvents,
+  isUserAdmin,
   getUserTeams,
   getTeamChannels,
   getChannelMessages,
   getUserChats,
-  getChatMessages,
-  getCalendarEvents
-} from "./integrations/teams";
+  getChatMessages
+} from "./integrations/teams-app";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -373,7 +378,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Teams API routes
   
-  // Sync Teams meetings with transcripts
+  // Sync Teams meetings with transcripts using new application-level authentication
   app.get(
     "/api/teams/sync",
     isAuthenticated,
@@ -381,10 +386,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const userId = req.user.claims.sub;
-        const meetings = await getOnlineMeetings();
+        
+        // Get the current user's email using new authentication
+        const userPrincipalName = await getUserPrincipalName();
+        
+        // Fetch all meetings for the user (past 2 years)
+        const meetings = await getUserOnlineMeetings(userPrincipalName);
         
         let syncedCount = 0;
         let processedCount = 0;
+        let failedCount = 0;
 
         for (const meeting of meetings) {
           try {
@@ -401,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (meeting.transcripts && meeting.transcripts.length > 0) {
                 for (const trans of meeting.transcripts) {
                   try {
-                    const transcriptContent = await getMeetingTranscript(meeting.id, trans.id);
+                    const transcriptContent = await getMeetingTranscript(meeting.id, trans.id, userPrincipalName);
                     if (transcriptContent) {
                       // Convert stream to text if needed
                       transcript = typeof transcriptContent === 'string' 
@@ -415,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               }
               
-              // Generate AI summary if we have transcript
+              // Generate AI summary if we have transcript (with fallback)
               if (transcript) {
                 try {
                   const aiResult = await summarizeMeeting(transcript);
@@ -429,6 +440,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     : transcript;
                   actionItems = [];
                 }
+              } else {
+                // No transcript available, create basic summary from meeting info
+                summary = `Meeting: ${meeting.subject || 'Untitled'} on ${new Date(meeting.startDateTime).toLocaleDateString()}`;
               }
               
               // Store the meeting
@@ -467,13 +481,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             processedCount++;
           } catch (error) {
             console.error(`Error processing meeting ${meeting.id}:`, error);
+            failedCount++;
           }
         }
         
         res.json({ 
-          message: `Synced ${syncedCount} new Teams meetings, processed ${processedCount} total`,
+          message: `Synced ${syncedCount} new Teams meetings, processed ${processedCount} total${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
           synced: syncedCount,
-          processed: processedCount
+          processed: processedCount,
+          failed: failedCount,
+          userEmail: userPrincipalName
         });
       } catch (error) {
         console.error("Error syncing Teams meetings:", error);
@@ -482,14 +499,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Get Teams meetings
+  // Get Teams meetings using new authentication
   app.get(
     "/api/teams/meetings",
     isAuthenticated,
     logActivity("view_teams_meetings"),
     async (req, res) => {
       try {
-        const meetings = await getOnlineMeetings();
+        // Get the current user's email
+        const userPrincipalName = await getUserPrincipalName();
+        
+        // Fetch meetings for the current user
+        const meetings = await getUserOnlineMeetings(userPrincipalName);
         
         // Format meetings for response
         const formattedMeetings = meetings.map((meeting: any) => ({
@@ -590,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Import a specific Teams meeting with transcript
+  // Import a specific Teams meeting with transcript using new authentication
   app.post(
     "/api/teams/import-meeting",
     isAuthenticated,
@@ -598,14 +619,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const userId = req.user.claims.sub;
-        const { meetingId } = req.body;
+        const { meetingId, historical } = req.body; // Support historical flag for importing older meetings
         
         if (!meetingId) {
           return res.status(400).json({ message: "Meeting ID is required" });
         }
         
+        // Get the current user's email
+        const userPrincipalName = await getUserPrincipalName();
+        
         // Get meetings and find the specific one
-        const meetings = await getOnlineMeetings();
+        const meetings = await getUserOnlineMeetings(userPrincipalName);
         const meeting = meetings.find((m: any) => m.id === meetingId);
         
         if (!meeting) {
@@ -616,7 +640,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const existingMeetings = await storage.getMeetings();
         const exists = existingMeetings.some(m => m.sourceId === meetingId);
         
-        if (exists) {
+        if (exists && !historical) {
           return res.status(400).json({ message: "Meeting already imported" });
         }
         
@@ -628,7 +652,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (meeting.transcripts && meeting.transcripts.length > 0) {
           for (const trans of meeting.transcripts) {
             try {
-              const transcriptContent = await getMeetingTranscript(meeting.id, trans.id);
+              const transcriptContent = await getMeetingTranscript(meeting.id, trans.id, userPrincipalName);
               if (transcriptContent) {
                 // Convert stream to text if needed
                 transcript = typeof transcriptContent === 'string' 
@@ -642,7 +666,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Generate AI summary if we have transcript
+        // Generate AI summary if we have transcript (with fallback)
         if (transcript) {
           try {
             const aiResult = await summarizeMeeting(transcript);
@@ -656,6 +680,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               : transcript;
             actionItems = [];
           }
+        } else {
+          // No transcript available, create basic summary from meeting info
+          summary = `Meeting: ${meeting.subject || 'Untitled'} on ${new Date(meeting.startDateTime).toLocaleDateString()}`;
         }
         
         // Store the meeting
@@ -692,11 +719,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json({ 
           message: "Meeting imported successfully",
           meeting: storedMeeting,
-          tasksCreated: actionItems.length
+          tasksCreated: actionItems.length,
+          historical: !!historical
         });
       } catch (error) {
         console.error("Error importing Teams meeting:", error);
         res.status(500).json({ message: "Failed to import Teams meeting" });
+      }
+    },
+  );
+
+  // Sync ALL Teams meetings for ALL users (Admin only)
+  app.get(
+    "/api/teams/sync-all",
+    isAuthenticated,
+    logActivity("sync_all_teams_meetings"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        // Check if user is an admin
+        if (user?.role !== "admin") {
+          // Additional check using Teams/Azure AD admin role
+          const isAdmin = await isUserAdmin(userId);
+          if (!isAdmin) {
+            return res.status(403).json({ 
+              message: "Access denied. Admin role required for organization-wide sync." 
+            });
+          }
+        }
+        
+        // Get all meetings for the entire organization
+        console.log("Starting organization-wide Teams meetings sync...");
+        const allMeetings = await getAllOnlineMeetings();
+        
+        let syncedCount = 0;
+        let processedCount = 0;
+        let failedCount = 0;
+        const usersMeetingsCount: { [key: string]: number } = {};
+
+        for (const meeting of allMeetings) {
+          try {
+            // Track meetings per user
+            const organizerEmail = meeting.organizerEmail || 'unknown';
+            usersMeetingsCount[organizerEmail] = (usersMeetingsCount[organizerEmail] || 0) + 1;
+            
+            // Check if meeting already exists
+            const existingMeetings = await storage.getMeetings();
+            const exists = existingMeetings.some(m => m.sourceId === meeting.id);
+            
+            if (!exists && meeting.subject) {
+              // Get transcript if available
+              let transcript = "";
+              let summary = "";
+              let actionItems: any[] = [];
+              
+              if (meeting.transcripts && meeting.transcripts.length > 0) {
+                for (const trans of meeting.transcripts) {
+                  try {
+                    const transcriptContent = await getMeetingTranscript(
+                      meeting.id, 
+                      trans.id, 
+                      meeting.organizerEmail
+                    );
+                    if (transcriptContent) {
+                      // Convert stream to text if needed
+                      transcript = typeof transcriptContent === 'string' 
+                        ? transcriptContent 
+                        : transcriptContent.toString();
+                      break;
+                    }
+                  } catch (err) {
+                    console.error(`Error fetching transcript for meeting ${meeting.id}:`, err);
+                  }
+                }
+              }
+              
+              // Generate AI summary if we have transcript (with fallback)
+              if (transcript) {
+                try {
+                  const aiResult = await summarizeMeeting(transcript);
+                  summary = aiResult.summary;
+                  actionItems = aiResult.actionItems;
+                } catch (err) {
+                  console.error("Error generating AI summary:", err);
+                  // Create fallback summary from first 500 chars of transcript
+                  summary = transcript.length > 500 
+                    ? transcript.substring(0, 500) + "..." 
+                    : transcript;
+                  actionItems = [];
+                }
+              } else {
+                // No transcript available, create basic summary from meeting info
+                summary = `Meeting: ${meeting.subject || 'Untitled'} organized by ${meeting.organizerName || 'Unknown'} on ${new Date(meeting.startDateTime).toLocaleDateString()}`;
+              }
+              
+              // Store the meeting (associate with the organizer)
+              const storedMeeting = await storage.createMeeting({
+                title: meeting.subject || "Teams Meeting",
+                description: `Teams meeting by ${meeting.organizerName || 'Unknown'} - ${meeting.joinUrl || 'No join URL'}`,
+                meetingDate: new Date(meeting.startDateTime),
+                transcript: transcript || null,
+                summary: summary || null,
+                actionItems: actionItems.length > 0 ? actionItems : null,
+                source: "teams",
+                sourceId: meeting.id,
+                uploadedById: meeting.organizerId || userId, // Use organizer's ID if available
+                attendees: meeting.participants?.attendees?.map((a: any) => a.identity?.user?.displayName).filter(Boolean) || [],
+              });
+              
+              // Create tasks from action items (assign to meeting organizer if possible)
+              if (actionItems && actionItems.length > 0) {
+                for (const item of actionItems) {
+                  await storage.createTask({
+                    title: item.title || item.task || item,
+                    description: `From Teams meeting: ${meeting.subject} (Organizer: ${meeting.organizerName || 'Unknown'})`,
+                    priority: "medium",
+                    status: "pending",
+                    source: "ai_meeting",
+                    sourceId: storedMeeting.id,
+                    assignedToId: meeting.organizerId || userId,
+                    assignedById: userId, // Admin who triggered the sync
+                    dueDate: item.deadline ? new Date(item.deadline) : null,
+                  });
+                }
+              }
+              
+              syncedCount++;
+            }
+            processedCount++;
+          } catch (error) {
+            console.error(`Error processing meeting ${meeting.id}:`, error);
+            failedCount++;
+          }
+        }
+        
+        // Prepare summary of sync operation
+        const uniqueUsers = Object.keys(usersMeetingsCount).length;
+        const usersSummary = Object.entries(usersMeetingsCount)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5) // Top 5 users
+          .map(([email, count]) => `${email}: ${count} meetings`)
+          .join(', ');
+        
+        res.json({ 
+          message: `Admin sync complete: Synced ${syncedCount} new meetings from ${uniqueUsers} users, processed ${processedCount} total${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
+          synced: syncedCount,
+          processed: processedCount,
+          failed: failedCount,
+          uniqueUsers,
+          topUsers: usersSummary,
+          adminUser: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || userId : userId
+        });
+      } catch (error) {
+        console.error("Error in admin Teams sync:", error);
+        res.status(500).json({ message: "Failed to sync all Teams meetings" });
       }
     },
   );
