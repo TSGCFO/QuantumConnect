@@ -1,0 +1,112 @@
+# Group-OnPremisesSyncBehavior Permissions
+
+## Overview
+
+This document provides comprehensive information about **Group-OnPremisesSyncBehavior** permissions in Microsoft Graph API.
+
+**Total Permissions:** 1
+
+## Permissions List
+
+### 1. Group-OnPremisesSyncBehavior.ReadWrite.All
+
+**Display Name:** Read and update the on-premises sync behavior of groups  
+**Permission ID:** 2d9bd318-b883-40be-9df7-63ec4fcdc424  
+**Type:** Application  
+**Assigned Date:** 2025-11-23 17:43:59  
+**Risk Level:** High
+
+#### Description
+Allows the app to update the on-premises sync behavior of all groups without a signed-in user.
+
+#### Common Use Cases
+- Group-OnPremisesSyncBehavior information retrieval
+- Reporting and analytics
+- Compliance and auditing
+- Group-OnPremisesSyncBehavior management
+- Automated workflows
+- Data synchronization
+
+#### Code Example
+```javascript
+// Read group-onpremisessyncbehavior data
+const items = await client
+  .api('/group-onpremisessyncbehaviors')
+  .get();
+
+// Create new group-onpremisessyncbehavior
+const newGroup-onpremisessyncbehavior = {
+  displayName: 'New Item',
+  description: 'Created via API'
+};
+
+const created = await client
+  .api('/group-onpremisessyncbehaviors')
+  .post(newGroup-onpremisessyncbehavior);
+
+// Update group-onpremisessyncbehavior
+await client
+  .api('/group-onpremisessyncbehaviors/${created.id}')
+  .patch({
+    displayName: 'Updated Item'
+  });
+
+// Delete group-onpremisessyncbehavior
+await client
+  .api('/group-onpremisessyncbehaviors/${created.id}')
+  .delete();
+```
+
+#### Security Considerations
+**HIGH RISK**: Allows the app to update the on-premises sync behavior of all groups without a signed-in user.
+- Organization-wide scope requires strict access controls
+- Monitor for unauthorized access
+- Comply with data protection regulations
+
+---
+
+## Best Practices
+
+### 1. Access Control
+- Implement role-based access control (RBAC)
+- Use least privilege principle
+- Regular permission audits
+- Monitor usage patterns
+
+### 2. Security
+- Encrypt sensitive data in transit and at rest
+- Implement comprehensive logging
+- Regular security assessments
+- Incident response procedures
+
+### 3. Compliance
+- GDPR compliance for data access
+- Data retention policies
+- Audit trail maintenance
+- Privacy impact assessments
+
+### 4. Monitoring
+- Track all API calls
+- Alert on suspicious patterns
+- Regular access reviews
+- Performance monitoring
+
+## Related Permissions
+
+This category may be used in conjunction with:
+- **User.Read.All** - User information access
+- **Directory.Read.All** - Directory data access
+- **AuditLog.Read.All** - Audit logging
+
+## Additional Resources
+
+- [Microsoft Graph Group-OnPremisesSyncBehavior Documentation](https://learn.microsoft.com/en-us/graph/api/resources/)
+- [Permission Best Practices](https://learn.microsoft.com/en-us/graph/permissions-reference)
+- [Security and Compliance](https://learn.microsoft.com/en-us/graph/security-authorization)
+
+---
+
+**Last Updated:** 2025-11-23  
+**Category:** Group-OnPremisesSyncBehavior  
+**Total Permissions:** 1  
+**Documentation Version:** 1.0
