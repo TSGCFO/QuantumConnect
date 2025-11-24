@@ -2,11 +2,12 @@
 
 ## Overview
 
-This document provides comprehensive documentation for all **97 Microsoft Graph API permissions** assigned to the **employee portal** application.
+This document provides **comprehensive and detailed documentation** for all **97 Microsoft Graph API permissions** assigned to the **employee portal** application. Each permission includes detailed descriptions, practical code examples, common use cases, and security considerations.
 
 **App Name:** employee portal  
 **App ID:** bc9aec39-5f2a-4808-9738-959f655c4306  
 **Total Permissions:** 97  
+**Categories:** 79  
 **Documentation Generated:** November 24, 2025
 
 ## Table of Contents
@@ -14,117 +15,284 @@ This document provides comprehensive documentation for all **97 Microsoft Graph 
 - [Overview](#overview)
 - [Permission Statistics](#permission-statistics)
 - [Quick Reference](#quick-reference)
+- [Security Guidelines](#security-guidelines)
 - [Detailed Permissions](#detailed-permissions)
+  
+  - [APIConnectors](#apiconnectors)
+  - [AccessReview](#accessreview)
+  - [Acronym](#acronym)
+  - [AgentCardManifest](#agentcardmanifest)
+  - [Application-RemoteDesktopConfig](#application-remotedesktopconfig)
+  - [AuditLogsQuery-Exchange](#auditlogsquery-exchange)
+  - [BackupRestore-Monitor](#backuprestore-monitor)
+  - [Bookings](#bookings)
+  - [Bookmark](#bookmark)
+  - [BusinessScenarioData](#businessscenariodata)
+  - [CallAiInsights](#callaiinsights)
+  - [Calls](#calls)
+  - [Channel](#channel)
+  - [Chat](#chat)
+  - [Community](#community)
+  - [Contacts-OnPremisesSyncBehavior](#contacts-onpremisessyncbehavior)
+  - [CustomAuthenticationExtension](#customauthenticationextension)
+  - [CustomSecAttributeDefinition](#customsecattributedefinition)
+  - [CustomTags](#customtags)
+  - [Device](#device)
+  - [DeviceTemplate](#devicetemplate)
+  - [DirectoryRecommendations](#directoryrecommendations)
+  - [Domain](#domain)
+  - [ExternalConnection](#externalconnection)
+  - [ExternalItem](#externalitem)
+  - [FileIngestion](#fileingestion)
+  - [FileIngestionHybridOnboarding](#fileingestionhybridonboarding)
+  - [Files](#files)
+  - [Group-Conversation](#group-conversation)
+  - [Group-OnPremisesSyncBehavior](#group-onpremisessyncbehavior)
+  - [IdentityRiskEvent](#identityriskevent)
+  - [IdentityUserFlow](#identityuserflow)
+  - [IndustryData-DataConnector](#industrydata-dataconnector)
+  - [IndustryData-InboundFlow](#industrydata-inboundflow)
+  - [IndustryData-Run](#industrydata-run)
+  - [Mail](#mail)
+  - [MultiTenantOrganization](#multitenantorganization)
+  - [OnlineMeetingAiInsight](#onlinemeetingaiinsight)
+  - [OnlineMeetingArtifact](#onlinemeetingartifact)
+  - [OnlineMeetings](#onlinemeetings)
+  - [OrgContact](#orgcontact)
+  - [OrgSettings-DynamicsVoice](#orgsettings-dynamicsvoice)
+  - [OrgSettings-Microsoft365Install](#orgsettings-microsoft365install)
+  - [Place](#place)
+  - [PlaceDevice](#placedevice)
+  - [Policy](#policy)
+  - [Presence](#presence)
+  - [ProtectionScopes](#protectionscopes)
+  - [PublicKeyInfrastructure](#publickeyinfrastructure)
+  - [RealTimeActivityFeed](#realtimeactivityfeed)
+  - [RoleAssignmentSchedule](#roleassignmentschedule)
+  - [RoleEligibilitySchedule](#roleeligibilityschedule)
+  - [RoleManagement](#rolemanagement)
+  - [RoleManagementAlert](#rolemanagementalert)
+  - [RoleManagementPolicy](#rolemanagementpolicy)
+  - [Schedule](#schedule)
+  - [SchedulePermissions](#schedulepermissions)
+  - [SecurityIdentitiesUserActions](#securityidentitiesuseractions)
+  - [ServiceActivity-Exchange](#serviceactivity-exchange)
+  - [ServiceActivity-Microsoft365Web](#serviceactivity-microsoft365web)
+  - [ServiceActivity-Teams](#serviceactivity-teams)
+  - [SharePointTenantSettings](#sharepointtenantsettings)
+  - [Sites](#sites)
+  - [SynchronizationData-User](#synchronizationdata-user)
+  - [TeamMember](#teammember)
+  - [TeamSettings](#teamsettings)
+  - [TeamsActivity](#teamsactivity)
+  - [TeamsAppInstallation](#teamsappinstallation)
+  - [TeamsResourceAccount](#teamsresourceaccount)
+  - [TeamsTab](#teamstab)
+  - [TeamsTelephoneNumber](#teamstelephonenumber)
+  - [Teamwork](#teamwork)
+  - [User](#user)
+  - [User-Mail](#user-mail)
+  - [User-OnPremisesSyncBehavior](#user-onpremisessyncbehavior)
+  - [User-Phone](#user-phone)
+  - [UserAuthMethod-External](#userauthmethod-external)
+  - [VirtualAppointmentNotification](#virtualappointmentnotification)
+  - [WorkforceIntegration](#workforceintegration)
+- [Best Practices](#best-practices)
+- [Compliance Frameworks](#compliance-frameworks)
+
+---
 
 ## Permission Statistics
 
-| Permission Type | Count |
-|----------------|-------|
-| ReadWrite.All | 36 |
-| Read.All | 17 |
-| Other | 44 |
+### By Permission Scope
+
+| Permission Type | Count | Risk Level | Description |
+|----------------|-------|-----------|-------------|
+| ReadWrite.All | 36 | High | Full control with organization-wide scope |
+| Read.All | 17 | Medium | Read-only with organization-wide scope |
+| ReadWrite (Limited) | 20 | Medium | Full control with limited scope |
+| Read (Limited) | 8 | Low | Read-only with limited scope |
+| Specialized | 16 | Varies | Special purpose permissions |
+| **Total** | **97** | | |
+
+### Permission Distribution
+
+1. **Policy** - 10 permissions
+2. **TeamsAppInstallation** - 4 permissions
+3. **User** - 3 permissions
+4. **Bookings** - 2 permissions
+5. **RoleManagement** - 2 permissions
+6. **TeamsTab** - 2 permissions
+7. **TeamsTelephoneNumber** - 2 permissions
+8. **AccessReview** - 1 permission
+9. **Acronym** - 1 permission
+10. **AgentCardManifest** - 1 permission
+
+
+---
 
 ## Quick Reference
 
-Below is an alphabetical list of all permissions:
+### High-Privilege Permissions ⚠️
 
-- `APIConnectors.ReadWrite.All` - Read and write API connectors for authentication flows
-- `AccessReview.ReadWrite.Membership` - Manage access reviews for group and app memberships
-- `Acronym.Read.All` - Read all acronyms
-- `AgentCardManifest.ReadWrite.All` - Read and write all agent card manifests in Agent Registry
-- `Application-RemoteDesktopConfig.ReadWrite.All` - Read and write the remote desktop security configuration for all apps
-- `AuditLogsQuery-Exchange.Read.All` - Read audit logs data from Exchange workload
-- `BackupRestore-Monitor.Read.All` - Read all monitoring, quota and billing information for the tenant
-- `Bookings.Manage.All` - Manage bookings information
-- `Bookings.ReadWrite.All` - Read and write bookings information
-- `Bookmark.Read.All` - Read all bookmarks
-- `BusinessScenarioData.ReadWrite.OwnedBy` - Read and write data for all business scenarios this app creates or owns
-- `CallAiInsights.Read.All` - Read all AI Insights for calls.
-- `Calls.JoinGroupCall.All` - Join group calls and meetings as an app
-- `Channel.Delete.All` - Delete channels
-- `Chat.UpdatePolicyViolation.All` - Flag chat messages for violating policy
-- `Community.ReadWrite.All` - Read and write all Viva Engage communities
-- `Contacts-OnPremisesSyncBehavior.ReadWrite.All` - Read and update the on-premises sync behavior of contacts
-- `CustomAuthenticationExtension.Receive.Payload` - Receive custom authentication extension HTTP requests
-- `CustomSecAttributeDefinition.ReadWrite.All` - Read and write custom security attribute definitions
-- `CustomTags.ReadWrite.All` - Read and write custom tags data
+These permissions require extra scrutiny and monitoring:
+
 - `Device.ReadWrite.All` - Read and write devices
-- `DeviceTemplate.Create` - Create device template
-- `DirectoryRecommendations.ReadWrite.All` - Read and update all Azure AD recommendations
 - `Domain.ReadWrite.All` - Read and write domains
-- `ExternalConnection.ReadWrite.OwnedBy` - Read and write external connections
-- `ExternalItem.ReadWrite.OwnedBy` - Read and write external items
-- `FileIngestion.Ingest` - Ingest SharePoint and OneDrive content to make it available in the search index
-- `FileIngestionHybridOnboarding.Manage` - Manage onboarding for a Hybrid Cloud tenant
-- `Files.ReadWrite.AppFolder` - Have full access to the application's folder without a signed in user.
-- `Group-Conversation.ReadWrite.All` - Read and write all group conversations
-- `Group-OnPremisesSyncBehavior.ReadWrite.All` - Read and update the on-premises sync behavior of groups
-- `IdentityRiskEvent.ReadWrite.All` - Read and write all risk detection information
-- `IdentityUserFlow.ReadWrite.All` - Read and write all identity user flows
-- `IndustryData-DataConnector.ReadWrite.All` - Manage data connector definitions
-- `IndustryData-InboundFlow.ReadWrite.All` - Manage inbound flow definitions
-- `IndustryData-Run.Read.All` - View current and previous runs
 - `Mail.ReadWrite` - Read and write mail in all mailboxes
-- `MultiTenantOrganization.ReadWrite.All` - Read and write all multi-tenant organization details and tenants
-- `OnlineMeetingAiInsight.Read.Chat` - Read all AI Insights for online meetings where the Teams application is installed.
-- `OnlineMeetingArtifact.Read.All` - Read online meeting artifacts
-- `OnlineMeetings.ReadWrite.All` - Read and create online meetings
-- `OrgContact.Read.All` - Read organizational contacts
-- `OrgSettings-DynamicsVoice.ReadWrite.All` - Read and write organization-wide Dynamics customer voice settings
-- `OrgSettings-Microsoft365Install.ReadWrite.All` - Read and write organization-wide Microsoft 365 apps installation settings
-- `Place.Read.All` - Read all company places
 - `PlaceDevice.ReadWrite.All` - Read and write all workplace devices
-- `Policy.Read.AuthenticationMethod` - Read authentication method policies
-- `Policy.Read.ConditionalAccess` - Read your organization's conditional access policies
-- `Policy.Read.DeviceConfiguration` - Read your organization's device configuration policies
-- `Policy.Read.PermissionGrant` - Read consent and permission grant policies
-- `Policy.ReadWrite.AuthenticationFlows` - Read and write authentication flow policies
-- `Policy.ReadWrite.AuthenticationMethod` - Read and write all authentication method policies
 - `Policy.ReadWrite.ConditionalAccess` - Read and write your organization's conditional access policies
-- `Policy.ReadWrite.FedTokenValidation` - Read and write your organization's federated token validation policy
-- `Policy.ReadWrite.IdentityProtection` - Read and write your organization’s identity protection policy
-- `Policy.ReadWrite.PermissionGrant` - Manage consent and permission grant policies
-- `Presence.ReadWrite.All` - Read and write presence information for all users
-- `ProtectionScopes.Compute.All` - Compute Purview policies at tenant scope
-- `PublicKeyInfrastructure.ReadWrite.All` - Read and write all certificate based authentication configurations
-- `RealTimeActivityFeed.Read.All` - Access real-time enriched data in a meeting as an app
 - `RoleAssignmentSchedule.Remove.Directory` - Delete all active role assignments of your company's directory
 - `RoleEligibilitySchedule.ReadWrite.Directory` - Read, update, and delete all eligible role assignments and schedules for your company's directory
-- `RoleManagement.ReadWrite.Defender` - Read M365 Defender RBAC configuration
-- `RoleManagement.ReadWrite.Exchange` - Read and write Exchange Online RBAC configuration
-- `RoleManagementAlert.ReadWrite.Directory` - Read all alert data, configure alerts, and take actions on all alerts for your company's directory
-- `RoleManagementPolicy.ReadWrite.Directory` - Read, update, and delete all policies for privileged role assignments of your company's directory
-- `Schedule.ReadWrite.All` - Read and write all schedule items
-- `SchedulePermissions.ReadWrite.All` - Read/Write schedule permissions for a role
-- `SecurityIdentitiesUserActions.ReadWrite.All` - Read and perform all identity security available user actions
-- `ServiceActivity-Exchange.Read.All` - Read all Exchange service activity
-- `ServiceActivity-Microsoft365Web.Read.All` - Read all Microsoft 365 Web service activity
-- `ServiceActivity-Teams.Read.All` - Read all Teams service activity
-- `SharePointTenantSettings.ReadWrite.All` - Read and change SharePoint and OneDrive tenant settings
-- `Sites.Selected` - Access selected site collections
-- `SynchronizationData-User.Upload` - Upload user data to the identity synchronization service
-- `TeamMember.ReadWriteNonOwnerRole.All` - Add and remove members with non-owner role for all teams
-- `TeamSettings.ReadWrite.All` - Read and change all teams' settings
-- `TeamsActivity.Read.All` - Read all users' teamwork activity feed
-- `TeamsAppInstallation.ManageSelectedForUser.All` - Manage installation and permission grants of selected Teams apps for all user accounts
-- `TeamsAppInstallation.ReadForChat.All` - Read installed Teams apps for all chats
-- `TeamsAppInstallation.ReadForUser.All` - Read installed Teams apps for all users
-- `TeamsAppInstallation.ReadWriteAndConsentSelfForChat.All` - Allow the Teams app to manage itself and its permission grants for all chats
-- `TeamsResourceAccount.Read.All` - Read Teams resource accounts
-- `TeamsTab.Read.All` - Read tabs in Microsoft Teams.
-- `TeamsTab.ReadWriteForChat.All` - Allow the Teams app to manage all tabs for all chats
-- `TeamsTelephoneNumber.Read.All` - Read Tenant-Acquired Telephone Number Details
-- `TeamsTelephoneNumber.ReadWrite.All` - Read and Modify Tenant-Acquired Telephone Number Details
-- `Teamwork.Migrate.All` - Create chat and channel messages with anyone's identity and with any timestamp
-- `User-Mail.ReadWrite.All` - Read and write all secondary mail addresses for users
-- `User-OnPremisesSyncBehavior.ReadWrite.All` - Read and update the on-premises sync behavior of users
-- `User-Phone.ReadWrite.All` - Read and write all user mobile phone and business phones
-- `User.ReadBasic.All` - Read all users' basic profiles
 - `User.ReadWrite.All` - Read and write all users' full profiles
-- `User.RevokeSessions.All` - Revoke all sign in sessions for a user
-- `UserAuthMethod-External.ReadWrite.All` - Read and write all users' external authentication methods
-- `VirtualAppointmentNotification.Send` - Send notification regarding virtual appointments as any user
-- `WorkforceIntegration.ReadWrite.All` - Read and write workforce integrations
+- `User-Mail.ReadWrite.All` - Read and write all secondary mail addresses for users
+
+
+### All Permissions (Alphabetical)
+
+- 🔴 High | `APIConnectors.ReadWrite.All` - Read and write API connectors for authentication flows
+- 🟡 Medium | `AccessReview.ReadWrite.Membership` - Manage access reviews for group and app memberships
+- 🟢 Low | `Acronym.Read.All` - Read all acronyms
+- 🔴 High | `AgentCardManifest.ReadWrite.All` - Read and write all agent card manifests in Agent Registry
+- 🔴 High | `Application-RemoteDesktopConfig.ReadWrite.All` - Read and write the remote desktop security configuration for all apps
+- 🟢 Low | `AuditLogsQuery-Exchange.Read.All` - Read audit logs data from Exchange workload
+- 🟢 Low | `BackupRestore-Monitor.Read.All` - Read all monitoring, quota and billing information for the tenant
+- 🟢 Low | `Bookings.Manage.All` - Manage bookings information
+- 🔴 High | `Bookings.ReadWrite.All` - Read and write bookings information
+- 🟢 Low | `Bookmark.Read.All` - Read all bookmarks
+- 🟡 Medium | `BusinessScenarioData.ReadWrite.OwnedBy` - Read and write data for all business scenarios this app creates or owns
+- 🟢 Low | `CallAiInsights.Read.All` - Read all AI Insights for calls.
+- 🟢 Low | `Calls.JoinGroupCall.All` - Join group calls and meetings as an app
+- 🟢 Low | `Channel.Delete.All` - Delete channels
+- 🟢 Low | `Chat.UpdatePolicyViolation.All` - Flag chat messages for violating policy
+- 🔴 High | `Community.ReadWrite.All` - Read and write all Viva Engage communities
+- 🔴 High | `Contacts-OnPremisesSyncBehavior.ReadWrite.All` - Read and update the on-premises sync behavior of contacts
+- 🟢 Low | `CustomAuthenticationExtension.Receive.Payload` - Receive custom authentication extension HTTP requests
+- 🔴 High | `CustomSecAttributeDefinition.ReadWrite.All` - Read and write custom security attribute definitions
+- 🔴 High | `CustomTags.ReadWrite.All` - Read and write custom tags data
+- 🔴 High | `Device.ReadWrite.All` - Read and write devices
+- 🟢 Low | `DeviceTemplate.Create` - Create device template
+- 🔴 High | `DirectoryRecommendations.ReadWrite.All` - Read and update all Azure AD recommendations
+- 🔴 High | `Domain.ReadWrite.All` - Read and write domains
+- 🟡 Medium | `ExternalConnection.ReadWrite.OwnedBy` - Read and write external connections
+- 🟡 Medium | `ExternalItem.ReadWrite.OwnedBy` - Read and write external items
+- 🟢 Low | `FileIngestion.Ingest` - Ingest SharePoint and OneDrive content to make it available in the search index
+- 🟢 Low | `FileIngestionHybridOnboarding.Manage` - Manage onboarding for a Hybrid Cloud tenant
+- 🟡 Medium | `Files.ReadWrite.AppFolder` - Have full access to the application's folder without a signed in user.
+- 🔴 High | `Group-Conversation.ReadWrite.All` - Read and write all group conversations
+- 🔴 High | `Group-OnPremisesSyncBehavior.ReadWrite.All` - Read and update the on-premises sync behavior of groups
+- 🔴 High | `IdentityRiskEvent.ReadWrite.All` - Read and write all risk detection information
+- 🔴 High | `IdentityUserFlow.ReadWrite.All` - Read and write all identity user flows
+- 🔴 High | `IndustryData-DataConnector.ReadWrite.All` - Manage data connector definitions
+- 🔴 High | `IndustryData-InboundFlow.ReadWrite.All` - Manage inbound flow definitions
+- 🟢 Low | `IndustryData-Run.Read.All` - View current and previous runs
+- 🟡 Medium | `Mail.ReadWrite` - Read and write mail in all mailboxes
+- 🔴 High | `MultiTenantOrganization.ReadWrite.All` - Read and write all multi-tenant organization details and tenants
+- 🟢 Low | `OnlineMeetingAiInsight.Read.Chat` - Read all AI Insights for online meetings where the Teams application is installed.
+- 🟢 Low | `OnlineMeetingArtifact.Read.All` - Read online meeting artifacts
+- 🔴 High | `OnlineMeetings.ReadWrite.All` - Read and create online meetings
+- 🟢 Low | `OrgContact.Read.All` - Read organizational contacts
+- 🔴 High | `OrgSettings-DynamicsVoice.ReadWrite.All` - Read and write organization-wide Dynamics customer voice settings
+- 🔴 High | `OrgSettings-Microsoft365Install.ReadWrite.All` - Read and write organization-wide Microsoft 365 apps installation settings
+- 🟢 Low | `Place.Read.All` - Read all company places
+- 🔴 High | `PlaceDevice.ReadWrite.All` - Read and write all workplace devices
+- 🟢 Low | `Policy.Read.AuthenticationMethod` - Read authentication method policies
+- 🟢 Low | `Policy.Read.ConditionalAccess` - Read your organization's conditional access policies
+- 🟢 Low | `Policy.Read.DeviceConfiguration` - Read your organization's device configuration policies
+- 🟢 Low | `Policy.Read.PermissionGrant` - Read consent and permission grant policies
+- 🟡 Medium | `Policy.ReadWrite.AuthenticationFlows` - Read and write authentication flow policies
+- 🟡 Medium | `Policy.ReadWrite.AuthenticationMethod` - Read and write all authentication method policies
+- 🟡 Medium | `Policy.ReadWrite.ConditionalAccess` - Read and write your organization's conditional access policies
+- 🟡 Medium | `Policy.ReadWrite.FedTokenValidation` - Read and write your organization's federated token validation policy
+- 🟡 Medium | `Policy.ReadWrite.IdentityProtection` - Read and write your organization’s identity protection policy
+- 🟡 Medium | `Policy.ReadWrite.PermissionGrant` - Manage consent and permission grant policies
+- 🔴 High | `Presence.ReadWrite.All` - Read and write presence information for all users
+- 🟢 Low | `ProtectionScopes.Compute.All` - Compute Purview policies at tenant scope
+- 🔴 High | `PublicKeyInfrastructure.ReadWrite.All` - Read and write all certificate based authentication configurations
+- 🟢 Low | `RealTimeActivityFeed.Read.All` - Access real-time enriched data in a meeting as an app
+- 🟢 Low | `RoleAssignmentSchedule.Remove.Directory` - Delete all active role assignments of your company's directory
+- 🟡 Medium | `RoleEligibilitySchedule.ReadWrite.Directory` - Read, update, and delete all eligible role assignments and schedules for your company's directory
+- 🟡 Medium | `RoleManagement.ReadWrite.Defender` - Read M365 Defender RBAC configuration
+- 🟡 Medium | `RoleManagement.ReadWrite.Exchange` - Read and write Exchange Online RBAC configuration
+- 🟡 Medium | `RoleManagementAlert.ReadWrite.Directory` - Read all alert data, configure alerts, and take actions on all alerts for your company's directory
+- 🟡 Medium | `RoleManagementPolicy.ReadWrite.Directory` - Read, update, and delete all policies for privileged role assignments of your company's directory
+- 🔴 High | `Schedule.ReadWrite.All` - Read and write all schedule items
+- 🔴 High | `SchedulePermissions.ReadWrite.All` - Read/Write schedule permissions for a role
+- 🔴 High | `SecurityIdentitiesUserActions.ReadWrite.All` - Read and perform all identity security available user actions
+- 🟢 Low | `ServiceActivity-Exchange.Read.All` - Read all Exchange service activity
+- 🟢 Low | `ServiceActivity-Microsoft365Web.Read.All` - Read all Microsoft 365 Web service activity
+- 🟢 Low | `ServiceActivity-Teams.Read.All` - Read all Teams service activity
+- 🔴 High | `SharePointTenantSettings.ReadWrite.All` - Read and change SharePoint and OneDrive tenant settings
+- 🟢 Low | `Sites.Selected` - Access selected site collections
+- 🟢 Low | `SynchronizationData-User.Upload` - Upload user data to the identity synchronization service
+- 🟡 Medium | `TeamMember.ReadWriteNonOwnerRole.All` - Add and remove members with non-owner role for all teams
+- 🔴 High | `TeamSettings.ReadWrite.All` - Read and change all teams' settings
+- 🟢 Low | `TeamsActivity.Read.All` - Read all users' teamwork activity feed
+- 🟢 Low | `TeamsAppInstallation.ManageSelectedForUser.All` - Manage installation and permission grants of selected Teams apps for all user accounts
+- 🟢 Low | `TeamsAppInstallation.ReadForChat.All` - Read installed Teams apps for all chats
+- 🟢 Low | `TeamsAppInstallation.ReadForUser.All` - Read installed Teams apps for all users
+- 🟡 Medium | `TeamsAppInstallation.ReadWriteAndConsentSelfForChat.All` - Allow the Teams app to manage itself and its permission grants for all chats
+- 🟢 Low | `TeamsResourceAccount.Read.All` - Read Teams resource accounts
+- 🟢 Low | `TeamsTab.Read.All` - Read tabs in Microsoft Teams.
+- 🟡 Medium | `TeamsTab.ReadWriteForChat.All` - Allow the Teams app to manage all tabs for all chats
+- 🟢 Low | `TeamsTelephoneNumber.Read.All` - Read Tenant-Acquired Telephone Number Details
+- 🔴 High | `TeamsTelephoneNumber.ReadWrite.All` - Read and Modify Tenant-Acquired Telephone Number Details
+- 🟢 Low | `Teamwork.Migrate.All` - Create chat and channel messages with anyone's identity and with any timestamp
+- 🔴 High | `User-Mail.ReadWrite.All` - Read and write all secondary mail addresses for users
+- 🔴 High | `User-OnPremisesSyncBehavior.ReadWrite.All` - Read and update the on-premises sync behavior of users
+- 🔴 High | `User-Phone.ReadWrite.All` - Read and write all user mobile phone and business phones
+- 🟢 Low | `User.ReadBasic.All` - Read all users' basic profiles
+- 🔴 High | `User.ReadWrite.All` - Read and write all users' full profiles
+- 🟢 Low | `User.RevokeSessions.All` - Revoke all sign in sessions for a user
+- 🔴 High | `UserAuthMethod-External.ReadWrite.All` - Read and write all users' external authentication methods
+- 🟢 Low | `VirtualAppointmentNotification.Send` - Send notification regarding virtual appointments as any user
+- 🔴 High | `WorkforceIntegration.ReadWrite.All` - Read and write workforce integrations
+
+
+---
+
+## Security Guidelines
+
+### Risk-Based Access Control
+
+Permissions are classified by risk level:
+
+- **🔴 High Risk:** Can modify critical organizational resources
+  - Require approval from Security team
+  - Implement comprehensive audit logging
+  - Monitor usage patterns for anomalies
+  
+- **🟡 Medium Risk:** Can access or modify specific resources
+  - Require manager approval
+  - Log all operations
+  - Review quarterly
+  
+- **🟢 Low Risk:** Read-only access to non-sensitive data
+  - Standard approval process
+  - Basic logging
+  - Annual review
+
+### Monitoring Requirements
+
+For all permissions:
+
+1. **Real-time Alerts:** Unusual activity patterns, bulk operations, after-hours access
+2. **Audit Logs:** Retain for minimum 1 year, 7 years for compliance data
+3. **Access Reviews:** Quarterly for high-risk, semi-annually for medium-risk
+4. **Performance Metrics:** Track API usage, error rates, throttling events
+
+### Incident Response
+
+If suspicious activity detected:
+
+1. Alert Security Operations Center (SOC)
+2. Temporarily disable application if needed
+3. Review audit logs for affected timeframe
+4. Assess impact and data exposure
+5. Implement remediation steps
+6. Update access controls and monitoring
+
+---
 
 ## Detailed Permissions
 
@@ -142,41 +310,55 @@ Allows the app to read, create and manage the API connectors used in user authen
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update apiconnectors
+// Create new apiconnectors
 const result = await graphClient
   .api('/apiconnectors')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read apiconnectors
+2. **Read Resource**
+```javascript
+// Get apiconnectors with filters
 const data = await graphClient
   .api('/apiconnectors')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update apiconnectors
+3. **Update Resource**
+```javascript
+// Update existing apiconnectors
 await graphClient
   .api('/apiconnectors/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -194,41 +376,54 @@ Allows the app to read, update, delete and perform actions on access reviews, re
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update accessreview
+// Create new accessreview
 const result = await graphClient
   .api('/accessreview')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read accessreview
+2. **Read Resource**
+```javascript
+// Get accessreview with filters
 const data = await graphClient
   .api('/accessreview')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update accessreview
+3. **Update Resource**
+```javascript
+// Update existing accessreview
 await graphClient
   .api('/accessreview/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -246,34 +441,58 @@ Allows an app to read all acronyms without a signed-in user.
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read acronym data
+// Get all acronym
 const data = await graphClient
   .api('/acronym')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/acronym')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/acronym';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -291,41 +510,55 @@ Allows the app to read and write to all agent card manifests in your organizatio
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update agentcardmanifest
+// Create new agentcardmanifest
 const result = await graphClient
   .api('/agentcardmanifest')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read agentcardmanifest
+2. **Read Resource**
+```javascript
+// Get agentcardmanifest with filters
 const data = await graphClient
   .api('/agentcardmanifest')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update agentcardmanifest
+3. **Update Resource**
+```javascript
+// Update existing agentcardmanifest
 await graphClient
   .api('/agentcardmanifest/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -343,41 +576,55 @@ Allows the app to read and write the remote desktop security configuration for a
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update application-remotedesktopconfig
+// Create new application/remotedesktopconfig
 const result = await graphClient
-  .api('/application-remotedesktopconfig')
+  .api('/application/remotedesktopconfig')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read application-remotedesktopconfig
+2. **Read Resource**
+```javascript
+// Get application/remotedesktopconfig with filters
 const data = await graphClient
-  .api('/application-remotedesktopconfig')
+  .api('/application/remotedesktopconfig')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update application-remotedesktopconfig
+3. **Update Resource**
+```javascript
+// Update existing application/remotedesktopconfig
 await graphClient
-  .api('/application-remotedesktopconfig/{id}')
+  .api('/application/remotedesktopconfig/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -395,34 +642,58 @@ Allows the app to read and query audit logs from Exchange workload, without a si
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read auditlogsquery-exchange data
+// Get all auditlogsquery/exchange
 const data = await graphClient
-  .api('/auditlogsquery-exchange')
+  .api('/auditlogsquery/exchange')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
-  .api('/auditlogsquery-exchange')
+  .api('/auditlogsquery/exchange')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/auditlogsquery/exchange';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -440,34 +711,58 @@ Allows the app to monitor all backup and restore jobs, view quota usage and bill
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read backuprestore-monitor data
+// Get all backuprestore/monitor
 const data = await graphClient
-  .api('/backuprestore-monitor')
+  .api('/backuprestore/monitor')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
-  .api('/backuprestore-monitor')
+  .api('/backuprestore/monitor')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/backuprestore/monitor';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -486,28 +781,28 @@ Allows an app to read, write and manage bookings appointments, businesses, custo
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute bookings operation
 const result = await graphClient
   .api('/bookings')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -522,41 +817,55 @@ Allows an app to read and write bookings appointments, businesses, customers, se
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update bookings
+// Create new bookings
 const result = await graphClient
   .api('/bookings')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read bookings
+2. **Read Resource**
+```javascript
+// Get bookings with filters
 const data = await graphClient
   .api('/bookings')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update bookings
+3. **Update Resource**
+```javascript
+// Update existing bookings
 await graphClient
   .api('/bookings/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -574,34 +883,58 @@ Allows an app to read all bookmarks without a signed-in user.
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read bookmark data
+// Get all bookmark
 const data = await graphClient
   .api('/bookmark')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/bookmark')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/bookmark';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -619,41 +952,54 @@ Allows the app to fully manage the data associated with the business scenarios i
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update businessscenariodata
+// Create new businessscenariodata
 const result = await graphClient
   .api('/businessscenariodata')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read businessscenariodata
+2. **Read Resource**
+```javascript
+// Get businessscenariodata with filters
 const data = await graphClient
   .api('/businessscenariodata')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update businessscenariodata
+3. **Update Resource**
+```javascript
+// Update existing businessscenariodata
 await graphClient
   .api('/businessscenariodata/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -671,34 +1017,58 @@ Allows the app to read all AI Insights for all calls, without a signed-in user.
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read callaiinsights data
+// Get all callaiinsights
 const data = await graphClient
   .api('/callaiinsights')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/callaiinsights')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/callaiinsights';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -717,28 +1087,28 @@ Allows the app to join group calls and scheduled meetings in your organization, 
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute calls operation
 const result = await graphClient
   .api('/calls')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -757,28 +1127,29 @@ Delete channels in any team, without a signed-in user.
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute channel operation
 const result = await graphClient
   .api('/channel')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -797,28 +1168,30 @@ Allows the app to update Microsoft Teams 1-to-1 or group chat messages by patchi
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute chat operation
 const result = await graphClient
   .api('/chat')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Security Impact:** Affects identity and access management
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -836,41 +1209,55 @@ Allows the app to create Viva Engage communities, read all community properties,
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update community
+// Create new community
 const result = await graphClient
   .api('/community')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read community
+2. **Read Resource**
+```javascript
+// Get community with filters
 const data = await graphClient
   .api('/community')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update community
+3. **Update Resource**
+```javascript
+// Update existing community
 await graphClient
   .api('/community/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -888,41 +1275,55 @@ Allows the app to update the on-premises sync behavior of all contacts in all ma
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update contacts-onpremisessyncbehavior
+// Create new contacts/onpremisessyncbehavior
 const result = await graphClient
-  .api('/contacts-onpremisessyncbehavior')
+  .api('/contacts/onpremisessyncbehavior')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read contacts-onpremisessyncbehavior
+2. **Read Resource**
+```javascript
+// Get contacts/onpremisessyncbehavior with filters
 const data = await graphClient
-  .api('/contacts-onpremisessyncbehavior')
+  .api('/contacts/onpremisessyncbehavior')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update contacts-onpremisessyncbehavior
+3. **Update Resource**
+```javascript
+// Update existing contacts/onpremisessyncbehavior
 await graphClient
-  .api('/contacts-onpremisessyncbehavior/{id}')
+  .api('/contacts/onpremisessyncbehavior/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -941,27 +1342,27 @@ Allows custom authentication extensions associated with the app to receive HTTP 
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute customauthenticationextension operation
 const result = await graphClient
   .api('/customauthenticationextension')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -979,41 +1380,55 @@ Allows the app to read and write custom security attribute definitions for the t
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update customsecattributedefinition
+// Create new customsecattributedefinition
 const result = await graphClient
   .api('/customsecattributedefinition')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read customsecattributedefinition
+2. **Read Resource**
+```javascript
+// Get customsecattributedefinition with filters
 const data = await graphClient
   .api('/customsecattributedefinition')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update customsecattributedefinition
+3. **Update Resource**
+```javascript
+// Update existing customsecattributedefinition
 await graphClient
   .api('/customsecattributedefinition/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1031,41 +1446,55 @@ Read and write custom tags data, without a signed-in user
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update customtags
+// Create new customtags
 const result = await graphClient
   .api('/customtags')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read customtags
+2. **Read Resource**
+```javascript
+// Get customtags with filters
 const data = await graphClient
   .api('/customtags')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update customtags
+3. **Update Resource**
+```javascript
+// Update existing customtags
 await graphClient
   .api('/customtags/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1083,41 +1512,55 @@ Allows the app to read and write all device properties without a signed in user.
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update device
+// Create new device
 const result = await graphClient
   .api('/device')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read device
+2. **Read Resource**
+```javascript
+// Get device with filters
 const data = await graphClient
   .api('/device')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update device
+3. **Update Resource**
+```javascript
+// Update existing device
 await graphClient
   .api('/device/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1136,27 +1579,27 @@ Allows the app to create device templates. The app is marked as owner of the cre
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute devicetemplate operation
 const result = await graphClient
   .api('/devicetemplate')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1174,41 +1617,55 @@ Allows the app to read and update all Azure AD recommendations, without a signed
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update directoryrecommendations
+// Create new directoryrecommendations
 const result = await graphClient
   .api('/directoryrecommendations')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read directoryrecommendations
+2. **Read Resource**
+```javascript
+// Get directoryrecommendations with filters
 const data = await graphClient
   .api('/directoryrecommendations')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update directoryrecommendations
+3. **Update Resource**
+```javascript
+// Update existing directoryrecommendations
 await graphClient
   .api('/directoryrecommendations/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1226,41 +1683,55 @@ Allows the app to read and write all domain properties without a signed in user.
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update domain
+// Create new domain
 const result = await graphClient
   .api('/domain')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read domain
+2. **Read Resource**
+```javascript
+// Get domain with filters
 const data = await graphClient
   .api('/domain')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update domain
+3. **Update Resource**
+```javascript
+// Update existing domain
 await graphClient
   .api('/domain/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1278,41 +1749,54 @@ Allows the app to read and write external connections without a signed-in user. 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update externalconnection
+// Create new externalconnection
 const result = await graphClient
   .api('/externalconnection')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read externalconnection
+2. **Read Resource**
+```javascript
+// Get externalconnection with filters
 const data = await graphClient
   .api('/externalconnection')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update externalconnection
+3. **Update Resource**
+```javascript
+// Update existing externalconnection
 await graphClient
   .api('/externalconnection/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1330,41 +1814,54 @@ Allows the app to read and write external items without a signed-in user. The ap
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update externalitem
+// Create new externalitem
 const result = await graphClient
   .api('/externalitem')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read externalitem
+2. **Read Resource**
+```javascript
+// Get externalitem with filters
 const data = await graphClient
   .api('/externalitem')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update externalitem
+3. **Update Resource**
+```javascript
+// Update existing externalitem
 await graphClient
   .api('/externalitem/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1383,27 +1880,27 @@ Allows the app to ingest SharePoint and OneDrive content to make it available in
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute fileingestion operation
 const result = await graphClient
   .api('/fileingestion')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1422,27 +1919,27 @@ Allows the app to manage onboarding for a Hybrid Cloud tenant, without a signed-
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute fileingestionhybridonboarding operation
 const result = await graphClient
   .api('/fileingestionhybridonboarding')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1460,41 +1957,64 @@ Allows the app to read, create, update and delete files in the application's fol
 
 **Usage Examples:**
 
+1. **Upload File to App Folder**
 ```javascript
-// Create or update files
-const result = await graphClient
-  .api('/files')
-  .post({
-    // resource properties
-  });
+// Create application-specific folder and upload file
+const fileContent = 'Configuration data for the app';
 
-// Read files
-const data = await graphClient
-  .api('/files')
+const uploadedFile = await graphClient
+  .api('/me/drive/special/approot:/config.json:/content')
+  .put(fileContent);
+
+console.log('File uploaded:', uploadedFile.name);
+```
+
+2. **Read File from App Folder**
+```javascript
+// Read application configuration file
+const fileContent = await graphClient
+  .api('/me/drive/special/approot:/config.json:/content')
   .get();
 
-// Update files
+const config = JSON.parse(fileContent);
+```
+
+3. **List Files in App Folder**
+```javascript
+// List all files in the app folder
+const files = await graphClient
+  .api('/me/drive/special/approot/children')
+  .get();
+
+files.value.forEach(file => {
+  console.log(`${file.name} - ${file.size} bytes`);
+});
+```
+
+4. **Delete File**
+```javascript
+// Remove old file from app folder
 await graphClient
-  .api('/files/{id}')
-  .patch({
-    // updated properties
-  });
+  .api('/me/drive/special/approot:/old-data.json')
+  .delete();
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- **App Configuration:** Store application-specific settings per user
+- **Cache Management:** Cache data locally in user's OneDrive
+- **Offline Data:** Store data for offline access
+- **User Preferences:** Save user-specific preferences and state
+- **Temporary Storage:** Store intermediate processing results
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1512,41 +2032,55 @@ Allows the app to read and write conversations of the groups this app has access
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update group-conversation
+// Create new group/conversation
 const result = await graphClient
-  .api('/group-conversation')
+  .api('/group/conversation')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read group-conversation
+2. **Read Resource**
+```javascript
+// Get group/conversation with filters
 const data = await graphClient
-  .api('/group-conversation')
+  .api('/group/conversation')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update group-conversation
+3. **Update Resource**
+```javascript
+// Update existing group/conversation
 await graphClient
-  .api('/group-conversation/{id}')
+  .api('/group/conversation/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1564,41 +2098,55 @@ Allows the app to update the on-premises sync behavior of all groups without a s
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update group-onpremisessyncbehavior
+// Create new group/onpremisessyncbehavior
 const result = await graphClient
-  .api('/group-onpremisessyncbehavior')
+  .api('/group/onpremisessyncbehavior')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read group-onpremisessyncbehavior
+2. **Read Resource**
+```javascript
+// Get group/onpremisessyncbehavior with filters
 const data = await graphClient
-  .api('/group-onpremisessyncbehavior')
+  .api('/group/onpremisessyncbehavior')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update group-onpremisessyncbehavior
+3. **Update Resource**
+```javascript
+// Update existing group/onpremisessyncbehavior
 await graphClient
-  .api('/group-onpremisessyncbehavior/{id}')
+  .api('/group/onpremisessyncbehavior/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1616,41 +2164,55 @@ Allows the app to read and update identity risk detection information for your o
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update identityriskevent
+// Create new identityriskevent
 const result = await graphClient
   .api('/identityriskevent')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read identityriskevent
+2. **Read Resource**
+```javascript
+// Get identityriskevent with filters
 const data = await graphClient
   .api('/identityriskevent')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update identityriskevent
+3. **Update Resource**
+```javascript
+// Update existing identityriskevent
 await graphClient
   .api('/identityriskevent/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1668,41 +2230,56 @@ Allows the app to read or write your organization's user flows, without a signed
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update identityuserflow
+// Create new identityuserflow
 const result = await graphClient
   .api('/identityuserflow')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read identityuserflow
+2. **Read Resource**
+```javascript
+// Get identityuserflow with filters
 const data = await graphClient
   .api('/identityuserflow')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update identityuserflow
+3. **Update Resource**
+```javascript
+// Update existing identityuserflow
 await graphClient
   .api('/identityuserflow/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1720,41 +2297,55 @@ Allows the app to read and write data connectors without a signed-in user.
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update industrydata-dataconnector
+// Create new industrydata/dataconnector
 const result = await graphClient
-  .api('/industrydata-dataconnector')
+  .api('/industrydata/dataconnector')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read industrydata-dataconnector
+2. **Read Resource**
+```javascript
+// Get industrydata/dataconnector with filters
 const data = await graphClient
-  .api('/industrydata-dataconnector')
+  .api('/industrydata/dataconnector')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update industrydata-dataconnector
+3. **Update Resource**
+```javascript
+// Update existing industrydata/dataconnector
 await graphClient
-  .api('/industrydata-dataconnector/{id}')
+  .api('/industrydata/dataconnector/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1772,41 +2363,55 @@ Allows the app to read and write inbound data flows without a signed-in user.
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update industrydata-inboundflow
+// Create new industrydata/inboundflow
 const result = await graphClient
-  .api('/industrydata-inboundflow')
+  .api('/industrydata/inboundflow')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read industrydata-inboundflow
+2. **Read Resource**
+```javascript
+// Get industrydata/inboundflow with filters
 const data = await graphClient
-  .api('/industrydata-inboundflow')
+  .api('/industrydata/inboundflow')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update industrydata-inboundflow
+3. **Update Resource**
+```javascript
+// Update existing industrydata/inboundflow
 await graphClient
-  .api('/industrydata-inboundflow/{id}')
+  .api('/industrydata/inboundflow/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1824,34 +2429,58 @@ Allows the app to read current and previous IndustryData runs without a signed-i
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read industrydata-run data
+// Get all industrydata/run
 const data = await graphClient
-  .api('/industrydata-run')
+  .api('/industrydata/run')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
-  .api('/industrydata-run')
+  .api('/industrydata/run')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/industrydata/run';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1869,41 +2498,67 @@ Allows the app to create, read, update, and delete mail in all mailboxes without
 
 **Usage Examples:**
 
+1. **Read Recent Emails**
 ```javascript
-// Create or update mail
-const result = await graphClient
-  .api('/mail')
-  .post({
-    // resource properties
-  });
-
-// Read mail
-const data = await graphClient
-  .api('/mail')
+// Get recent emails from all mailboxes
+const messages = await graphClient
+  .api('/users/{userId}/messages')
+  .top(50)
+  .orderby('receivedDateTime desc')
+  .select('subject,from,receivedDateTime,isRead')
   .get();
 
-// Update mail
+// Process unread messages
+const unreadMessages = messages.value.filter(m => !m.isRead);
+```
+
+2. **Create Draft Email**
+```javascript
+// Create a draft email
+const draft = await graphClient
+  .api('/users/{userId}/messages')
+  .post({
+    subject: 'Monthly Report',
+    body: {
+      contentType: 'HTML',
+      content: '<h1>Report</h1><p>Details...</p>'
+    },
+    toRecipients: [
+      {
+        emailAddress: {
+          address: 'manager@company.com'
+        }
+      }
+    ]
+  });
+```
+
+3. **Move Email to Folder**
+```javascript
+// Move email to a specific folder
 await graphClient
-  .api('/mail/{id}')
-  .patch({
-    // updated properties
+  .api(`/users/{userId}/messages/{messageId}/move`)
+  .post({
+    destinationId: 'archive-folder-id'
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- **Email Automation:** Automatically process and route incoming emails
+- **Archival System:** Move old emails to archive folders
+- **Compliance Scanning:** Scan emails for policy violations or sensitive data
+- **Email Analytics:** Generate reports on email volume and patterns
+- **Integration:** Sync emails with CRM or ticketing systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1921,41 +2576,55 @@ Allows the app to read and write all multi-tenant organization details and tenan
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update multitenantorganization
+// Create new multitenantorganization
 const result = await graphClient
   .api('/multitenantorganization')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read multitenantorganization
+2. **Read Resource**
+```javascript
+// Get multitenantorganization with filters
 const data = await graphClient
   .api('/multitenantorganization')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update multitenantorganization
+3. **Update Resource**
+```javascript
+// Update existing multitenantorganization
 await graphClient
   .api('/multitenantorganization/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -1973,33 +2642,58 @@ Allows the teams-app to read all aiInsights for online meetings where the Teams-
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read onlinemeetingaiinsight data
+// Get all onlinemeetingaiinsight
 const data = await graphClient
   .api('/onlinemeetingaiinsight')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/onlinemeetingaiinsight')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/onlinemeetingaiinsight';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2017,34 +2711,58 @@ Allows the app to read online meeting artifacts in your organization, without a 
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read onlinemeetingartifact data
+// Get all onlinemeetingartifact
 const data = await graphClient
   .api('/onlinemeetingartifact')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/onlinemeetingartifact')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/onlinemeetingartifact';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2062,41 +2780,77 @@ Allows the app to read and create online meetings as an application in your orga
 
 **Usage Examples:**
 
+1. **Create Scheduled Meeting**
 ```javascript
-// Create or update onlinemeetings
-const result = await graphClient
-  .api('/onlinemeetings')
+// Create a Teams meeting
+const meeting = await graphClient
+  .api('/users/{userId}/onlineMeetings')
   .post({
-    // resource properties
+    startDateTime: '2025-12-01T10:00:00Z',
+    endDateTime: '2025-12-01T11:00:00Z',
+    subject: 'Project Kickoff Meeting',
+    participants: {
+      attendees: [
+        {
+          identity: {
+            user: {
+              id: 'user-id-1'
+            }
+          },
+          upn: 'attendee1@company.com'
+        }
+      ]
+    },
+    lobbyBypassSettings: {
+      scope: 'organization'
+    },
+    allowMeetingChat: 'enabled'
   });
 
-// Read onlinemeetings
-const data = await graphClient
-  .api('/onlinemeetings')
+console.log('Join URL:', meeting.joinUrl);
+```
+
+2. **Get Meeting Details**
+```javascript
+// Retrieve meeting information
+const meetingDetails = await graphClient
+  .api(`/users/{userId}/onlineMeetings/{meetingId}`)
   .get();
 
-// Update onlinemeetings
+// Access meeting recording
+if (meetingDetails.recording) {
+  console.log('Recording URL:', meetingDetails.recording.contentUrl);
+}
+```
+
+3. **Update Meeting Settings**
+```javascript
+// Modify meeting settings
 await graphClient
-  .api('/onlinemeetings/{id}')
+  .api(`/users/{userId}/onlineMeetings/{meetingId}`)
   .patch({
-    // updated properties
+    allowMeetingChat: 'disabled',
+    allowTeamworkReactions: false,
+    recordAutomatically: true
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- **Meeting Automation:** Create recurring team meetings programmatically
+- **Calendar Integration:** Sync meetings with project management tools
+- **Meeting Analytics:** Track meeting frequency and attendance
+- **Automated Scheduling:** Schedule meetings based on participant availability
+- **Recording Management:** Automatically organize and archive meeting recordings
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2114,34 +2868,58 @@ Allows the app to read all organizational contacts without a signed-in user.  Th
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read orgcontact data
+// Get all orgcontact
 const data = await graphClient
   .api('/orgcontact')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/orgcontact')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/orgcontact';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2159,41 +2937,55 @@ Allows the app to read and write organization-wide Dynamics customer voice setti
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update orgsettings-dynamicsvoice
+// Create new orgsettings/dynamicsvoice
 const result = await graphClient
-  .api('/orgsettings-dynamicsvoice')
+  .api('/orgsettings/dynamicsvoice')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read orgsettings-dynamicsvoice
+2. **Read Resource**
+```javascript
+// Get orgsettings/dynamicsvoice with filters
 const data = await graphClient
-  .api('/orgsettings-dynamicsvoice')
+  .api('/orgsettings/dynamicsvoice')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update orgsettings-dynamicsvoice
+3. **Update Resource**
+```javascript
+// Update existing orgsettings/dynamicsvoice
 await graphClient
-  .api('/orgsettings-dynamicsvoice/{id}')
+  .api('/orgsettings/dynamicsvoice/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2211,41 +3003,55 @@ Allows the app to read and write organization-wide Microsoft 365 apps installati
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update orgsettings-microsoft365install
+// Create new orgsettings/microsoft365install
 const result = await graphClient
-  .api('/orgsettings-microsoft365install')
+  .api('/orgsettings/microsoft365install')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read orgsettings-microsoft365install
+2. **Read Resource**
+```javascript
+// Get orgsettings/microsoft365install with filters
 const data = await graphClient
-  .api('/orgsettings-microsoft365install')
+  .api('/orgsettings/microsoft365install')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update orgsettings-microsoft365install
+3. **Update Resource**
+```javascript
+// Update existing orgsettings/microsoft365install
 await graphClient
-  .api('/orgsettings-microsoft365install/{id}')
+  .api('/orgsettings/microsoft365install/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2263,34 +3069,58 @@ Allows the app to read company places (conference rooms and room lists) for cale
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read place data
+// Get all place
 const data = await graphClient
   .api('/place')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/place')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/place';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2308,41 +3138,55 @@ Allows the app to read and write all workplace devices, without a signed-in user
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update placedevice
+// Create new placedevice
 const result = await graphClient
   .api('/placedevice')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read placedevice
+2. **Read Resource**
+```javascript
+// Get placedevice with filters
 const data = await graphClient
   .api('/placedevice')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update placedevice
+3. **Update Resource**
+```javascript
+// Update existing placedevice
 await graphClient
   .api('/placedevice/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2360,33 +3204,58 @@ Allows the app to read all authentication method policies for the tenant, withou
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read policy data
+// Get all policy
 const data = await graphClient
   .api('/policy')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/policy')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/policy';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2401,33 +3270,58 @@ Allows the app to read your organization's conditional access policies, without 
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read policy data
+// Get all policy
 const data = await graphClient
   .api('/policy')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/policy')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/policy';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2442,33 +3336,58 @@ Allows the application to read your organization's device configuration policies
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read policy data
+// Get all policy
 const data = await graphClient
   .api('/policy')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/policy')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/policy';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2483,33 +3402,58 @@ Allows the app to read policies related to consent and permission grants for app
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read policy data
+// Get all policy
 const data = await graphClient
   .api('/policy')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/policy')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/policy';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2524,41 +3468,55 @@ Allows the app to read and write all authentication flow policies for the tenant
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update policy
+// Create new policy
 const result = await graphClient
   .api('/policy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read policy
+2. **Read Resource**
+```javascript
+// Get policy with filters
 const data = await graphClient
   .api('/policy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update policy
+3. **Update Resource**
+```javascript
+// Update existing policy
 await graphClient
   .api('/policy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2573,41 +3531,55 @@ Allows the app to read and write all authentication method policies for the tena
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update policy
+// Create new policy
 const result = await graphClient
   .api('/policy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read policy
+2. **Read Resource**
+```javascript
+// Get policy with filters
 const data = await graphClient
   .api('/policy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update policy
+3. **Update Resource**
+```javascript
+// Update existing policy
 await graphClient
   .api('/policy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2622,41 +3594,55 @@ Allows the app to read and write your organization's conditional access policies
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update policy
+// Create new policy
 const result = await graphClient
   .api('/policy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read policy
+2. **Read Resource**
+```javascript
+// Get policy with filters
 const data = await graphClient
   .api('/policy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update policy
+3. **Update Resource**
+```javascript
+// Update existing policy
 await graphClient
   .api('/policy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2671,41 +3657,55 @@ Allows the application to read and update the organization's federated token val
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update policy
+// Create new policy
 const result = await graphClient
   .api('/policy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read policy
+2. **Read Resource**
+```javascript
+// Get policy with filters
 const data = await graphClient
   .api('/policy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update policy
+3. **Update Resource**
+```javascript
+// Update existing policy
 await graphClient
   .api('/policy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2720,41 +3720,55 @@ Allows the app to read and write your organization’s identity protection polic
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update policy
+// Create new policy
 const result = await graphClient
   .api('/policy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read policy
+2. **Read Resource**
+```javascript
+// Get policy with filters
 const data = await graphClient
   .api('/policy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update policy
+3. **Update Resource**
+```javascript
+// Update existing policy
 await graphClient
   .api('/policy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2769,41 +3783,55 @@ Allows the app to manage policies related to consent and permission grants for a
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update policy
+// Create new policy
 const result = await graphClient
   .api('/policy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read policy
+2. **Read Resource**
+```javascript
+// Get policy with filters
 const data = await graphClient
   .api('/policy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update policy
+3. **Update Resource**
+```javascript
+// Update existing policy
 await graphClient
   .api('/policy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2821,41 +3849,55 @@ Allows the app to read all presence information and write activity and availabil
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update presence
+// Create new presence
 const result = await graphClient
   .api('/presence')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read presence
+2. **Read Resource**
+```javascript
+// Get presence with filters
 const data = await graphClient
   .api('/presence')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update presence
+3. **Update Resource**
+```javascript
+// Update existing presence
 await graphClient
   .api('/presence/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2874,28 +3916,28 @@ Allows the app to identify Purview data protection, compliance and governance po
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute protectionscopes operation
 const result = await graphClient
   .api('/protectionscopes')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2913,41 +3955,55 @@ Allows the application to read and write certificate-based authentication config
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update publickeyinfrastructure
+// Create new publickeyinfrastructure
 const result = await graphClient
   .api('/publickeyinfrastructure')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read publickeyinfrastructure
+2. **Read Resource**
+```javascript
+// Get publickeyinfrastructure with filters
 const data = await graphClient
   .api('/publickeyinfrastructure')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update publickeyinfrastructure
+3. **Update Resource**
+```javascript
+// Update existing publickeyinfrastructure
 await graphClient
   .api('/publickeyinfrastructure/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -2965,34 +4021,58 @@ Allows the app to get direct access to real-time enriched data in a meeting, wit
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read realtimeactivityfeed data
+// Get all realtimeactivityfeed
 const data = await graphClient
   .api('/realtimeactivityfeed')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/realtimeactivityfeed')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/realtimeactivityfeed';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3011,27 +4091,28 @@ Delete all active privileged role-based access control (RBAC) assignments of you
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute roleassignmentschedule operation
 const result = await graphClient
   .api('/roleassignmentschedule')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3049,41 +4130,55 @@ Allows the app to read and manage the eligible role-based access control (RBAC) 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update roleeligibilityschedule
+// Create new roleeligibilityschedule
 const result = await graphClient
   .api('/roleeligibilityschedule')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read roleeligibilityschedule
+2. **Read Resource**
+```javascript
+// Get roleeligibilityschedule with filters
 const data = await graphClient
   .api('/roleeligibilityschedule')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update roleeligibilityschedule
+3. **Update Resource**
+```javascript
+// Update existing roleeligibilityschedule
 await graphClient
   .api('/roleeligibilityschedule/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3101,41 +4196,55 @@ Allows the app to read the role-based access control (RBAC) settings for your co
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update rolemanagement
+// Create new rolemanagement
 const result = await graphClient
   .api('/rolemanagement')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read rolemanagement
+2. **Read Resource**
+```javascript
+// Get rolemanagement with filters
 const data = await graphClient
   .api('/rolemanagement')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update rolemanagement
+3. **Update Resource**
+```javascript
+// Update existing rolemanagement
 await graphClient
   .api('/rolemanagement/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3150,41 +4259,55 @@ Allows the app to read and manage the role-based access control (RBAC) settings 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update rolemanagement
+// Create new rolemanagement
 const result = await graphClient
   .api('/rolemanagement')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read rolemanagement
+2. **Read Resource**
+```javascript
+// Get rolemanagement with filters
 const data = await graphClient
   .api('/rolemanagement')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update rolemanagement
+3. **Update Resource**
+```javascript
+// Update existing rolemanagement
 await graphClient
   .api('/rolemanagement/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3202,41 +4325,55 @@ Allows the app to read and manage all role-based access control (RBAC) alerts fo
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update rolemanagementalert
+// Create new rolemanagementalert
 const result = await graphClient
   .api('/rolemanagementalert')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read rolemanagementalert
+2. **Read Resource**
+```javascript
+// Get rolemanagementalert with filters
 const data = await graphClient
   .api('/rolemanagementalert')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update rolemanagementalert
+3. **Update Resource**
+```javascript
+// Update existing rolemanagementalert
 await graphClient
   .api('/rolemanagementalert/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3254,41 +4391,55 @@ Allows the app to read, update, and delete policies for privileged role-based ac
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update rolemanagementpolicy
+// Create new rolemanagementpolicy
 const result = await graphClient
   .api('/rolemanagementpolicy')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read rolemanagementpolicy
+2. **Read Resource**
+```javascript
+// Get rolemanagementpolicy with filters
 const data = await graphClient
   .api('/rolemanagementpolicy')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update rolemanagementpolicy
+3. **Update Resource**
+```javascript
+// Update existing rolemanagementpolicy
 await graphClient
   .api('/rolemanagementpolicy/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3306,41 +4457,55 @@ Allows the app to manage all schedules, schedule groups, shifts and associated e
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update schedule
+// Create new schedule
 const result = await graphClient
   .api('/schedule')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read schedule
+2. **Read Resource**
+```javascript
+// Get schedule with filters
 const data = await graphClient
   .api('/schedule')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update schedule
+3. **Update Resource**
+```javascript
+// Update existing schedule
 await graphClient
   .api('/schedule/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3358,41 +4523,55 @@ Allows the app to read/write schedule permissions for a specific role in Shifts 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update schedulepermissions
+// Create new schedulepermissions
 const result = await graphClient
   .api('/schedulepermissions')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read schedulepermissions
+2. **Read Resource**
+```javascript
+// Get schedulepermissions with filters
 const data = await graphClient
   .api('/schedulepermissions')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update schedulepermissions
+3. **Update Resource**
+```javascript
+// Update existing schedulepermissions
 await graphClient
   .api('/schedulepermissions/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3410,41 +4589,56 @@ Allows the app to read and write identity security available user actions withou
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update securityidentitiesuseractions
+// Create new securityidentitiesuseractions
 const result = await graphClient
   .api('/securityidentitiesuseractions')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read securityidentitiesuseractions
+2. **Read Resource**
+```javascript
+// Get securityidentitiesuseractions with filters
 const data = await graphClient
   .api('/securityidentitiesuseractions')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update securityidentitiesuseractions
+3. **Update Resource**
+```javascript
+// Update existing securityidentitiesuseractions
 await graphClient
   .api('/securityidentitiesuseractions/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3462,34 +4656,58 @@ Allows the app to read all Exchange service activity, without a signed-in user.
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read serviceactivity-exchange data
+// Get all serviceactivity/exchange
 const data = await graphClient
-  .api('/serviceactivity-exchange')
+  .api('/serviceactivity/exchange')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
-  .api('/serviceactivity-exchange')
+  .api('/serviceactivity/exchange')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/serviceactivity/exchange';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3507,34 +4725,58 @@ Allows the app to read all Microsoft 365 Web service activity, without a signed-
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read serviceactivity-microsoft365web data
+// Get all serviceactivity/microsoft365web
 const data = await graphClient
-  .api('/serviceactivity-microsoft365web')
+  .api('/serviceactivity/microsoft365web')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
-  .api('/serviceactivity-microsoft365web')
+  .api('/serviceactivity/microsoft365web')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/serviceactivity/microsoft365web';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3552,34 +4794,58 @@ Allows the app to read all Teams service activity, without a signed-in user.
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read serviceactivity-teams data
+// Get all serviceactivity/teams
 const data = await graphClient
-  .api('/serviceactivity-teams')
+  .api('/serviceactivity/teams')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
-  .api('/serviceactivity-teams')
+  .api('/serviceactivity/teams')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/serviceactivity/teams';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3597,41 +4863,55 @@ Allows the application to read and change the tenant-level settings of SharePoin
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update sharepointtenantsettings
+// Create new sharepointtenantsettings
 const result = await graphClient
   .api('/sharepointtenantsettings')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read sharepointtenantsettings
+2. **Read Resource**
+```javascript
+// Get sharepointtenantsettings with filters
 const data = await graphClient
   .api('/sharepointtenantsettings')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update sharepointtenantsettings
+3. **Update Resource**
+```javascript
+// Update existing sharepointtenantsettings
 await graphClient
   .api('/sharepointtenantsettings/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3650,27 +4930,27 @@ Allow the application to access a subset of site collections without a signed in
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute sites operation
 const result = await graphClient
   .api('/sites')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3689,27 +4969,28 @@ Allows the application to upload bulk user data to the identity synchronization 
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute synchronizationdata/user operation
 const result = await graphClient
-  .api('/synchronizationdata-user')
+  .api('/synchronizationdata/user')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3727,41 +5008,56 @@ Add and remove members from all teams, without a signed-in user. Does not allow 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update teammember
+// Create new teammember
 const result = await graphClient
   .api('/teammember')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read teammember
+2. **Read Resource**
+```javascript
+// Get teammember with filters
 const data = await graphClient
   .api('/teammember')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update teammember
+3. **Update Resource**
+```javascript
+// Update existing teammember
 await graphClient
   .api('/teammember/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3779,41 +5075,55 @@ Read and change all teams' settings, without a signed-in user.
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update teamsettings
+// Create new teamsettings
 const result = await graphClient
   .api('/teamsettings')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read teamsettings
+2. **Read Resource**
+```javascript
+// Get teamsettings with filters
 const data = await graphClient
   .api('/teamsettings')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update teamsettings
+3. **Update Resource**
+```javascript
+// Update existing teamsettings
 await graphClient
   .api('/teamsettings/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3831,34 +5141,58 @@ Allows the app to read all users' teamwork activity feed, without a signed-in us
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read teamsactivity data
+// Get all teamsactivity
 const data = await graphClient
   .api('/teamsactivity')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/teamsactivity')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/teamsactivity';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3877,28 +5211,29 @@ Allows the app to read, install, upgrade, and uninstall selected Teams apps in a
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute teamsappinstallation operation
 const result = await graphClient
   .api('/teamsappinstallation')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3913,34 +5248,59 @@ Allows the app to read the Teams apps that are installed in any chat, without a 
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read teamsappinstallation data
+// Get all teamsappinstallation
 const data = await graphClient
   .api('/teamsappinstallation')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/teamsappinstallation')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/teamsappinstallation';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3955,34 +5315,59 @@ Allows the app to read the Teams apps that are installed for any user, without a
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read teamsappinstallation data
+// Get all teamsappinstallation
 const data = await graphClient
   .api('/teamsappinstallation')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/teamsappinstallation')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/teamsappinstallation';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -3997,41 +5382,56 @@ Allows a Teams app to read, install, upgrade, and uninstall itself for any chat,
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update teamsappinstallation
+// Create new teamsappinstallation
 const result = await graphClient
   .api('/teamsappinstallation')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read teamsappinstallation
+2. **Read Resource**
+```javascript
+// Get teamsappinstallation with filters
 const data = await graphClient
   .api('/teamsappinstallation')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update teamsappinstallation
+3. **Update Resource**
+```javascript
+// Update existing teamsappinstallation
 await graphClient
   .api('/teamsappinstallation/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4049,34 +5449,58 @@ Allows the app to read your tenant's resource accounts without a signed-in user.
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read teamsresourceaccount data
+// Get all teamsresourceaccount
 const data = await graphClient
   .api('/teamsresourceaccount')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/teamsresourceaccount')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/teamsresourceaccount';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4094,34 +5518,58 @@ Read the names and settings of tabs inside any team in Microsoft Teams, without 
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read teamstab data
+// Get all teamstab
 const data = await graphClient
   .api('/teamstab')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/teamstab')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/teamstab';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4136,41 +5584,56 @@ Allows a Teams app to read, install, upgrade, and uninstall all tabs for any cha
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update teamstab
+// Create new teamstab
 const result = await graphClient
   .api('/teamstab')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read teamstab
+2. **Read Resource**
+```javascript
+// Get teamstab with filters
 const data = await graphClient
   .api('/teamstab')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update teamstab
+3. **Update Resource**
+```javascript
+// Update existing teamstab
 await graphClient
   .api('/teamstab/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4188,34 +5651,58 @@ Allows the app to read your tenant's acquired telephone number details, without 
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read teamstelephonenumber data
+// Get all teamstelephonenumber
 const data = await graphClient
   .api('/teamstelephonenumber')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/teamstelephonenumber')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/teamstelephonenumber';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4230,41 +5717,55 @@ Allows the app to read your tenant's acquired telephone number details, without 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update teamstelephonenumber
+// Create new teamstelephonenumber
 const result = await graphClient
   .api('/teamstelephonenumber')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read teamstelephonenumber
+2. **Read Resource**
+```javascript
+// Get teamstelephonenumber with filters
 const data = await graphClient
   .api('/teamstelephonenumber')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update teamstelephonenumber
+3. **Update Resource**
+```javascript
+// Update existing teamstelephonenumber
 await graphClient
   .api('/teamstelephonenumber/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4283,28 +5784,28 @@ Allows the app to create chat and channel messages, without a signed in user. Th
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute teamwork operation
 const result = await graphClient
   .api('/teamwork')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4322,34 +5823,59 @@ Allows the app to read a basic set of profile properties of other users in your 
 
 **Usage Examples:**
 
+1. **List Resources**
 ```javascript
-// Read user data
+// Get all user
 const data = await graphClient
   .api('/user')
   .get();
 
-// Query with filters
+console.log(`Found ${data.value.length} items`);
+```
+
+2. **Query with Filters**
+```javascript
+// Filter and search
 const filtered = await graphClient
   .api('/user')
   .filter("property eq 'value'")
-  .top(10)
+  .orderby('createdDateTime desc')
+  .top(20)
   .get();
+```
+
+3. **Export Data**
+```javascript
+// Export for reporting
+const allData = [];
+let nextLink = '/user';
+
+while (nextLink) {
+  const response = await graphClient.api(nextLink).get();
+  allData.push(...response.value);
+  nextLink = response['@odata.nextLink'];
+}
+
+// Generate report
+console.log(`Exported ${allData.length} records`);
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
 - Reporting and analytics
+- Compliance auditing
+- Data export and archival
+- Integration with dashboards
+- Monitoring and alerts
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4364,41 +5890,80 @@ Allows the app to read and update user profiles without a signed in user.
 
 **Usage Examples:**
 
+1. **Create New User**
 ```javascript
-// Create or update user
-const result = await graphClient
-  .api('/user')
+// Provision a new user account
+const newUser = await graphClient
+  .api('/users')
   .post({
-    // resource properties
+    accountEnabled: true,
+    displayName: 'John Doe',
+    mailNickname: 'johnd',
+    userPrincipalName: 'john.doe@company.com',
+    passwordProfile: {
+      forceChangePasswordNextSignIn: true,
+      password: 'TempPassword123!'
+    },
+    department: 'Engineering',
+    jobTitle: 'Software Engineer'
+  });
+```
+
+2. **Update User Properties**
+```javascript
+// Update user department and manager
+await graphClient
+  .api(`/users/{userId}`)
+  .patch({
+    department: 'Marketing',
+    jobTitle: 'Marketing Manager',
+    officeLocation: 'Building 2, Floor 3'
   });
 
-// Read user
-const data = await graphClient
-  .api('/user')
+// Assign manager
+await graphClient
+  .api(`/users/{userId}/manager/$ref`)
+  .put({
+    '@odata.id': `https://graph.microsoft.com/v1.0/users/{managerId}`
+  });
+```
+
+3. **Bulk User Operations**
+```javascript
+// Get all users in a department
+const users = await graphClient
+  .api('/users')
+  .filter("department eq 'Sales'")
+  .select('id,displayName,mail,jobTitle')
   .get();
 
-// Update user
-await graphClient
-  .api('/user/{id}')
-  .patch({
-    // updated properties
-  });
+// Update all users' property
+for (const user of users.value) {
+  await graphClient
+    .api(`/users/${user.id}`)
+    .patch({
+      companyName: 'Acme Corp - Updated'
+    });
+}
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- **User Onboarding:** Automate new employee account creation
+- **Directory Synchronization:** Sync user data with HR systems
+- **Organizational Changes:** Update user information during reorganizations
+- **Offboarding:** Disable accounts and transfer data when employees leave
+- **Bulk Updates:** Apply changes to multiple users simultaneously
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4414,28 +5979,29 @@ Allow the app to revoke all sign in sessions for a user, without a signed-in use
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute user operation
 const result = await graphClient
   .api('/user')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4453,41 +6019,57 @@ Allows the app to read and write secondary mail addresses for all users, without
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update user-mail
+// Create new user/mail
 const result = await graphClient
-  .api('/user-mail')
+  .api('/user/mail')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read user-mail
+2. **Read Resource**
+```javascript
+// Get user/mail with filters
 const data = await graphClient
-  .api('/user-mail')
+  .api('/user/mail')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update user-mail
+3. **Update Resource**
+```javascript
+// Update existing user/mail
 await graphClient
-  .api('/user-mail/{id}')
+  .api('/user/mail/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Privacy Concern:** May contain personal or confidential information
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4505,41 +6087,56 @@ Allows the app to update the on-premises sync behavior of all users without a si
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update user-onpremisessyncbehavior
+// Create new user/onpremisessyncbehavior
 const result = await graphClient
-  .api('/user-onpremisessyncbehavior')
+  .api('/user/onpremisessyncbehavior')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read user-onpremisessyncbehavior
+2. **Read Resource**
+```javascript
+// Get user/onpremisessyncbehavior with filters
 const data = await graphClient
-  .api('/user-onpremisessyncbehavior')
+  .api('/user/onpremisessyncbehavior')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update user-onpremisessyncbehavior
+3. **Update Resource**
+```javascript
+// Update existing user/onpremisessyncbehavior
 await graphClient
-  .api('/user-onpremisessyncbehavior/{id}')
+  .api('/user/onpremisessyncbehavior/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4557,41 +6154,56 @@ Allows the app to read and write the mobile phone and business phones for all us
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update user-phone
+// Create new user/phone
 const result = await graphClient
-  .api('/user-phone')
+  .api('/user/phone')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read user-phone
+2. **Read Resource**
+```javascript
+// Get user/phone with filters
 const data = await graphClient
-  .api('/user-phone')
+  .api('/user/phone')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update user-phone
+3. **Update Resource**
+```javascript
+// Update existing user/phone
 await graphClient
-  .api('/user-phone/{id}')
+  .api('/user/phone/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4609,41 +6221,56 @@ Allows the application to read and write external authentication methods of all 
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update userauthmethod-external
+// Create new userauthmethod/external
 const result = await graphClient
-  .api('/userauthmethod-external')
+  .api('/userauthmethod/external')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read userauthmethod-external
+2. **Read Resource**
+```javascript
+// Get userauthmethod/external with filters
 const data = await graphClient
-  .api('/userauthmethod-external')
+  .api('/userauthmethod/external')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update userauthmethod-external
+3. **Update Resource**
+```javascript
+// Update existing userauthmethod/external
 await graphClient
-  .api('/userauthmethod-external/{id}')
+  .api('/userauthmethod/external/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Security Impact:** Affects identity and access management
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4662,27 +6289,27 @@ Allows the application to send notification regarding virtual appointments as an
 **Usage Examples:**
 
 ```javascript
-// Use this permission to perform specialized operations
+// Execute virtualappointmentnotification operation
 const result = await graphClient
   .api('/virtualappointmentnotification')
   .post({
-    // operation-specific parameters
+    // operation parameters
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Specialized operations
+- Workflow automation
+- System integration
+- Administrative tasks
 
 **Security Considerations:**
 
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
@@ -4700,70 +6327,227 @@ Allows the app to manage workforce integrations to synchronize data from Microso
 
 **Usage Examples:**
 
+1. **Create Resource**
 ```javascript
-// Create or update workforceintegration
+// Create new workforceintegration
 const result = await graphClient
   .api('/workforceintegration')
   .post({
     // resource properties
+    displayName: 'Example',
+    description: 'Created via API'
   });
+```
 
-// Read workforceintegration
+2. **Read Resource**
+```javascript
+// Get workforceintegration with filters
 const data = await graphClient
   .api('/workforceintegration')
+  .filter("property eq 'value'")
+  .select('id,displayName')
+  .top(50)
   .get();
+```
 
-// Update workforceintegration
+3. **Update Resource**
+```javascript
+// Update existing workforceintegration
 await graphClient
   .api('/workforceintegration/{id}')
   .patch({
-    // updated properties
+    displayName: 'Updated Name',
+    // other properties
   });
 ```
 
 **Common Use Cases:**
 
-- Organizational automation and workflow management
-- Integration with business systems
-- Compliance and security monitoring
-- Reporting and analytics
+- Automated provisioning and deprovisioning
+- Integration with business workflows
+- Bulk operations and migrations
+- Synchronization with external systems
 
 **Security Considerations:**
 
-- **High Privilege:** This permission grants broad access - implement strict controls
-- **Audit Logging:** Log all operations for compliance
-- **Least Privilege:** Only grant if absolutely necessary
-- **Regular Review:** Periodically review usage and necessity
-- **Monitoring:** Implement alerting for suspicious activity
+- **🔴 High Privilege:** Organization-wide access - implement strict controls
+- **Data Modification:** Can alter organizational data - require approval workflows
+- **Audit Logging:** Log all API calls for compliance and security
+- **Least Privilege:** Only grant if absolutely necessary for application function
+- **Regular Review:** Review usage quarterly and remove if no longer needed
+- **Monitoring:** Set up alerts for unusual activity patterns
 
 ---
 
 
-## Security and Compliance
+## Best Practices
 
-### Best Practices
+### Application Development
 
-1. **Principle of Least Privilege:** Only grant permissions absolutely necessary
-2. **Regular Audits:** Review permissions quarterly
-3. **Monitoring:** Implement comprehensive logging and alerting
-4. **Conditional Access:** Use Azure AD policies to restrict usage
-5. **Secret Management:** Store credentials in Azure Key Vault
+1. **Error Handling**
+   - Implement retry logic with exponential backoff
+   - Handle rate limiting (HTTP 429) gracefully
+   - Log errors with correlation IDs for debugging
 
-### Compliance Frameworks
+2. **Performance Optimization**
+   - Use batch requests to combine multiple operations
+   - Implement caching for frequently accessed data
+   - Use delta queries to track changes efficiently
+   - Select only required fields to minimize payload
 
-These permissions should be reviewed against:
-- SOC 2 Type II
-- ISO 27001
-- GDPR
-- HIPAA (if applicable)
-- PCI DSS (if applicable)
+3. **Security Implementation**
+   - Store credentials in Azure Key Vault
+   - Use Managed Identities when possible
+   - Implement certificate-based authentication
+   - Rotate secrets regularly (90 days maximum)
+
+### Permission Management
+
+1. **Just-in-Time Access**
+   - Request permissions only when needed
+   - Implement time-limited grants for sensitive operations
+   - Use separate service principals for different functions
+
+2. **Separation of Duties**
+   - Split permissions across multiple app registrations
+   - Use different principals for read vs. write operations
+   - Implement approval workflows for privilege escalation
+
+3. **Environment Isolation**
+   - Separate credentials for Dev/Test/Prod
+   - Different permission sets per environment
+   - Test with minimum permissions in development
+
+### Monitoring and Compliance
+
+1. **Continuous Monitoring**
+   - Track API usage patterns and trends
+   - Alert on unusual activity (bulk operations, after-hours access)
+   - Monitor for failed authentication attempts
+   - Track permission changes
+
+2. **Regular Audits**
+   - Quarterly review of all granted permissions
+   - Remove unused permissions
+   - Verify business justification still valid
+   - Check for least-privilege violations
+
+3. **Documentation**
+   - Maintain permission usage matrix
+   - Document business justification for each permission
+   - Keep runbooks for incident response
+   - Track permission request and approval history
+
+---
+
+## Compliance Frameworks
+
+### SOC 2 Type II
+
+**Requirements:**
+- Access controls and authorization
+- Audit logging and monitoring
+- Change management procedures
+- Incident response planning
+
+**Implementation:**
+- All high-privilege permissions require approval
+- Comprehensive audit logs retained for 1+ years
+- Quarterly access reviews
+- Documented incident response procedures
+
+### ISO 27001
+
+**Requirements:**
+- Information security management
+- Access control policy
+- Cryptographic controls
+- Security monitoring
+
+**Implementation:**
+- Permissions mapped to job roles
+- Encryption for data at rest and in transit
+- Real-time security monitoring
+- Regular security assessments
+
+### GDPR (General Data Protection Regulation)
+
+**Requirements:**
+- Data protection by design
+- Right to access and deletion
+- Data breach notification
+- Privacy impact assessments
+
+**Implementation:**
+- Minimize data collection and retention
+- Implement data subject rights workflows
+- 72-hour breach notification procedure
+- Privacy impact assessment for new features
+
+### HIPAA (Health Insurance Portability and Accountability Act)
+
+**Requirements:**
+- Protected health information (PHI) safeguards
+- Access controls and audit trails
+- Encryption requirements
+- Business associate agreements
+
+**Implementation:**
+- Additional encryption for health data
+- Comprehensive audit logging
+- Access restricted to authorized users only
+- BAA in place with Microsoft
+
+---
 
 ## Additional Resources
 
+### Microsoft Documentation
+
 - [Microsoft Graph API Documentation](https://docs.microsoft.com/graph/)
 - [Graph API Permissions Reference](https://docs.microsoft.com/graph/permissions-reference)
-- [Azure AD Best Practices](https://docs.microsoft.com/azure/active-directory/develop/howto-create-service-principal-portal)
+- [Best Practices for Graph API](https://docs.microsoft.com/graph/best-practices-concept)
+- [Throttling Guidance](https://docs.microsoft.com/graph/throttling)
+
+### Development Tools
+
+- [Graph Explorer](https://developer.microsoft.com/graph/graph-explorer) - Interactive API testing
+- [Graph SDKs](https://docs.microsoft.com/graph/sdks/sdks-overview) - Client libraries
+- [Postman Collection](https://www.postman.com/microsoftgraph) - API collection for testing
+
+### Security Resources
+
+- [Azure AD Security Best Practices](https://docs.microsoft.com/azure/active-directory/fundamentals/security-operations-introduction)
+- [Application Security](https://docs.microsoft.com/azure/security/fundamentals/application-security-best-practices)
+- [Key Vault Documentation](https://docs.microsoft.com/azure/key-vault/)
 
 ---
 
-*Documentation generated on November 24, 2025*
+## Changelog
+
+### Version 1.0 - November 24, 2025
+- Initial comprehensive documentation for {len(permissions)} Graph API permissions
+- Detailed usage examples with code samples
+- Security and compliance guidelines
+- Best practices for permission management
+- Risk-based classification system
+
+---
+
+## Support and Contact
+
+For questions about these permissions:
+
+- **Security Team:** security@company.com
+- **IT Support:** itsupport@company.com
+- **Compliance:** compliance@company.com
+
+For permission requests or modifications:
+1. Submit request through IT Service Portal
+2. Include business justification
+3. Specify required scope and duration
+4. Await approval from Security and IT teams
+
+---
+
+*This documentation is maintained by the IT Security and Compliance team. Last updated: November 24, 2025*
