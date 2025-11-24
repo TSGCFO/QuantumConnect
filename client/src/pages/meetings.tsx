@@ -66,8 +66,7 @@ export default function Meetings() {
       meetingDate: string; 
       transcript: string 
     }) => {
-      const response = await apiRequest("POST", "/api/meetings/upload", data);
-      return response.json();
+      return await apiRequest("POST", "/api/meetings/upload", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/meetings"] });

@@ -47,6 +47,15 @@ export default function Analytics() {
     }>;
   }>({
     queryKey: ["/api/analytics", timeRange],
+    queryFn: async () => {
+      const response = await fetch(`/api/analytics?timeRange=${timeRange}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch analytics");
+      }
+      return response.json();
+    },
   });
 
   if (user?.role !== "manager" && user?.role !== "admin") {
