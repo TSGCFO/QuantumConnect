@@ -93,8 +93,16 @@ export default function Meetings() {
       });
       
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Failed to sync Teams meetings");
+        let errorMessage = "Failed to sync Teams meetings";
+        try {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        } catch {
+          // If we can't parse the error, use the default message
+        }
+        throw new Error(errorMessage);
       }
       
       return response.json();
@@ -103,13 +111,15 @@ export default function Meetings() {
       queryClient.invalidateQueries({ queryKey: ["/api/meetings"] });
       toast({
         title: "Teams Sync Complete",
-        description: `Successfully synced ${data.synced} new meeting${data.synced !== 1 ? 's' : ''}`,
+        description: data?.synced 
+          ? `Successfully synced ${data.synced} new meeting${data.synced !== 1 ? 's' : ''}`
+          : "Sync completed",
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Sync Failed",
-        description: error.message || "Failed to sync Teams meetings",
+        description: error.message || "Failed to sync Teams meetings. Please check your Teams authentication.",
         variant: "destructive",
       });
     },
