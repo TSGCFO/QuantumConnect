@@ -31,7 +31,7 @@ Allows the application to read and change the tenant-level settings of SharePoin
 ```javascript
 // Read sharepointtenantsettings data
 const items = await client
-  .api('/sharepointtenantsettingss')
+  .api('/sharepointtenantsettings')
   .get();
 
 // Create new sharepointtenantsettings
@@ -41,19 +41,19 @@ const newItem = {
 };
 
 const created = await client
-  .api('/sharepointtenantsettingss')
+  .api('/sharepointtenantsettings')
   .post(newItem);
 
 // Update sharepointtenantsettings
 await client
-  .api(`/sharepointtenantsettingss/${created.id}`)
+  .api(`/sharepointtenantsettings/${created.id}`)
   .patch({
     displayName: 'Updated Item'
   });
 
 // Delete sharepointtenantsettings
 await client
-  .api(`/sharepointtenantsettingss/${created.id}`)
+  .api(`/sharepointtenantsettings/${created.id}`)
   .delete();
 ```
 

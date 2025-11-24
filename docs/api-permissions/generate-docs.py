@@ -106,11 +106,14 @@ def generate_example(permission):
     name = permission['name']
     resource = name.split('.')[0].lower()
     
+    # Handle plural form correctly - don't add 's' if already ends with 's'
+    resource_plural = resource if resource.endswith('s') else f"{resource}s"
+    
     if '.Read.All' in name or '.Read.' in name:
         return f"""```javascript
 // Read {resource} data
 const data = await client
-  .api('/{resource}s')
+  .api('/{resource_plural}')
   .select('id,displayName')
   .top(50)
   .get();
@@ -124,7 +127,7 @@ data.value.forEach(item => {{
         return f"""```javascript
 // Read {resource} data
 const items = await client
-  .api('/{resource}s')
+  .api('/{resource_plural}')
   .get();
 
 // Create new {resource}
@@ -134,19 +137,19 @@ const newItem = {{
 }};
 
 const created = await client
-  .api('/{resource}s')
+  .api('/{resource_plural}')
   .post(newItem);
 
 // Update {resource}
 await client
-  .api(`/{resource}s/${{created.id}}`)
+  .api(`/{resource_plural}/${{created.id}}`)
   .patch({{
     displayName: 'Updated Item'
   }});
 
 // Delete {resource}
 await client
-  .api(`/{resource}s/${{created.id}}`)
+  .api(`/{resource_plural}/${{created.id}}`)
   .delete();
 ```"""
     

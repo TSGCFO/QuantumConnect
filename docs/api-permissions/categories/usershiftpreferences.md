@@ -31,7 +31,7 @@ Allows the app to manage all users' shift schedule preferences without a signed-
 ```javascript
 // Read usershiftpreferences data
 const items = await client
-  .api('/usershiftpreferencess')
+  .api('/usershiftpreferences')
   .get();
 
 // Create new usershiftpreferences
@@ -41,19 +41,19 @@ const newItem = {
 };
 
 const created = await client
-  .api('/usershiftpreferencess')
+  .api('/usershiftpreferences')
   .post(newItem);
 
 // Update usershiftpreferences
 await client
-  .api(`/usershiftpreferencess/${created.id}`)
+  .api(`/usershiftpreferences/${created.id}`)
   .patch({
     displayName: 'Updated Item'
   });
 
 // Delete usershiftpreferences
 await client
-  .api(`/usershiftpreferencess/${created.id}`)
+  .api(`/usershiftpreferences/${created.id}`)
   .delete();
 ```
 

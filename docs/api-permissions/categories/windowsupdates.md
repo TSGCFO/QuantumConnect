@@ -31,7 +31,7 @@ Allows the app to read and write all Windows update deployment settings for the 
 ```javascript
 // Read windowsupdates data
 const items = await client
-  .api('/windowsupdatess')
+  .api('/windowsupdates')
   .get();
 
 // Create new windowsupdates
@@ -41,19 +41,19 @@ const newItem = {
 };
 
 const created = await client
-  .api('/windowsupdatess')
+  .api('/windowsupdates')
   .post(newItem);
 
 // Update windowsupdates
 await client
-  .api(`/windowsupdatess/${created.id}`)
+  .api(`/windowsupdates/${created.id}`)
   .patch({
     displayName: 'Updated Item'
   });
 
 // Delete windowsupdates
 await client
-  .api(`/windowsupdatess/${created.id}`)
+  .api(`/windowsupdates/${created.id}`)
   .delete();
 ```
 

@@ -31,7 +31,7 @@ Allows the app to read, create, edit, and delete all the short notes without a s
 ```javascript
 // Read shortnotes data
 const items = await client
-  .api('/shortnotess')
+  .api('/shortnotes')
   .get();
 
 // Create new shortnotes
@@ -41,19 +41,19 @@ const newItem = {
 };
 
 const created = await client
-  .api('/shortnotess')
+  .api('/shortnotes')
   .post(newItem);
 
 // Update shortnotes
 await client
-  .api(`/shortnotess/${created.id}`)
+  .api(`/shortnotes/${created.id}`)
   .patch({
     displayName: 'Updated Item'
   });
 
 // Delete shortnotes
 await client
-  .api(`/shortnotess/${created.id}`)
+  .api(`/shortnotes/${created.id}`)
   .delete();
 ```
 

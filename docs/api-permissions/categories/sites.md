@@ -147,7 +147,7 @@ Allows the app to create, read, update, and delete documents and list items in a
 ```javascript
 // Read sites data
 const items = await client
-  .api('/sitess')
+  .api('/sites')
   .get();
 
 // Create new sites
@@ -157,19 +157,19 @@ const newItem = {
 };
 
 const created = await client
-  .api('/sitess')
+  .api('/sites')
   .post(newItem);
 
 // Update sites
 await client
-  .api(`/sitess/${created.id}`)
+  .api(`/sites/${created.id}`)
   .patch({
     displayName: 'Updated Item'
   });
 
 // Delete sites
 await client
-  .api(`/sitess/${created.id}`)
+  .api(`/sites/${created.id}`)
   .delete();
 ```
 

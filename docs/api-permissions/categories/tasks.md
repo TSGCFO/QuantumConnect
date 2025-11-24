@@ -31,7 +31,7 @@ Allows the app to create, read, update and delete all users’ tasks and task li
 ```javascript
 // Read tasks data
 const items = await client
-  .api('/taskss')
+  .api('/tasks')
   .get();
 
 // Create new tasks
@@ -41,19 +41,19 @@ const newItem = {
 };
 
 const created = await client
-  .api('/taskss')
+  .api('/tasks')
   .post(newItem);
 
 // Update tasks
 await client
-  .api(`/taskss/${created.id}`)
+  .api(`/tasks/${created.id}`)
   .patch({
     displayName: 'Updated Item'
   });
 
 // Delete tasks
 await client
-  .api(`/taskss/${created.id}`)
+  .api(`/tasks/${created.id}`)
   .delete();
 ```
 
