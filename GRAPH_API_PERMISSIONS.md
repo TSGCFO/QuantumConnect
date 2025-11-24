@@ -6526,7 +6526,7 @@ await graphClient
 ## Changelog
 
 ### Version 1.0 - November 24, 2025
-- Initial comprehensive documentation for {len(permissions)} Graph API permissions
+- Initial comprehensive documentation for 97 Graph API permissions
 - Detailed usage examples with code samples
 - Security and compliance guidelines
 - Best practices for permission management
