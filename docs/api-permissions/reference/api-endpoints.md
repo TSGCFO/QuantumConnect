@@ -108,10 +108,12 @@ GET https://graph.microsoft.com/v1.0/users/{id}/manager
 ### Get Direct Reports
 
 ```http
-GET https://graph.microsoft.com/v1.0/users/{id}/directReports
+GET https://graph.microsoft.com/v1.0/users/{id}/directReports?$top=100
 ```
 
 **Required Permission**: `User.Read.All`
+
+**Note**: Use pagination parameters to limit result sets
 
 ### Assign Manager
 

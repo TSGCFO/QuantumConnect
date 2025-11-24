@@ -270,7 +270,7 @@ public class SecureConfigurationManager
 #### 2. Environment Variables (Development Only)
 
 ```javascript
-// Load from environment variables (development)
+// ✅ CORRECT: Load from environment variables (development)
 require('dotenv').config();
 
 const config = {
@@ -279,11 +279,13 @@ const config = {
     clientSecret: process.env.CLIENT_SECRET
 };
 
-// ❌ NEVER do this:
-const config = {
-    tenantId: "a1b2c3d4-...",  // Hardcoded!
-    clientSecret: "secret123"   // DANGER!
+// ❌ ANTI-PATTERN - NEVER do this (shown for educational purposes only):
+// DO NOT COPY THIS CODE:
+const badConfig = {
+    tenantId: "a1b2c3d4-...",  // Hardcoded credentials - SECURITY RISK!
+    clientSecret: "secret123"   // Exposed secret - NEVER DO THIS!
 };
+// This is a security vulnerability and must be avoided
 ```
 
 #### 3. Credential Rotation
@@ -311,11 +313,14 @@ function Update-ClientSecret {
         -SecretValue (ConvertTo-SecureString $newCredential.SecretText -AsPlainText -Force)
 
     # Schedule removal of old secret after grace period
+    $gracePeriodDays = 30
+    $gracePeriodSeconds = $gracePeriodDays * 24 * 3600
+    
     Start-Job -ScriptBlock {
-        param($AppId, $OldKeyId)
-        Start-Sleep -Seconds (30 * 24 * 3600) # 30 days
+        param($AppId, $OldKeyId, $GracePeriod)
+        Start-Sleep -Seconds $GracePeriod
         Remove-MgApplicationPassword -ApplicationId $AppId -KeyId $OldKeyId
-    } -ArgumentList $AppId, $oldKeyId
+    } -ArgumentList $AppId, $oldKeyId, $gracePeriodSeconds
 }
 ```
 
