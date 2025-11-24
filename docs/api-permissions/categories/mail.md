@@ -134,26 +134,26 @@ Allows the app to send mail as any user without a signed-in user.
 // Send email as a specific user
 async function sendEmail(fromUser, toUser, subject, body) {
   const message = {
-    message: {
-      subject: subject,
-      body: {
-        contentType: 'HTML',
-        content: body
-      },
-      toRecipients: [
-        {
-          emailAddress: {
-            address: toUser
-          }
-        }
-      ]
+    subject: subject,
+    body: {
+      contentType: 'HTML',
+      content: body
     },
-    saveToSentItems: true
+    toRecipients: [
+      {
+        emailAddress: {
+          address: toUser
+        }
+      }
+    ]
   };
 
   await client
     .api(`/users/${fromUser}/sendMail`)
-    .post(message);
+    .post({ 
+      message: message,
+      saveToSentItems: true
+    });
 
   console.log('Email sent successfully');
 }

@@ -294,22 +294,20 @@ async function getUserInfo(userId) {
 ```javascript
 async function sendEmail(subject, body, recipients) {
   const message = {
-    message: {
-      subject: subject,
-      body: {
-        contentType: 'HTML',
-        content: body
-      },
-      toRecipients: recipients.map(email => ({
-        emailAddress: { address: email }
-      }))
-    }
+    subject: subject,
+    body: {
+      contentType: 'HTML',
+      content: body
+    },
+    toRecipients: recipients.map(email => ({
+      emailAddress: { address: email }
+    }))
   };
 
   try {
     await client
       .api('/me/sendMail')
-      .post(message);
+      .post({ message: message });
     
     console.log('Email sent successfully');
   } catch (error) {
