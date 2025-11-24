@@ -22,19 +22,34 @@ The permissions in this application include:
 
 ## Documentation Structure
 
-### By Category
-Permissions are organized into categories for easier navigation:
+### Individual Permission Documentation
 
-- [User Management](./categories/user-management.md) - User, authentication, and identity management
-- [Group & Team Management](./categories/group-team-management.md) - Groups, Teams, channels, and collaboration
-- [Communication](./categories/communication.md) - Mail, calendar, chat, and messaging
-- [Files & Documents](./categories/files-documents.md) - OneDrive, SharePoint, and document management
-- [Security & Compliance](./categories/security-compliance.md) - Audit logs, policies, and security features
-- [Device Management](./categories/device-management.md) - Intune and device administration
-- [Directory & Organization](./categories/directory-organization.md) - Directory services and organizational settings
-- [Applications & Services](./categories/applications-services.md) - Application registration and service management
-- [Reports & Analytics](./categories/reports-analytics.md) - Reporting and analytics capabilities
-- [Specialized Services](./categories/specialized-services.md) - Industry-specific and advanced features
+Each of the 400 permissions has its own detailed documentation file:
+
+- **[Browse All Permissions](./permissions/README.md)** - Complete index of all 400 permissions
+- **[Permissions Directory](./permissions/)** - Individual markdown files for each permission
+
+Each permission file includes:
+- Permission name, ID, and detailed description
+- Use cases and scenarios
+- API endpoints that require the permission
+- Code examples in PowerShell, JavaScript, and C#
+- Security considerations and risk level
+- Related permissions and resources
+
+### By Category
+Permissions are also organized by functional categories in the [Permissions Index](./permissions/README.md):
+
+- **User Management** - User, authentication, and identity management
+- **Group & Team Management** - Groups, Teams, channels, and collaboration
+- **Communication** - Mail, calendar, chat, and messaging
+- **Files & Documents** - OneDrive, SharePoint, and document management
+- **Security & Compliance** - Audit logs, policies, and security features
+- **Device Management** - Intune and device administration
+- **Directory & Organization** - Directory services and organizational settings
+- **Applications & Services** - Application registration and service management
+- **Reports & Analytics** - Reporting and analytics capabilities
+- **And many more** - See the [full index](./permissions/README.md) for all categories
 
 ### Quick Reference Guides
 
