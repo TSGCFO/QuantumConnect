@@ -24,9 +24,12 @@ This permission enables the following scenarios:
 
 ## API Endpoints
 
-Common endpoints that require this permission:
+This section provides detailed information about the Microsoft Graph API endpoints that require this permission.
 
-- Refer to [Microsoft Graph API Documentation](https://learn.microsoft.com/en-us/graph/api/overview) for specific endpoints
+### Endpoint Reference
+
+Refer to the [Microsoft Graph API Reference](https://learn.microsoft.com/en-us/graph/api/overview) for detailed endpoint documentation.
+
 
 ## Code Examples
 
@@ -37,7 +40,7 @@ Common endpoints that require this permission:
 Connect-MgGraph -Scopes "TeamsAppInstallation.ReadWriteForChat.All"
 
 # Use this permission to access Microsoft Graph resources
-# Refer to Microsoft Graph API documentation for specific endpoints
+# Refer to the API endpoints section below for specific operations
 ```
 
 ### JavaScript/TypeScript
@@ -49,7 +52,7 @@ const client = Client.init({
 });
 
 // Use this permission to access Microsoft Graph resources
-// Refer to Microsoft Graph API documentation for specific endpoints
+// Refer to the API endpoints section below for specific operations
 ```
 
 ### C#
@@ -59,7 +62,7 @@ const client = Client.init({
 var graphClient = new GraphServiceClient(credential, scopes);
 
 // Use this permission to access Microsoft Graph resources
-// Refer to Microsoft Graph API documentation for specific endpoints
+// Refer to the API endpoints section below for specific operations
 ```
 
 ## Security Considerations
@@ -73,9 +76,9 @@ var graphClient = new GraphServiceClient(credential, scopes);
 
 ### Risk Level
 
-🟢 **LOW-MEDIUM**
+🟡 **MEDIUM**
 
-This permission has limited scope. Still ensure appropriate security measures are in place.
+This permission grants write access to specific resources. Implement appropriate security measures.
 
 ### Required Actions
 

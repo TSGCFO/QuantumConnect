@@ -24,13 +24,156 @@ This permission enables the following scenarios:
 
 ## API Endpoints
 
-Common endpoints that require this permission:
+This section provides detailed information about the Microsoft Graph API endpoints that require this permission.
 
-- `GET /groups`
-- `POST /groups`
-- `PATCH /groups/{{id}}`
-- `GET /groups/{{id}}/members`
-- `POST /groups/{{id}}/members/$ref`
+
+### Endpoint 1: GET /groups
+
+**Description**: List all groups in the organization
+
+**Query Parameters**:
+
+- `$select`: Choose specific properties
+- `$filter`: Filter results (e.g., groupTypes/any(c:c eq 'Unified'))
+- `$top`: Limit number of results
+- `$orderby`: Sort results
+- `$search`: Search for groups (requires ConsistencyLevel: eventual header)
+
+**Response**: Returns a collection of group objects
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/groups?$filter=mailEnabled eq true and securityEnabled eq false
+```
+
+---
+
+### Endpoint 2: GET /groups/{id}
+
+**Description**: Get a specific group by ID
+
+**Query Parameters**:
+
+- `$select`: Choose specific properties
+- `$expand`: Expand related resources (e.g., members, owners)
+
+**Response**: Returns a group object
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/groups/{id}?$expand=members
+```
+
+---
+
+### Endpoint 3: POST /groups
+
+**Description**: Create a new group
+
+**Request Body**:
+
+```json
+{
+  "displayName": "Marketing Team",
+  "mailNickname": "marketing",
+  "mailEnabled": true,
+  "securityEnabled": false,
+  "groupTypes": [
+    "Unified"
+  ]
+}
+```
+
+**Response**: Returns the created group object
+
+**Example Request**:
+
+```http
+POST https://graph.microsoft.com/v1.0/groups
+```
+
+---
+
+### Endpoint 4: PATCH /groups/{id}
+
+**Description**: Update group properties
+
+**Request Body**:
+
+```json
+{
+  "description": "Updated description",
+  "displayName": "Updated Name"
+}
+```
+
+**Response**: Returns 204 No Content on success
+
+**Example Request**:
+
+```http
+PATCH https://graph.microsoft.com/v1.0/groups/{id}
+```
+
+---
+
+### Endpoint 5: GET /groups/{id}/members
+
+**Description**: List group members
+
+**Query Parameters**:
+
+- `$select`: Choose properties for members
+- `$top`: Limit number of results
+
+**Response**: Returns a collection of directoryObject
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/groups/{id}/members
+```
+
+---
+
+### Endpoint 6: POST /groups/{id}/members/$ref
+
+**Description**: Add a member to the group
+
+**Request Body**:
+
+```json
+{
+  "@odata.id": "https://graph.microsoft.com/v1.0/users/{user-id}"
+}
+```
+
+**Response**: Returns 204 No Content on success
+
+**Example Request**:
+
+```http
+POST https://graph.microsoft.com/v1.0/groups/{id}/members/$ref
+```
+
+---
+
+### Endpoint 7: DELETE /groups/{id}/members/{member-id}/$ref
+
+**Description**: Remove a member from the group
+
+**Response**: Returns 204 No Content on success
+
+**Example Request**:
+
+```http
+DELETE https://graph.microsoft.com/v1.0/groups/{id}/members/{member-id}/$ref
+```
+
+---
+
 
 ## Code Examples
 

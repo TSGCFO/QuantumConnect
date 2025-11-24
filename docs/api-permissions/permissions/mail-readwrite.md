@@ -24,12 +24,105 @@ This permission enables the following scenarios:
 
 ## API Endpoints
 
-Common endpoints that require this permission:
+This section provides detailed information about the Microsoft Graph API endpoints that require this permission.
 
-- `GET /users/{{id}}/messages`
-- `POST /users/{{id}}/sendMail`
-- `GET /users/{{id}}/mailFolders`
-- `PATCH /users/{{id}}/messages/{{message-id}}`
+
+### Endpoint 1: GET /users/{id}/messages
+
+**Description**: List user's email messages
+
+**Query Parameters**:
+
+- `$select`: Choose message properties
+- `$filter`: Filter messages (e.g., isRead eq false)
+- `$top`: Limit number of messages
+- `$orderby`: Sort messages (e.g., receivedDateTime desc)
+
+**Response**: Returns a collection of message objects
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/users/{id}/messages?$filter=isRead eq false&$top=25
+```
+
+---
+
+### Endpoint 2: POST /users/{id}/sendMail
+
+**Description**: Send an email message
+
+**Request Body**:
+
+```json
+{
+  "message": {
+    "subject": "Project Update",
+    "body": {
+      "contentType": "HTML",
+      "content": "<h1>Update</h1><p>Details here.</p>"
+    },
+    "toRecipients": [
+      {
+        "emailAddress": {
+          "address": "recipient@contoso.com"
+        }
+      }
+    ]
+  },
+  "saveToSentItems": true
+}
+```
+
+**Response**: Returns 202 Accepted on success
+
+**Example Request**:
+
+```http
+POST https://graph.microsoft.com/v1.0/users/{id}/sendMail
+```
+
+---
+
+### Endpoint 3: GET /users/{id}/mailFolders
+
+**Description**: List user's mail folders
+
+**Response**: Returns a collection of mailFolder objects
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/users/{id}/mailFolders
+```
+
+---
+
+### Endpoint 4: PATCH /users/{id}/messages/{message-id}
+
+**Description**: Update message properties
+
+**Request Body**:
+
+```json
+{
+  "isRead": true,
+  "categories": [
+    "Important"
+  ]
+}
+```
+
+**Response**: Returns the updated message object
+
+**Example Request**:
+
+```http
+PATCH https://graph.microsoft.com/v1.0/users/{id}/messages/{message-id}
+```
+
+---
+
 
 ## Code Examples
 
@@ -127,9 +220,9 @@ await graphClient.Users["sender@contoso.com"]
 
 ### Risk Level
 
-🟢 **LOW-MEDIUM**
+🟡 **MEDIUM**
 
-This permission has limited scope. Still ensure appropriate security measures are in place.
+This permission grants write access to specific resources. Implement appropriate security measures.
 
 ### Required Actions
 

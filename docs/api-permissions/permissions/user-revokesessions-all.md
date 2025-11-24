@@ -24,13 +24,135 @@ This permission enables the following scenarios:
 
 ## API Endpoints
 
-Common endpoints that require this permission:
+This section provides detailed information about the Microsoft Graph API endpoints that require this permission.
 
-- `GET /users`
-- `POST /users`
-- `PATCH /users/{{id}}`
-- `GET /users/{{id}}/manager`
-- `GET /users/{{id}}/directReports`
+
+### Endpoint 1: GET /users
+
+**Description**: List all users in the organization
+
+**Query Parameters**:
+
+- `$select`: Choose specific properties (e.g., displayName,mail,jobTitle)
+- `$filter`: Filter results (e.g., department eq 'Sales')
+- `$top`: Limit number of results (e.g., 100)
+- `$orderby`: Sort results (e.g., displayName)
+- `$search`: Search for users (requires ConsistencyLevel: eventual header)
+
+**Response**: Returns a collection of user objects
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/users?$select=displayName,mail&$filter=department eq 'Sales'&$top=50
+```
+
+---
+
+### Endpoint 2: GET /users/{id}
+
+**Description**: Get a specific user by ID or userPrincipalName
+
+**Query Parameters**:
+
+- `$select`: Choose specific properties to return
+- `$expand`: Expand related resources (e.g., manager, directReports)
+
+**Response**: Returns a user object
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/users/john@contoso.com?$select=displayName,jobTitle&$expand=manager
+```
+
+---
+
+### Endpoint 3: POST /users
+
+**Description**: Create a new user
+
+**Request Body**:
+
+```json
+{
+  "accountEnabled": true,
+  "displayName": "Jane Doe",
+  "mailNickname": "janed",
+  "userPrincipalName": "janed@contoso.com",
+  "passwordProfile": {
+    "forceChangePasswordNextSignIn": true,
+    "password": "SecurePassword123!"
+  }
+}
+```
+
+**Response**: Returns the created user object
+
+**Example Request**:
+
+```http
+POST https://graph.microsoft.com/v1.0/users
+```
+
+---
+
+### Endpoint 4: PATCH /users/{id}
+
+**Description**: Update user properties
+
+**Request Body**:
+
+```json
+{
+  "jobTitle": "Senior Developer",
+  "department": "Engineering",
+  "officeLocation": "Building 5, Room 301"
+}
+```
+
+**Response**: Returns 204 No Content on success
+
+**Example Request**:
+
+```http
+PATCH https://graph.microsoft.com/v1.0/users/john@contoso.com
+```
+
+---
+
+### Endpoint 5: GET /users/{id}/manager
+
+**Description**: Get the user's manager
+
+**Response**: Returns a directoryObject (typically a user)
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/users/john@contoso.com/manager
+```
+
+---
+
+### Endpoint 6: GET /users/{id}/directReports
+
+**Description**: Get the user's direct reports
+
+**Query Parameters**:
+
+- `$select`: Choose properties for direct reports
+
+**Response**: Returns a collection of directoryObject (users)
+
+**Example Request**:
+
+```http
+GET https://graph.microsoft.com/v1.0/users/john@contoso.com/directReports
+```
+
+---
+
 
 ## Code Examples
 
@@ -45,6 +167,9 @@ Get-MgUser -Top 10 | Select-Object DisplayName, Mail, JobTitle
 
 # Example: Get specific user
 Get-MgUser -UserId "user@contoso.com"
+
+# Example: Get user with manager
+Get-MgUser -UserId "user@contoso.com" -ExpandProperty manager
 ```
 
 ### JavaScript/TypeScript
