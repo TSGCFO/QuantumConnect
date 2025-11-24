@@ -1,0 +1,1047 @@
+==========================================
+ASSIGNED GRAPH API PERMISSIONS REPORT
+Generated: 2025-11-23 21:18:17
+==========================================
+
+App Name: employee portal
+App ID: bc9aec39-5f2a-4808-9738-959f655c4306
+Total Assigned Permissions: 97
+
+==========================================
+
+ASSIGNED PERMISSIONS BY CATEGORY:
+==========================================
+
+[1] AccessReview - 1 permissions
+----------------------------------------
+
+  Permission: AccessReview.ReadWrite.Membership
+  Display Name: Manage access reviews for group and app memberships
+  Description: Allows the app to read, update, delete and perform actions on access reviews, reviewers, decisions and settings in the organization for group and app memberships, without a signed-in user.
+  Permission ID: 18228521-a591-40f1-b215-5fad4488c117
+  Assigned Date: 2025-11-23 17:43:28
+
+
+[2] Acronym - 1 permissions
+----------------------------------------
+
+  Permission: Acronym.Read.All
+  Display Name: Read all acronyms
+  Description: Allows an app to read all acronyms without a signed-in user.
+  Permission ID: 8c0aed2c-0c61-433d-b63c-6370ddc73248
+  Assigned Date: 2025-11-23 17:43:28
+
+
+[3] AgentCardManifest - 1 permissions
+----------------------------------------
+
+  Permission: AgentCardManifest.ReadWrite.All
+  Display Name: Read and write all agent card manifests in Agent Registry
+  Description: Allows the app to read and write to all agent card manifests in your organization's Agent Registry without a signed-in user.
+  Permission ID: 228b1a03-f7ca-4348-b50d-e8a547ab61af
+  Assigned Date: 2025-11-23 17:43:29
+
+
+[4] APIConnectors - 1 permissions
+----------------------------------------
+
+  Permission: APIConnectors.ReadWrite.All
+  Display Name: Read and write API connectors for authentication flows
+  Description: Allows the app to read, create and manage the API connectors used in user authentication flows, without a signed-in user.
+  Permission ID: 1dfe531a-24a6-4f1b-80f4-7a0dc5a0a171
+  Assigned Date: 2025-11-23 17:43:31
+
+
+[5] Application-RemoteDesktopConfig - 1 permissions
+----------------------------------------
+
+  Permission: Application-RemoteDesktopConfig.ReadWrite.All
+  Display Name: Read and write the remote desktop security configuration for all apps
+  Description: Allows the app to read and write the remote desktop security configuration for all apps in your organization, without a signed-in user.
+  Permission ID: 3be0012a-cc4e-426b-895b-f9c836bf6381
+  Assigned Date: 2025-11-23 17:43:31
+
+
+[6] AuditLogsQuery-Exchange - 1 permissions
+----------------------------------------
+
+  Permission: AuditLogsQuery-Exchange.Read.All
+  Display Name: Read audit logs data from Exchange workload
+  Description: Allows the app to read and query audit logs from Exchange workload, without a signed-in user
+  Permission ID: 6b0d2622-d34e-4470-935b-b96550e5ca8d
+  Assigned Date: 2025-11-23 17:43:34
+
+
+[7] BackupRestore-Monitor - 1 permissions
+----------------------------------------
+
+  Permission: BackupRestore-Monitor.Read.All
+  Display Name: Read all monitoring, quota and billing information for the tenant
+  Description: Allows the app to monitor all backup and restore jobs, view quota usage and billing details, without a signed-in user.
+  Permission ID: ecae8511-f2d7-4be4-bdbf-91f244d45986
+  Assigned Date: 2025-11-23 17:43:35
+
+
+[8] Bookings - 2 permissions
+----------------------------------------
+
+  Permission: Bookings.Manage.All
+  Display Name: Manage bookings information
+  Description: Allows an app to read, write and manage bookings appointments, businesses, customers, services, and staff on behalf of the signed-in user.
+  Permission ID: 6b22000a-1228-42ec-88db-b8c00399aecb
+  Assigned Date: 2025-11-23 19:35:11
+
+  Permission: Bookings.ReadWrite.All
+  Display Name: Read and write bookings information
+  Description: Allows an app to read and write bookings appointments, businesses, customers, services, and staff on behalf of the signed-in user. Does not allow create, delete and publish of booking businesses.
+  Permission ID: 0c4b2d20-7919-468d-8668-c54b09d4dee8
+  Assigned Date: 2025-11-23 17:43:37
+
+
+[9] Bookmark - 1 permissions
+----------------------------------------
+
+  Permission: Bookmark.Read.All
+  Display Name: Read all bookmarks
+  Description: Allows an app to read all bookmarks without a signed-in user.
+  Permission ID: be95e614-8ef3-49eb-8464-1c9503433b86
+  Assigned Date: 2025-11-23 17:43:37
+
+
+[10] BusinessScenarioData - 1 permissions
+----------------------------------------
+
+  Permission: BusinessScenarioData.ReadWrite.OwnedBy
+  Display Name: Read and write data for all business scenarios this app creates or owns
+  Description: Allows the app to fully manage the data associated with the business scenarios it owns, without a signed-in user.
+  Permission ID: f2d21f22-5d80-499e-91cc-0a8a4ce16f54
+  Assigned Date: 2025-11-23 17:43:38
+
+
+[11] CallAiInsights - 1 permissions
+----------------------------------------
+
+  Permission: CallAiInsights.Read.All
+  Display Name: Read all AI Insights for calls.
+  Description: Allows the app to read all AI Insights for all calls, without a signed-in user.
+  Permission ID: 792b782b-7822-4b92-8103-77e44f2f706c
+  Assigned Date: 2025-11-23 17:43:38
+
+
+[12] Calls - 1 permissions
+----------------------------------------
+
+  Permission: Calls.JoinGroupCall.All
+  Display Name: Join group calls and meetings as an app
+  Description: Allows the app to join group calls and scheduled meetings in your organization, without a signed-in user.  The app will be joined with the privileges of a directory user to meetings in your organization.
+  Permission ID: f6b49018-60ab-4f81-83bd-22caeabfed2d
+  Assigned Date: 2025-11-23 17:43:41
+
+
+[13] Channel - 1 permissions
+----------------------------------------
+
+  Permission: Channel.Delete.All
+  Display Name: Delete channels
+  Description: Delete channels in any team, without a signed-in user.
+  Permission ID: 6a118a39-1227-45d4-af0c-ea7b40d210bc
+  Assigned Date: 2025-11-23 17:51:41
+
+
+[14] Chat - 1 permissions
+----------------------------------------
+
+  Permission: Chat.UpdatePolicyViolation.All
+  Display Name: Flag chat messages for violating policy
+  Description: Allows the app to update Microsoft Teams 1-to-1 or group chat messages by patching a set of Data Loss Prevention (DLP) policy violation properties to handle the output of DLP processing.
+  Permission ID: 7e847308-e030-4183-9899-5235d7270f58
+  Assigned Date: 2025-11-23 17:51:43
+
+
+[15] Community - 1 permissions
+----------------------------------------
+
+  Permission: Community.ReadWrite.All
+  Display Name: Read and write all Viva Engage communities
+  Description: Allows the app to create Viva Engage communities, read all community properties, update community properties, and delete communities without a signed-in user.
+  Permission ID: 35d59e32-eab5-4553-9345-abb62b4c703c
+  Assigned Date: 2025-11-23 17:43:44
+
+
+[16] Contacts-OnPremisesSyncBehavior - 1 permissions
+----------------------------------------
+
+  Permission: Contacts-OnPremisesSyncBehavior.ReadWrite.All
+  Display Name: Read and update the on-premises sync behavior of contacts
+  Description: Allows the app to update the on-premises sync behavior of all contacts in all mailboxes without a signed-in user.
+  Permission ID: c8948c23-e66b-42db-83fd-770b71ab78d2
+  Assigned Date: 2025-11-23 17:43:45
+
+
+[17] CustomAuthenticationExtension - 1 permissions
+----------------------------------------
+
+  Permission: CustomAuthenticationExtension.Receive.Payload
+  Display Name: Receive custom authentication extension HTTP requests
+  Description: Allows custom authentication extensions associated with the app to receive HTTP requests triggered by an authentication event. The request can include information about a user, client and resource service principals, and other information about the authentication.
+  Permission ID: 214e810f-fda8-4fd7-a475-29461495eb00
+  Assigned Date: 2025-11-23 17:51:44
+
+
+[18] CustomSecAttributeDefinition - 1 permissions
+----------------------------------------
+
+  Permission: CustomSecAttributeDefinition.ReadWrite.All
+  Display Name: Read and write custom security attribute definitions
+  Description: Allows the app to read and write custom security attribute definitions for the tenant without a signed in user.
+  Permission ID: 12338004-21f4-4896-bf5e-b75dfaf1016d
+  Assigned Date: 2025-11-23 17:43:47
+
+
+[19] CustomTags - 1 permissions
+----------------------------------------
+
+  Permission: CustomTags.ReadWrite.All
+  Display Name: Read and write custom tags data
+  Description: Read and write custom tags data, without a signed-in user
+  Permission ID: 2f503208-e509-4e39-974c-8cc16e5785c9
+  Assigned Date: 2025-11-23 17:43:48
+
+
+[20] Device - 1 permissions
+----------------------------------------
+
+  Permission: Device.ReadWrite.All
+  Display Name: Read and write devices
+  Description: Allows the app to read and write all device properties without a signed in user.  Does not allow device creation, device deletion or update of device alternative security identifiers.
+  Permission ID: 1138cb37-bd11-4084-a2b7-9f71582aeddb
+  Assigned Date: 2025-11-23 17:43:49
+
+
+[21] DeviceTemplate - 1 permissions
+----------------------------------------
+
+  Permission: DeviceTemplate.Create
+  Display Name: Create device template
+  Description: Allows the app to create device templates. The app is marked as owner of the created device template. As a member of owners, the app will be allowed to manage devices created from the template.
+  Permission ID: abf6441f-0772-4932-96e7-0191478dd73a
+  Assigned Date: 2025-11-23 19:35:13
+
+
+[22] DirectoryRecommendations - 1 permissions
+----------------------------------------
+
+  Permission: DirectoryRecommendations.ReadWrite.All
+  Display Name: Read and update all Azure AD recommendations
+  Description: Allows the app to read and update all Azure AD recommendations, without a signed-in user.
+  Permission ID: 0e9eea12-4f01-45f6-9b8d-3ea4c8144158
+  Assigned Date: 2025-11-23 17:43:51
+
+
+[23] Domain - 1 permissions
+----------------------------------------
+
+  Permission: Domain.ReadWrite.All
+  Display Name: Read and write domains
+  Description: Allows the app to read and write all domain properties without a signed in user.  Also allows the app to add,  verify and remove domains.
+  Permission ID: 7e05723c-0bb0-42da-be95-ae9f08a6e53c
+  Assigned Date: 2025-11-23 17:43:52
+
+
+[24] ExternalConnection - 1 permissions
+----------------------------------------
+
+  Permission: ExternalConnection.ReadWrite.OwnedBy
+  Display Name: Read and write external connections
+  Description: Allows the app to read and write external connections without a signed-in user. The app can only read and write external connections that it is authorized to, or it can create new external connections.
+  Permission ID: f431331c-49a6-499f-be1c-62af19c34a9d
+  Assigned Date: 2025-11-23 17:43:56
+
+
+[25] ExternalItem - 1 permissions
+----------------------------------------
+
+  Permission: ExternalItem.ReadWrite.OwnedBy
+  Display Name: Read and write external items
+  Description: Allows the app to read and write external items without a signed-in user. The app can only read external items of the connection that it is authorized to.
+  Permission ID: 8116ae0f-55c2-452d-9944-d18420f5b2c8
+  Assigned Date: 2025-11-23 17:43:57
+
+
+[26] FileIngestion - 1 permissions
+----------------------------------------
+
+  Permission: FileIngestion.Ingest
+  Display Name: Ingest SharePoint and OneDrive content to make it available in the search index
+  Description: Allows the app to ingest SharePoint and OneDrive content to make it available in the search index, without a signed-in user.
+  Permission ID: 65891b00-2fd9-4e33-be27-04a53132e3df
+  Assigned Date: 2025-11-23 17:43:57
+
+
+[27] FileIngestionHybridOnboarding - 1 permissions
+----------------------------------------
+
+  Permission: FileIngestionHybridOnboarding.Manage
+  Display Name: Manage onboarding for a Hybrid Cloud tenant
+  Description: Allows the app to manage onboarding for a Hybrid Cloud tenant, without a signed-in user.
+  Permission ID: 766c601b-c009-4438-8290-c8b05fa00c4b
+  Assigned Date: 2025-11-23 17:43:57
+
+
+[28] Files - 1 permissions
+----------------------------------------
+
+  Permission: Files.ReadWrite.AppFolder
+  Display Name: Have full access to the application's folder without a signed in user.
+  Description: Allows the app to read, create, update and delete files in the application's folder without a signed in user.
+  Permission ID: b47b160b-1054-4efd-9ca0-e2f614696086
+  Assigned Date: 2025-11-23 17:43:58
+
+
+[29] Group-Conversation - 1 permissions
+----------------------------------------
+
+  Permission: Group-Conversation.ReadWrite.All
+  Display Name: Read and write all group conversations
+  Description: Allows the app to read and write conversations of the groups this app has access to without a signed-in user.
+  Permission ID: 6679c91b-820a-4900-ab47-e97b197a89c4
+  Assigned Date: 2025-11-23 17:43:59
+
+
+[30] Group-OnPremisesSyncBehavior - 1 permissions
+----------------------------------------
+
+  Permission: Group-OnPremisesSyncBehavior.ReadWrite.All
+  Display Name: Read and update the on-premises sync behavior of groups
+  Description: Allows the app to update the on-premises sync behavior of all groups without a signed-in user.
+  Permission ID: 2d9bd318-b883-40be-9df7-63ec4fcdc424
+  Assigned Date: 2025-11-23 17:43:59
+
+
+[31] IdentityRiskEvent - 1 permissions
+----------------------------------------
+
+  Permission: IdentityRiskEvent.ReadWrite.All
+  Display Name: Read and write all risk detection information
+  Description: Allows the app to read and update identity risk detection information for your organization without a signed-in user. Update operations include confirming risk event detections. 
+  Permission ID: db06fb33-1953-4b7b-a2ac-f1e2c854f7ae
+  Assigned Date: 2025-11-23 17:44:00
+
+
+[32] IdentityUserFlow - 1 permissions
+----------------------------------------
+
+  Permission: IdentityUserFlow.ReadWrite.All
+  Display Name: Read and write all identity user flows
+  Description: Allows the app to read or write your organization's user flows, without a signed-in user.
+  Permission ID: 65319a09-a2be-469d-8782-f6b07debf789
+  Assigned Date: 2025-11-23 19:35:15
+
+
+[33] IndustryData-DataConnector - 1 permissions
+----------------------------------------
+
+  Permission: IndustryData-DataConnector.ReadWrite.All
+  Display Name: Manage data connector definitions
+  Description: Allows the app to read and write data connectors without a signed-in user.
+  Permission ID: eda0971c-482e-4345-b28f-69c309cb8a34
+  Assigned Date: 2025-11-23 17:44:01
+
+
+[34] IndustryData-InboundFlow - 1 permissions
+----------------------------------------
+
+  Permission: IndustryData-InboundFlow.ReadWrite.All
+  Display Name: Manage inbound flow definitions
+  Description: Allows the app to read and write inbound data flows without a signed-in user.
+  Permission ID: e688c61f-d4c6-4d64-a197-3bcf6ba1d6ad
+  Assigned Date: 2025-11-23 17:44:01
+
+
+[35] IndustryData-Run - 1 permissions
+----------------------------------------
+
+  Permission: IndustryData-Run.Read.All
+  Display Name: View current and previous runs
+  Description: Allows the app to read current and previous IndustryData runs without a signed-in user.
+  Permission ID: f6f5d10b-3024-4d1d-b674-aae4df4a1a73
+  Assigned Date: 2025-11-23 17:44:02
+
+
+[36] Mail - 1 permissions
+----------------------------------------
+
+  Permission: Mail.ReadWrite
+  Display Name: Read and write mail in all mailboxes
+  Description: Allows the app to create, read, update, and delete mail in all mailboxes without a signed-in user. Does not include permission to send mail.
+  Permission ID: e2a3a72e-5f79-4c64-b1b1-878b674786c9
+  Assigned Date: 2025-11-23 17:44:07
+
+
+[37] MultiTenantOrganization - 1 permissions
+----------------------------------------
+
+  Permission: MultiTenantOrganization.ReadWrite.All
+  Display Name: Read and write all multi-tenant organization details and tenants
+  Description: Allows the app to read and write all multi-tenant organization details and tenants, without a signed-in user.
+  Permission ID: 920def01-ca61-4d2d-b3df-105b46046a70
+  Assigned Date: 2025-11-23 17:44:08
+
+
+[38] OnlineMeetingAiInsight - 1 permissions
+----------------------------------------
+
+  Permission: OnlineMeetingAiInsight.Read.Chat
+  Display Name: Read all AI Insights for online meetings where the Teams application is installed.
+  Description: Allows the teams-app to read all aiInsights for online meetings where the Teams-app is installed, without a signed-in user.
+  Permission ID: 01892c31-3b66-4bcf-b5f5-bf0a03d5ed9f
+  Assigned Date: 2025-11-23 17:44:10
+
+
+[39] OnlineMeetingArtifact - 1 permissions
+----------------------------------------
+
+  Permission: OnlineMeetingArtifact.Read.All
+  Display Name: Read online meeting artifacts
+  Description: Allows the app to read online meeting artifacts in your organization, without a signed-in user.
+  Permission ID: df01ed3b-eb61-4eca-9965-6b3d789751b2
+  Assigned Date: 2025-11-23 17:44:11
+
+
+[40] OnlineMeetings - 1 permissions
+----------------------------------------
+
+  Permission: OnlineMeetings.ReadWrite.All
+  Display Name: Read and create online meetings
+  Description: Allows the app to read and create online meetings as an application in your organization.
+  Permission ID: b8bb2037-6e08-44ac-a4ea-4674e010e2a4
+  Assigned Date: 2025-11-23 17:44:11
+
+
+[41] OrgContact - 1 permissions
+----------------------------------------
+
+  Permission: OrgContact.Read.All
+  Display Name: Read organizational contacts
+  Description: Allows the app to read all organizational contacts without a signed-in user.  These contacts are managed by the organization and are different from a user's personal contacts.
+  Permission ID: e1a88a34-94c4-4418-be12-c87b00e26bea
+  Assigned Date: 2025-11-23 17:44:13
+
+
+[42] OrgSettings-DynamicsVoice - 1 permissions
+----------------------------------------
+
+  Permission: OrgSettings-DynamicsVoice.ReadWrite.All
+  Display Name: Read and write organization-wide Dynamics customer voice settings
+  Description: Allows the app to read and write organization-wide Dynamics customer voice settings, without a signed-in user.
+  Permission ID: c3f1cc32-8bbd-4ab6-bd33-f270e0d9e041
+  Assigned Date: 2025-11-23 17:44:13
+
+
+[43] OrgSettings-Microsoft365Install - 1 permissions
+----------------------------------------
+
+  Permission: OrgSettings-Microsoft365Install.ReadWrite.All
+  Display Name: Read and write organization-wide Microsoft 365 apps installation settings
+  Description: Allows the app to read and write organization-wide Microsoft 365 apps installation settings, without a signed-in user.
+  Permission ID: 83f7232f-763c-47b2-a097-e35d2cbe1da5
+  Assigned Date: 2025-11-23 17:44:14
+
+
+[44] Place - 1 permissions
+----------------------------------------
+
+  Permission: Place.Read.All
+  Display Name: Read all company places
+  Description: Allows the app to read company places (conference rooms and room lists) for calendar events and other applications, without a signed-in user.
+  Permission ID: 913b9306-0ce1-42b8-9137-6a7df690a760
+  Assigned Date: 2025-11-23 17:44:15
+
+
+[45] PlaceDevice - 1 permissions
+----------------------------------------
+
+  Permission: PlaceDevice.ReadWrite.All
+  Display Name: Read and write all workplace devices
+  Description: Allows the app to read and write all workplace devices, without a signed-in user.
+  Permission ID: 2d510721-5c4e-43cd-bfdb-ac0f8819fb92
+  Assigned Date: 2025-11-23 17:44:15
+
+
+[46] Policy - 10 permissions
+----------------------------------------
+
+  Permission: Policy.Read.AuthenticationMethod
+  Display Name: Read authentication method policies
+  Description: Allows the app to read all authentication method policies for the tenant, without a signed-in user. 
+  Permission ID: 8e3bc81b-d2f3-4b7b-838c-32c88218d2f0
+  Assigned Date: 2025-11-23 19:35:18
+
+  Permission: Policy.Read.ConditionalAccess
+  Display Name: Read your organization's conditional access policies
+  Description: Allows the app to read your organization's conditional access policies, without a signed-in user.
+  Permission ID: 37730810-e9ba-4e46-b07e-8ca78d182097
+  Assigned Date: 2025-11-23 19:35:18
+
+  Permission: Policy.Read.DeviceConfiguration
+  Display Name: Read your organization's device configuration policies
+  Description: Allows the application to read your organization's device configuration policies without a signed-in user.  For example, device registration policy can limit initial provisioning controls using quota restrictions, additional authentication and authorization checks.
+  Permission ID: bdba4817-6ba1-4a7c-8a01-be9bc7c242dd
+  Assigned Date: 2025-11-23 19:35:18
+
+  Permission: Policy.Read.PermissionGrant
+  Display Name: Read consent and permission grant policies
+  Description: Allows the app to read policies related to consent and permission grants for applications, without a signed-in user.
+  Permission ID: 9e640839-a198-48fb-8b9a-013fd6f6cbcd
+  Assigned Date: 2025-11-23 19:35:19
+
+  Permission: Policy.ReadWrite.AuthenticationFlows
+  Display Name: Read and write authentication flow policies
+  Description: Allows the app to read and write all authentication flow policies for the tenant, without a signed-in user.
+  Permission ID: 25f85f3c-f66c-4205-8cd5-de92dd7f0cec
+  Assigned Date: 2025-11-23 17:44:16
+
+  Permission: Policy.ReadWrite.AuthenticationMethod
+  Display Name: Read and write all authentication method policies 
+  Description: Allows the app to read and write all authentication method policies for the tenant, without a signed-in user. 
+  Permission ID: 29c18626-4985-4dcd-85c0-193eef327366
+  Assigned Date: 2025-11-23 17:44:17
+
+  Permission: Policy.ReadWrite.ConditionalAccess
+  Display Name: Read and write your organization's conditional access policies
+  Description: Allows the app to read and write your organization's conditional access policies, without a signed-in user.
+  Permission ID: 01c0a623-fc9b-48e9-b794-0756f8e8f067
+  Assigned Date: 2025-11-23 17:44:17
+
+  Permission: Policy.ReadWrite.FedTokenValidation
+  Display Name: Read and write your organization's federated token validation policy
+  Description: Allows the application to read and update the organization's federated token validation policy without a signed-in user.
+  Permission ID: 90bbca0b-227c-4cdc-8083-1c6cfb95bac6
+  Assigned Date: 2025-11-23 17:44:19
+
+  Permission: Policy.ReadWrite.IdentityProtection
+  Display Name: Read and write your organization’s identity protection policy 
+  Description: Allows the app to read and write your organization’s identity protection policy without a signed-in user.
+  Permission ID: 2dcf8603-09eb-4078-b1ec-d30a1a76b873
+  Assigned Date: 2025-11-23 17:44:19
+
+  Permission: Policy.ReadWrite.PermissionGrant
+  Display Name: Manage consent and permission grant policies
+  Description: Allows the app to manage policies related to consent and permission grants for applications, without a signed-in user.
+  Permission ID: a402ca1c-2696-4531-972d-6e5ee4aa11ea
+  Assigned Date: 2025-11-23 17:44:19
+
+
+[47] Presence - 1 permissions
+----------------------------------------
+
+  Permission: Presence.ReadWrite.All
+  Display Name: Read and write presence information for all users
+  Description: Allows the app to read all presence information and write activity and availability of all users in the directory without a signed-in user. Presence information includes activity, availability, status note, calendar out-of-office message, time zone and location.
+  Permission ID: 83cded22-8297-4ff6-a7fa-e97e9545a259
+  Assigned Date: 2025-11-23 17:44:20
+
+
+[48] ProtectionScopes - 1 permissions
+----------------------------------------
+
+  Permission: ProtectionScopes.Compute.All
+  Display Name: Compute Purview policies at tenant scope
+  Description: Allows the app to identify Purview data protection, compliance and governance policy scopes defined for all users across tenant.
+  Permission ID: e5a76501-dbb0-492c-ab55-5d09e8837263
+  Assigned Date: 2025-11-23 17:44:21
+
+
+[49] PublicKeyInfrastructure - 1 permissions
+----------------------------------------
+
+  Permission: PublicKeyInfrastructure.ReadWrite.All
+  Display Name: Read and write all certificate based authentication configurations
+  Description: Allows the application to read and write certificate-based authentication configuration such as all public key infrastructures (PKI) and certificate authorities (CA) configured for the organization, without a signed-in user.
+  Permission ID: a2b63618-5350-462d-b1b3-ba6eb3684e26
+  Assigned Date: 2025-11-23 17:44:22
+
+
+[50] RealTimeActivityFeed - 1 permissions
+----------------------------------------
+
+  Permission: RealTimeActivityFeed.Read.All
+  Display Name: Access real-time enriched data in a meeting as an app
+  Description: Allows the app to get direct access to real-time enriched data in a meeting, without a signed-in user.
+  Permission ID: abafe00f-ea87-4c63-b8a8-0e7bb0a88144
+  Assigned Date: 2025-11-23 17:44:22
+
+
+[51] RoleAssignmentSchedule - 1 permissions
+----------------------------------------
+
+  Permission: RoleAssignmentSchedule.Remove.Directory
+  Display Name: Delete all active role assignments of your company's directory
+  Description: Delete all active privileged role-based access control (RBAC) assignments of your company's directory, without a signed-in user.
+  Permission ID: d3495511-98b7-4df3-b317-4e35c19f6129
+  Assigned Date: 2025-11-23 19:35:20
+
+
+[52] RoleEligibilitySchedule - 1 permissions
+----------------------------------------
+
+  Permission: RoleEligibilitySchedule.ReadWrite.Directory
+  Display Name: Read, update, and delete all eligible role assignments and schedules for your company's directory
+  Description: Allows the app to read and manage the eligible role-based access control (RBAC) assignments and schedules for your company's directory, without a signed-in user. This includes managing eligible directory role membership, and reading directory role templates, directory roles and eligible memberships.
+  Permission ID: fee28b28-e1f3-4841-818e-2704dc62245f
+  Assigned Date: 2025-11-23 17:44:25
+
+
+[53] RoleManagement - 2 permissions
+----------------------------------------
+
+  Permission: RoleManagement.ReadWrite.Defender
+  Display Name: Read M365 Defender RBAC configuration
+  Description: Allows the app to read the role-based access control (RBAC) settings for your company's directory, without a signed-in user.
+  Permission ID: 8b7e8c0a-7e9d-4049-97ec-04b5e1bcaf05
+  Assigned Date: 2025-11-23 17:44:25
+
+  Permission: RoleManagement.ReadWrite.Exchange
+  Display Name: Read and write Exchange Online RBAC configuration
+  Description: Allows the app to read and manage the role-based access control (RBAC) settings for your organization's Exchange Online service, without a signed-in user. This includes reading, creating, updating, and deleting Exchange management role definitions, role groups, role group membership, role assignments, management scopes, and role assignment policies.
+  Permission ID: 025d3225-3f02-4882-b4c0-cd5b541a4e80
+  Assigned Date: 2025-11-23 17:44:25
+
+
+[54] RoleManagementAlert - 1 permissions
+----------------------------------------
+
+  Permission: RoleManagementAlert.ReadWrite.Directory
+  Display Name: Read all alert data, configure alerts, and take actions on all alerts for your company's directory
+  Description: Allows the app to read and manage all role-based access control (RBAC) alerts for your company's directory, without a signed-in user. This includes managing alert settings, initiating alert scans, dismissing alerts, remediating alert incidents, and reading alert statuses, alert definitions, alert configurations and incidents that lead to an alert.
+  Permission ID: 11059518-d6a6-4851-98ed-509268489c4a
+  Assigned Date: 2025-11-23 17:44:26
+
+
+[55] RoleManagementPolicy - 1 permissions
+----------------------------------------
+
+  Permission: RoleManagementPolicy.ReadWrite.Directory
+  Display Name: Read, update, and delete all policies for privileged role assignments of your company's directory
+  Description: Allows the app to read, update, and delete policies for privileged role-based access control (RBAC) assignments of your company's directory, without a signed-in user.
+  Permission ID: 31e08e0a-d3f7-4ca2-ac39-7343fb83e8ad
+  Assigned Date: 2025-11-23 17:44:26
+
+
+[56] Schedule - 1 permissions
+----------------------------------------
+
+  Permission: Schedule.ReadWrite.All
+  Display Name: Read and write all schedule items
+  Description: Allows the app to manage all schedules, schedule groups, shifts and associated entities in the Teams or Shifts application without a signed-in user.
+  Permission ID: b7760610-0545-4e8a-9ec3-cce9e63db01c
+  Assigned Date: 2025-11-23 17:44:26
+
+
+[57] SchedulePermissions - 1 permissions
+----------------------------------------
+
+  Permission: SchedulePermissions.ReadWrite.All
+  Display Name: Read/Write schedule permissions for a role
+  Description: Allows the app to read/write schedule permissions for a specific role in Shifts application without a signed-in user.
+  Permission ID: 7239b71d-b402-4150-b13d-78ecfe8df441
+  Assigned Date: 2025-11-23 17:44:27
+
+
+[58] SecurityIdentitiesUserActions - 1 permissions
+----------------------------------------
+
+  Permission: SecurityIdentitiesUserActions.ReadWrite.All
+  Display Name: Read and perform all identity security available user actions
+  Description: Allows the app to read and write identity security available user actions without a signed-in user.
+  Permission ID: b4146a3a-dd4f-4af4-8d91-7cc0eef3d041
+  Assigned Date: 2025-11-23 17:44:30
+
+
+[59] ServiceActivity-Exchange - 1 permissions
+----------------------------------------
+
+  Permission: ServiceActivity-Exchange.Read.All
+  Display Name: Read all Exchange service activity
+  Description: Allows the app to read all Exchange service activity, without a signed-in user.
+  Permission ID: 2b655018-450a-4845-81e7-d603b1ebffdb
+  Assigned Date: 2025-11-23 17:44:31
+
+
+[60] ServiceActivity-Microsoft365Web - 1 permissions
+----------------------------------------
+
+  Permission: ServiceActivity-Microsoft365Web.Read.All
+  Display Name: Read all Microsoft 365 Web service activity
+  Description: Allows the app to read all Microsoft 365 Web service activity, without a signed-in user.
+  Permission ID: c766cb16-acc4-4663-ba09-6eedef5876c5
+  Assigned Date: 2025-11-23 17:44:31
+
+
+[61] ServiceActivity-Teams - 1 permissions
+----------------------------------------
+
+  Permission: ServiceActivity-Teams.Read.All
+  Display Name: Read all Teams service activity
+  Description: Allows the app to read all Teams service activity, without a signed-in user.
+  Permission ID: 4dfee10b-fa4a-41b5-b34d-ccf54cc0c394
+  Assigned Date: 2025-11-23 17:44:31
+
+
+[62] SharePointTenantSettings - 1 permissions
+----------------------------------------
+
+  Permission: SharePointTenantSettings.ReadWrite.All
+  Display Name: Read and change SharePoint and OneDrive tenant settings
+  Description: Allows the application to read and change the tenant-level settings of SharePoint and OneDrive, without a signed-in user.
+  Permission ID: 19b94e34-907c-4f43-bde9-38b1909ed408
+  Assigned Date: 2025-11-23 17:44:33
+
+
+[63] Sites - 1 permissions
+----------------------------------------
+
+  Permission: Sites.Selected
+  Display Name: Access selected site collections
+  Description: Allow the application to access a subset of site collections without a signed in user.  The specific site collections and the permissions granted will be configured in SharePoint Online.
+  Permission ID: 883ea226-0bf2-4a8f-9f9d-92c9162a727d
+  Assigned Date: 2025-11-23 19:35:29
+
+
+[64] SynchronizationData-User - 1 permissions
+----------------------------------------
+
+  Permission: SynchronizationData-User.Upload
+  Display Name: Upload user data to the identity synchronization service
+  Description: Allows the application to upload bulk user data to the identity synchronization service, without a signed-in user.
+  Permission ID: db31e92a-b9ea-4d87-bf6a-75a37a9ca35a
+  Assigned Date: 2025-11-23 17:44:35
+
+
+[65] TeamMember - 1 permissions
+----------------------------------------
+
+  Permission: TeamMember.ReadWriteNonOwnerRole.All
+  Display Name: Add and remove members with non-owner role for all teams
+  Description: Add and remove members from all teams, without a signed-in user. Does not allow adding or removing a member with the owner role. Additionally, does not allow the app to elevate an existing member to the owner role.
+  Permission ID: 4437522e-9a86-4a41-a7da-e380edd4a97d
+  Assigned Date: 2025-11-23 17:44:36
+
+
+[66] TeamsActivity - 1 permissions
+----------------------------------------
+
+  Permission: TeamsActivity.Read.All
+  Display Name: Read all users' teamwork activity feed
+  Description: Allows the app to read all users' teamwork activity feed, without a signed-in user.
+  Permission ID: 70dec828-f620-4914-aa83-a29117306807
+  Assigned Date: 2025-11-23 17:44:36
+
+
+[67] TeamsAppInstallation - 4 permissions
+----------------------------------------
+
+  Permission: TeamsAppInstallation.ManageSelectedForUser.All
+  Display Name: Manage installation and permission grants of selected Teams apps for all user accounts
+  Description: Allows the app to read, install, upgrade, and uninstall selected Teams apps in any user account, without a signed-in user. Gives the ability to manage permission grants for accessing those specific users' data.
+  Permission ID: e97a9235-5b3c-43c4-b37d-6786a173fae4
+  Assigned Date: 2025-11-23 19:35:30
+
+  Permission: TeamsAppInstallation.ReadForChat.All
+  Display Name: Read installed Teams apps for all chats
+  Description: Allows the app to read the Teams apps that are installed in any chat, without a signed-in user. Does not give the ability to read application-specific settings.
+  Permission ID: cc7e7635-2586-41d6-adaa-a8d3bcad5ee5
+  Assigned Date: 2025-11-23 19:35:31
+
+  Permission: TeamsAppInstallation.ReadForUser.All
+  Display Name: Read installed Teams apps for all users
+  Description: Allows the app to read the Teams apps that are installed for any user, without a signed-in user. Does not give the ability to read application-specific settings.
+  Permission ID: 9ce09611-f4f7-4abd-a629-a05450422a97
+  Assigned Date: 2025-11-23 19:35:31
+
+  Permission: TeamsAppInstallation.ReadWriteAndConsentSelfForChat.All
+  Display Name: Allow the Teams app to manage itself and its permission grants for all chats
+  Description: Allows a Teams app to read, install, upgrade, and uninstall itself for any chat, without a signed-in user, and manage its permission grants for accessing those specific chats' data.
+  Permission ID: ba1ba90b-2d8f-487e-9f16-80728d85bb5c
+  Assigned Date: 2025-11-23 17:44:37
+
+
+[68] TeamSettings - 1 permissions
+----------------------------------------
+
+  Permission: TeamSettings.ReadWrite.All
+  Display Name: Read and change all teams' settings
+  Description: Read and change all teams' settings, without a signed-in user.
+  Permission ID: bdd80a03-d9bc-451d-b7c4-ce7c63fe3c8f
+  Assigned Date: 2025-11-23 17:44:41
+
+
+[69] TeamsResourceAccount - 1 permissions
+----------------------------------------
+
+  Permission: TeamsResourceAccount.Read.All
+  Display Name: Read Teams resource accounts
+  Description: Allows the app to read your tenant's resource accounts without a signed-in user.
+  Permission ID: b55aa226-33a1-4396-bcf4-edce5e7a31c1
+  Assigned Date: 2025-11-23 17:44:41
+
+
+[70] TeamsTab - 2 permissions
+----------------------------------------
+
+  Permission: TeamsTab.Read.All
+  Display Name: Read tabs in Microsoft Teams.
+  Description: Read the names and settings of tabs inside any team in Microsoft Teams, without a signed-in user. This does not give access to the content inside the tabs.
+  Permission ID: 46890524-499a-4bb2-ad64-1476b4f3e1cf
+  Assigned Date: 2025-11-23 19:35:32
+
+  Permission: TeamsTab.ReadWriteForChat.All
+  Display Name: Allow the Teams app to manage all tabs for all chats
+  Description: Allows a Teams app to read, install, upgrade, and uninstall all tabs for any chat, without a signed-in user.
+  Permission ID: fd9ce730-a250-40dc-bd44-8dc8d20f39ea
+  Assigned Date: 2025-11-23 17:44:42
+
+
+[71] TeamsTelephoneNumber - 2 permissions
+----------------------------------------
+
+  Permission: TeamsTelephoneNumber.Read.All
+  Display Name: Read Tenant-Acquired Telephone Number Details
+  Description: Allows the app to read your tenant's acquired telephone number details, without a signed-in user. Acquired telephone numbers may include attributes related to assigned object, emergency location, network site, etc.
+  Permission ID: 39b17d18-680c-41f4-b9c2-5f30629e7cb6
+  Assigned Date: 2025-11-23 19:35:32
+
+  Permission: TeamsTelephoneNumber.ReadWrite.All
+  Display Name: Read and Modify Tenant-Acquired Telephone Number Details
+  Description: Allows the app to read your tenant's acquired telephone number details, without a signed-in user. Acquired telephone numbers may include attributes related to assigned object, emergency location, network site, etc.
+  Permission ID: 0a42382f-155c-4eb1-9bdc-21548ccaa387
+  Assigned Date: 2025-11-23 17:44:43
+
+
+[72] Teamwork - 1 permissions
+----------------------------------------
+
+  Permission: Teamwork.Migrate.All
+  Display Name: Create chat and channel messages with anyone's identity and with any timestamp
+  Description: Allows the app to create chat and channel messages, without a signed in user. The app specifies which user appears as the sender, and can backdate the message to appear as if it was sent long ago. The messages can be sent to any chat or channel in the organization.
+  Permission ID: dfb0dd15-61de-45b2-be36-d6a69fba3c79
+  Assigned Date: 2025-11-23 19:35:33
+
+
+[73] User - 3 permissions
+----------------------------------------
+
+  Permission: User.ReadBasic.All
+  Display Name: Read all users' basic profiles
+  Description: Allows the app to read a basic set of profile properties of other users in your organization without a signed-in user. Includes display name, first and last name, email address, open extensions, and photo.
+  Permission ID: 97235f07-e226-4f63-ace3-39588e11d3a1
+  Assigned Date: 2025-11-23 19:35:34
+
+  Permission: User.ReadWrite.All
+  Display Name: Read and write all users' full profiles
+  Description: Allows the app to read and update user profiles without a signed in user.
+  Permission ID: 741f803b-c850-494e-b5df-cde7c675a1ca
+  Assigned Date: 2025-11-23 17:44:47
+
+  Permission: User.RevokeSessions.All
+  Display Name: Revoke all sign in sessions for a user
+  Description: Allow the app to revoke all sign in sessions for a user, without a signed-in user.
+  Permission ID: 77f3a031-c388-4f99-b373-dc68676a979e
+  Assigned Date: 2025-11-23 19:35:34
+
+
+[74] User-Mail - 1 permissions
+----------------------------------------
+
+  Permission: User-Mail.ReadWrite.All
+  Display Name: Read and write all secondary mail addresses for users
+  Description: Allows the app to read and write secondary mail addresses for all users, without a signed-in user.
+  Permission ID: 280d0935-0796-47d1-8d26-273470a3f17a
+  Assigned Date: 2025-11-23 17:44:46
+
+
+[75] User-OnPremisesSyncBehavior - 1 permissions
+----------------------------------------
+
+  Permission: User-OnPremisesSyncBehavior.ReadWrite.All
+  Display Name: Read and update the on-premises sync behavior of users
+  Description: Allows the app to update the on-premises sync behavior of all users without a signed-in user.
+  Permission ID: a94a502d-0281-4d15-8cd2-682ac9362c4c
+  Assigned Date: 2025-11-23 17:44:46
+
+
+[76] User-Phone - 1 permissions
+----------------------------------------
+
+  Permission: User-Phone.ReadWrite.All
+  Display Name: Read and write all user mobile phone and business phones
+  Description: Allows the app to read and write the mobile phone and business phones for all users, without a signed-in user.
+  Permission ID: 86ceff06-c822-49ff-989a-d912845ffe69
+  Assigned Date: 2025-11-23 17:44:47
+
+
+[77] UserAuthMethod-External - 1 permissions
+----------------------------------------
+
+  Permission: UserAuthMethod-External.ReadWrite.All
+  Display Name: Read and write all users' external authentication methods
+  Description: Allows the application to read and write external authentication methods of all users in your organization, without a signed-in user. This does not allow the app to see secret information like passwords, or to sign-in or otherwise use the authentication methods.
+  Permission ID: c7a22c2e-5b01-4129-8159-6c8be2c78f16
+  Assigned Date: 2025-11-23 17:44:48
+
+
+[78] VirtualAppointmentNotification - 1 permissions
+----------------------------------------
+
+  Permission: VirtualAppointmentNotification.Send
+  Display Name: Send notification regarding virtual appointments as any user
+  Description: Allows the application to send notification regarding virtual appointments as any user, without a signed-in user. The app must also be authorized to access an individual user's data by the online meetings application access policy.
+  Permission ID: 97e45b36-1250-48e4-bd70-2df6dab7e94a
+  Assigned Date: 2025-11-23 17:44:52
+
+
+[79] WorkforceIntegration - 1 permissions
+----------------------------------------
+
+  Permission: WorkforceIntegration.ReadWrite.All
+  Display Name: Read and write workforce integrations
+  Description: Allows the app to manage workforce integrations to synchronize data from Microsoft Teams Shifts, without a signed-in user.
+  Permission ID: 202bf709-e8e6-478e-bcfd-5d63c50b68e3
+  Assigned Date: 2025-11-23 17:44:53
+
+
+==========================================
+SIMPLE LIST (alphabetical):
+==========================================
+AccessReview.ReadWrite.Membership
+Acronym.Read.All
+AgentCardManifest.ReadWrite.All
+APIConnectors.ReadWrite.All
+Application-RemoteDesktopConfig.ReadWrite.All
+AuditLogsQuery-Exchange.Read.All
+BackupRestore-Monitor.Read.All
+Bookings.Manage.All
+Bookings.ReadWrite.All
+Bookmark.Read.All
+BusinessScenarioData.ReadWrite.OwnedBy
+CallAiInsights.Read.All
+Calls.JoinGroupCall.All
+Channel.Delete.All
+Chat.UpdatePolicyViolation.All
+Community.ReadWrite.All
+Contacts-OnPremisesSyncBehavior.ReadWrite.All
+CustomAuthenticationExtension.Receive.Payload
+CustomSecAttributeDefinition.ReadWrite.All
+CustomTags.ReadWrite.All
+Device.ReadWrite.All
+DeviceTemplate.Create
+DirectoryRecommendations.ReadWrite.All
+Domain.ReadWrite.All
+ExternalConnection.ReadWrite.OwnedBy
+ExternalItem.ReadWrite.OwnedBy
+FileIngestion.Ingest
+FileIngestionHybridOnboarding.Manage
+Files.ReadWrite.AppFolder
+Group-Conversation.ReadWrite.All
+Group-OnPremisesSyncBehavior.ReadWrite.All
+IdentityRiskEvent.ReadWrite.All
+IdentityUserFlow.ReadWrite.All
+IndustryData-DataConnector.ReadWrite.All
+IndustryData-InboundFlow.ReadWrite.All
+IndustryData-Run.Read.All
+Mail.ReadWrite
+MultiTenantOrganization.ReadWrite.All
+OnlineMeetingAiInsight.Read.Chat
+OnlineMeetingArtifact.Read.All
+OnlineMeetings.ReadWrite.All
+OrgContact.Read.All
+OrgSettings-DynamicsVoice.ReadWrite.All
+OrgSettings-Microsoft365Install.ReadWrite.All
+Place.Read.All
+PlaceDevice.ReadWrite.All
+Policy.Read.AuthenticationMethod
+Policy.Read.ConditionalAccess
+Policy.Read.DeviceConfiguration
+Policy.Read.PermissionGrant
+Policy.ReadWrite.AuthenticationFlows
+Policy.ReadWrite.AuthenticationMethod
+Policy.ReadWrite.ConditionalAccess
+Policy.ReadWrite.FedTokenValidation
+Policy.ReadWrite.IdentityProtection
+Policy.ReadWrite.PermissionGrant
+Presence.ReadWrite.All
+ProtectionScopes.Compute.All
+PublicKeyInfrastructure.ReadWrite.All
+RealTimeActivityFeed.Read.All
+RoleAssignmentSchedule.Remove.Directory
+RoleEligibilitySchedule.ReadWrite.Directory
+RoleManagement.ReadWrite.Defender
+RoleManagement.ReadWrite.Exchange
+RoleManagementAlert.ReadWrite.Directory
+RoleManagementPolicy.ReadWrite.Directory
+Schedule.ReadWrite.All
+SchedulePermissions.ReadWrite.All
+SecurityIdentitiesUserActions.ReadWrite.All
+ServiceActivity-Exchange.Read.All
+ServiceActivity-Microsoft365Web.Read.All
+ServiceActivity-Teams.Read.All
+SharePointTenantSettings.ReadWrite.All
+Sites.Selected
+SynchronizationData-User.Upload
+TeamMember.ReadWriteNonOwnerRole.All
+TeamsActivity.Read.All
+TeamsAppInstallation.ManageSelectedForUser.All
+TeamsAppInstallation.ReadForChat.All
+TeamsAppInstallation.ReadForUser.All
+TeamsAppInstallation.ReadWriteAndConsentSelfForChat.All
+TeamSettings.ReadWrite.All
+TeamsResourceAccount.Read.All
+TeamsTab.Read.All
+TeamsTab.ReadWriteForChat.All
+TeamsTelephoneNumber.Read.All
+TeamsTelephoneNumber.ReadWrite.All
+Teamwork.Migrate.All
+User-Mail.ReadWrite.All
+User-OnPremisesSyncBehavior.ReadWrite.All
+User-Phone.ReadWrite.All
+User.ReadBasic.All
+User.ReadWrite.All
+User.RevokeSessions.All
+UserAuthMethod-External.ReadWrite.All
+VirtualAppointmentNotification.Send
+WorkforceIntegration.ReadWrite.All
+
+==========================================
+SUMMARY BY PERMISSION TYPE:
+==========================================
+
+  ReadWrite.All (Full control with org-wide scope): 36
+  Read.All (Read-only with org-wide scope): 17
+  ReadWrite (Full control, limited scope): 17
+  Read (Read-only, limited scope): 5
+  Write.All (Write-only with org-wide scope): 0
+  Other (Send, Manage, etc.): 16
+
+  TOTAL: 97
+
+==========================================
+COVERAGE ANALYSIS:
+==========================================
+
+Categories with Permissions: 79
+
+Top 10 Categories by Permission Count:
+  Policy: 10 permissions
+  TeamsAppInstallation: 4 permissions
+  User: 3 permissions
+  RoleManagement: 2 permissions
+  Bookings: 2 permissions
+  TeamsTelephoneNumber: 2 permissions
+  TeamsTab: 2 permissions
+  AccessReview: 1 permissions
+  RoleManagementPolicy: 1 permissions
+  RoleManagementAlert: 1 permissions
+
+==========================================
+END OF REPORT
+==========================================
