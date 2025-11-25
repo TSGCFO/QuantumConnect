@@ -10,6 +10,8 @@ import {
   uniqueIndex,
   integer,
   boolean,
+  date,
+  bigint,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -368,3 +370,480 @@ export const insertSyncJobSchema = createInsertSchema(syncJobs).omit({
 });
 export type InsertSyncJob = z.infer<typeof insertSyncJobSchema>;
 export type SyncJob = typeof syncJobs.$inferSelect;
+
+// Microsoft 365 Calendar - Recurrence patterns for recurring events
+export const msRecurrencePatterns = pgTable("ms_recurrence_patterns", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  type: varchar("type").notNull(), // daily, weekly, absoluteMonthly, relativeMonthly, absoluteYearly, relativeYearly
+  interval: integer("interval").notNull(), // repeat every N days/weeks/months
+  daysOfWeek: text("days_of_week").array(), // sunday, monday, etc.
+  dayOfMonth: integer("day_of_month"), // for monthly/yearly
+  firstDayOfWeek: varchar("first_day_of_week").default("sunday"),
+  month: integer("month"), // for yearly (1-12)
+  rangeType: varchar("range_type").notNull(), // endDate, noEnd, numbered
+  rangeStartDate: date("range_start_date").notNull(),
+  rangeEndDate: date("range_end_date"),
+  numberOfOccurrences: integer("number_of_occurrences"),
+});
+
+export const msRecurrencePatternsRelations = relations(
+  msRecurrencePatterns,
+  ({ many }) => ({
+    events: many(msCalendarEvents),
+  }),
+);
+
+export const insertMsRecurrencePatternSchema = createInsertSchema(
+  msRecurrencePatterns,
+).omit({
+  id: true,
+});
+export type InsertMsRecurrencePattern = z.infer<
+  typeof insertMsRecurrencePatternSchema
+>;
+export type MsRecurrencePattern = typeof msRecurrencePatterns.$inferSelect;
+
+// Microsoft 365 Calendar - Calendar events from Outlook
+export const msCalendarEvents = pgTable("ms_calendar_events", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .notNull(),
+  msEventId: varchar("ms_event_id").unique().notNull(),
+  subject: text("subject"),
+  bodyPreview: text("body_preview"),
+  bodyContent: text("body_content"),
+  start: timestamp("start", { withTimezone: true }).notNull(),
+  end: timestamp("end", { withTimezone: true }).notNull(),
+  isAllDay: boolean("is_all_day").default(false),
+  location: text("location"),
+  onlineMeetingUrl: text("online_meeting_url"),
+  isOnlineMeeting: boolean("is_online_meeting").default(false),
+  organizer: jsonb("organizer"), // {email, name}
+  responseStatus: varchar("response_status"), // none, organizer, tentativelyAccepted, accepted, declined
+  sensitivity: varchar("sensitivity"), // normal, personal, private, confidential
+  showAs: varchar("show_as"), // free, tentative, busy, oof, workingElsewhere
+  importance: varchar("importance"), // low, normal, high
+  isRecurring: boolean("is_recurring").default(false),
+  recurrencePatternId: varchar("recurrence_pattern_id").references(
+    () => msRecurrencePatterns.id,
+  ),
+  seriesMasterId: varchar("series_master_id"), // for recurring event instances
+  isCancelled: boolean("is_cancelled").default(false),
+  categories: text("categories").array(),
+  webLink: text("web_link"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const msCalendarEventsRelations = relations(
+  msCalendarEvents,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [msCalendarEvents.userId],
+      references: [users.id],
+    }),
+    recurrencePattern: one(msRecurrencePatterns, {
+      fields: [msCalendarEvents.recurrencePatternId],
+      references: [msRecurrencePatterns.id],
+    }),
+    attendees: many(msEventAttendees),
+  }),
+);
+
+export const insertMsCalendarEventSchema = createInsertSchema(
+  msCalendarEvents,
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMsCalendarEvent = z.infer<typeof insertMsCalendarEventSchema>;
+export type MsCalendarEvent = typeof msCalendarEvents.$inferSelect;
+
+// Microsoft 365 Calendar - Attendees for calendar events
+export const msEventAttendees = pgTable("ms_event_attendees", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id")
+    .references(() => msCalendarEvents.id)
+    .notNull(),
+  email: varchar("email").notNull(),
+  name: text("name"),
+  type: varchar("type").notNull(), // required, optional, resource
+  responseStatus: varchar("response_status"), // none, organizer, tentativelyAccepted, accepted, declined
+  responseTime: timestamp("response_time"),
+});
+
+export const msEventAttendeesRelations = relations(
+  msEventAttendees,
+  ({ one }) => ({
+    event: one(msCalendarEvents, {
+      fields: [msEventAttendees.eventId],
+      references: [msCalendarEvents.id],
+    }),
+  }),
+);
+
+export const insertMsEventAttendeeSchema = createInsertSchema(
+  msEventAttendees,
+).omit({
+  id: true,
+});
+export type InsertMsEventAttendee = z.infer<typeof insertMsEventAttendeeSchema>;
+export type MsEventAttendee = typeof msEventAttendees.$inferSelect;
+
+// Microsoft To Do - Task lists
+export const msTodoLists = pgTable("ms_todo_lists", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .notNull(),
+  msListId: varchar("ms_list_id").unique().notNull(),
+  displayName: text("display_name").notNull(),
+  isOwner: boolean("is_owner").default(true),
+  isShared: boolean("is_shared").default(false),
+  wellknownListName: varchar("wellknown_list_name"), // none, defaultList, flaggedEmails, unknownFutureValue
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const msTodoListsRelations = relations(msTodoLists, ({ one, many }) => ({
+  user: one(users, {
+    fields: [msTodoLists.userId],
+    references: [users.id],
+  }),
+  tasks: many(msTodoTasks),
+}));
+
+export const insertMsTodoListSchema = createInsertSchema(msTodoLists).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMsTodoList = z.infer<typeof insertMsTodoListSchema>;
+export type MsTodoList = typeof msTodoLists.$inferSelect;
+
+// Microsoft To Do - Tasks
+export const msTodoTasks = pgTable("ms_todo_tasks", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  listId: varchar("list_id")
+    .references(() => msTodoLists.id)
+    .notNull(),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .notNull(),
+  msTaskId: varchar("ms_task_id").unique().notNull(),
+  title: text("title").notNull(),
+  body: text("body"),
+  importance: varchar("importance").notNull().default("normal"), // low, normal, high
+  status: varchar("status").notNull().default("notStarted"), // notStarted, inProgress, completed, waitingOnOthers, deferred
+  isReminderOn: boolean("is_reminder_on").default(false),
+  reminderDateTime: timestamp("reminder_date_time", { withTimezone: true }),
+  dueDateTime: timestamp("due_date_time", { withTimezone: true }),
+  completedDateTime: timestamp("completed_date_time", { withTimezone: true }),
+  startDateTime: timestamp("start_date_time", { withTimezone: true }),
+  categories: text("categories").array(),
+  hasAttachments: boolean("has_attachments").default(false),
+  linkedResources: jsonb("linked_resources"), // array of {webUrl, applicationName, displayName}
+  recurrence: jsonb("recurrence"), // recurrence pattern
+  checklistItems: jsonb("checklist_items"), // array of {displayName, isChecked}
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const msTodoTasksRelations = relations(msTodoTasks, ({ one }) => ({
+  list: one(msTodoLists, {
+    fields: [msTodoTasks.listId],
+    references: [msTodoLists.id],
+  }),
+  user: one(users, {
+    fields: [msTodoTasks.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertMsTodoTaskSchema = createInsertSchema(msTodoTasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMsTodoTask = z.infer<typeof insertMsTodoTaskSchema>;
+export type MsTodoTask = typeof msTodoTasks.$inferSelect;
+
+// Microsoft Teams - User presence/availability snapshots
+export const msPresenceSnapshots = pgTable(
+  "ms_presence_snapshots",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    availability: varchar("availability").notNull(), // Available, AvailableIdle, Away, BeRightBack, Busy, BusyIdle, DoNotDisturb, Offline, PresenceUnknown
+    activity: varchar("activity").notNull(), // Available, Away, BeRightBack, Busy, DoNotDisturb, InACall, InAConferenceCall, Inactive, InAMeeting, Offline, OffWork, OutOfOffice, PresenceUnknown, Presenting, UrgentInterruptionsOnly
+    statusMessage: text("status_message"),
+    outOfOfficeMessage: text("out_of_office_message"),
+    isOutOfOffice: boolean("is_out_of_office").default(false),
+    recordedAt: timestamp("recorded_at").notNull(),
+    expiresAt: timestamp("expires_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("ms_presence_snapshots_user_recorded_idx").on(
+      table.userId,
+      table.recordedAt,
+    ),
+  ],
+);
+
+export const msPresenceSnapshotsRelations = relations(
+  msPresenceSnapshots,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [msPresenceSnapshots.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const insertMsPresenceSnapshotSchema = createInsertSchema(
+  msPresenceSnapshots,
+).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMsPresenceSnapshot = z.infer<
+  typeof insertMsPresenceSnapshotSchema
+>;
+export type MsPresenceSnapshot = typeof msPresenceSnapshots.$inferSelect;
+
+// Microsoft Teams Chat - Chat threads/conversations
+export const msChatThreads = pgTable("ms_chat_threads", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  msChatId: varchar("ms_chat_id").unique().notNull(),
+  chatType: varchar("chat_type").notNull(), // oneOnOne, group, meeting
+  topic: text("topic"),
+  createdDateTime: timestamp("created_date_time").notNull(),
+  lastUpdatedDateTime: timestamp("last_updated_date_time").notNull(),
+  tenantId: varchar("tenant_id").notNull(),
+  webUrl: text("web_url"),
+  onlineMeetingInfo: jsonb("online_meeting_info"), // {meetingId, joinWebUrl}
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const msChatThreadsRelations = relations(msChatThreads, ({ many }) => ({
+  participants: many(msChatParticipants),
+  messages: many(msChatMessages),
+}));
+
+export const insertMsChatThreadSchema = createInsertSchema(msChatThreads).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMsChatThread = z.infer<typeof insertMsChatThreadSchema>;
+export type MsChatThread = typeof msChatThreads.$inferSelect;
+
+// Microsoft Teams Chat - Participants in chat threads
+export const msChatParticipants = pgTable("ms_chat_participants", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  chatId: varchar("chat_id")
+    .references(() => msChatThreads.id)
+    .notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  msUserId: varchar("ms_user_id").notNull(),
+  displayName: text("display_name").notNull(),
+  email: varchar("email").notNull(),
+  roles: text("roles").array(), // owner, guest, etc.
+  addedDateTime: timestamp("added_date_time").notNull(),
+});
+
+export const msChatParticipantsRelations = relations(
+  msChatParticipants,
+  ({ one }) => ({
+    chat: one(msChatThreads, {
+      fields: [msChatParticipants.chatId],
+      references: [msChatThreads.id],
+    }),
+    user: one(users, {
+      fields: [msChatParticipants.userId],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const insertMsChatParticipantSchema = createInsertSchema(
+  msChatParticipants,
+).omit({
+  id: true,
+});
+export type InsertMsChatParticipant = z.infer<
+  typeof insertMsChatParticipantSchema
+>;
+export type MsChatParticipant = typeof msChatParticipants.$inferSelect;
+
+// Microsoft Teams Chat - Chat messages
+export const msChatMessages = pgTable("ms_chat_messages", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  chatId: varchar("chat_id")
+    .references(() => msChatThreads.id)
+    .notNull(),
+  msMessageId: varchar("ms_message_id").unique().notNull(),
+  senderId: varchar("sender_id").references(() => users.id),
+  senderMsId: varchar("sender_ms_id").notNull(),
+  senderDisplayName: text("sender_display_name").notNull(),
+  messageType: varchar("message_type").notNull(), // message, chatEvent, typing, unknownFutureValue
+  body: text("body").notNull(),
+  bodyContentType: varchar("body_content_type").notNull(), // text, html
+  importance: varchar("importance").notNull().default("normal"), // normal, high, urgent
+  mentions: jsonb("mentions"), // array of {id, mentionText, mentioned: {id, displayName}}
+  attachments: jsonb("attachments"), // array of {id, contentType, contentUrl, name}
+  reactions: jsonb("reactions"), // array of {reactionType, createdDateTime, user}
+  sentDateTime: timestamp("sent_date_time").notNull(),
+  lastModifiedDateTime: timestamp("last_modified_date_time"),
+  lastEditedDateTime: timestamp("last_edited_date_time"),
+  deletedDateTime: timestamp("deleted_date_time"),
+  isDeleted: boolean("is_deleted").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const msChatMessagesRelations = relations(msChatMessages, ({ one }) => ({
+  chat: one(msChatThreads, {
+    fields: [msChatMessages.chatId],
+    references: [msChatThreads.id],
+  }),
+  sender: one(users, {
+    fields: [msChatMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export const insertMsChatMessageSchema = createInsertSchema(
+  msChatMessages,
+).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertMsChatMessage = z.infer<typeof insertMsChatMessageSchema>;
+export type MsChatMessage = typeof msChatMessages.$inferSelect;
+
+// Microsoft Outlook Contacts
+export const msContacts = pgTable("ms_contacts", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .notNull(),
+  msContactId: varchar("ms_contact_id").unique().notNull(),
+  displayName: text("display_name").notNull(),
+  givenName: text("given_name"),
+  surname: text("surname"),
+  nickname: text("nickname"),
+  title: text("title"),
+  jobTitle: text("job_title"),
+  companyName: text("company_name"),
+  department: text("department"),
+  emailAddresses: jsonb("email_addresses").notNull(),
+  phoneNumbers: jsonb("phone_numbers"),
+  addresses: jsonb("addresses"),
+  birthday: date("birthday"),
+  personalNotes: text("personal_notes"),
+  imAddresses: text("im_addresses").array(),
+  categories: text("categories").array().notNull(),
+  isFavorite: boolean("is_favorite").default(false),
+  parentFolderId: varchar("parent_folder_id"),
+  photo: text("photo"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const msContactsRelations = relations(msContacts, ({ one }) => ({
+  user: one(users, {
+    fields: [msContacts.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertMsContactSchema = createInsertSchema(msContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMsContact = z.infer<typeof insertMsContactSchema>;
+export type MsContact = typeof msContacts.$inferSelect;
+
+// OneDrive/SharePoint file metadata
+export const msDriveItems = pgTable(
+  "ms_drive_items",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    msDriveItemId: varchar("ms_drive_item_id").unique().notNull(),
+    driveId: varchar("drive_id").notNull(),
+    name: text("name").notNull(),
+    size: bigint("size", { mode: "number" }),
+    mimeType: varchar("mime_type"),
+    webUrl: text("web_url"),
+    downloadUrl: text("download_url"),
+    parentPath: text("parent_path").notNull(),
+    parentId: varchar("parent_id"),
+    isFolder: boolean("is_folder").default(false),
+    isFile: boolean("is_file").default(true),
+    fileExtension: varchar("file_extension"),
+    source: varchar("source").notNull(), // onedrive, sharepoint
+    siteId: varchar("site_id"),
+    siteName: text("site_name"),
+    libraryId: varchar("library_id"),
+    libraryName: text("library_name"),
+    createdByDisplayName: text("created_by_display_name"),
+    createdByEmail: varchar("created_by_email"),
+    lastModifiedByDisplayName: text("last_modified_by_display_name"),
+    lastModifiedByEmail: varchar("last_modified_by_email"),
+    lastModifiedDateTime: timestamp("last_modified_date_time").notNull(),
+    createdDateTime: timestamp("created_date_time").notNull(),
+    sharingLinks: jsonb("sharing_links"), // array of {id, type, scope, webUrl}
+    permissions: jsonb("permissions"), // array of permission info
+    contentHash: varchar("content_hash"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("ms_drive_items_user_source_idx").on(table.userId, table.source),
+  ],
+);
+
+export const msDriveItemsRelations = relations(msDriveItems, ({ one }) => ({
+  user: one(users, {
+    fields: [msDriveItems.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertMsDriveItemSchema = createInsertSchema(msDriveItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMsDriveItem = z.infer<typeof insertMsDriveItemSchema>;
+export type MsDriveItem = typeof msDriveItems.$inferSelect;
