@@ -7,6 +7,7 @@ import {
   timestamp,
   jsonb,
   index,
+  uniqueIndex,
   integer,
   boolean,
 } from "drizzle-orm/pg-core";
@@ -251,3 +252,119 @@ export type InsertHubspotCommunication = z.infer<
   typeof insertHubspotCommunicationSchema
 >;
 export type HubspotCommunication = typeof hubspotCommunications.$inferSelect;
+
+// Extended Microsoft 365 user profile data
+export const msUserProfiles = pgTable("ms_user_profiles", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .unique()
+    .notNull(),
+  msUserId: varchar("ms_user_id").unique().notNull(),
+  jobTitle: text("job_title"),
+  department: text("department"),
+  officeLocation: text("office_location"),
+  city: text("city"),
+  country: text("country"),
+  timezone: varchar("timezone"),
+  managerId: varchar("manager_id").references(() => users.id),
+  employeeType: varchar("employee_type"), // employee, contractor, etc.
+  mobilePhone: varchar("mobile_phone"),
+  businessPhones: text("business_phones").array(),
+  preferredLanguage: varchar("preferred_language"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const msUserProfilesRelations = relations(msUserProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [msUserProfiles.userId],
+    references: [users.id],
+  }),
+  manager: one(users, {
+    fields: [msUserProfiles.managerId],
+    references: [users.id],
+  }),
+}));
+
+export const insertMsUserProfileSchema = createInsertSchema(msUserProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMsUserProfile = z.infer<typeof insertMsUserProfileSchema>;
+export type MsUserProfile = typeof msUserProfiles.$inferSelect;
+
+// Track sync status per user per resource type
+export const userSyncStates = pgTable(
+  "user_sync_states",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    resourceType: varchar("resource_type").notNull(), // calendar, tasks, presence, chat, contacts, files
+    lastSyncedAt: timestamp("last_synced_at"),
+    deltaToken: text("delta_token"), // Microsoft Graph delta token for incremental sync
+    status: varchar("status").notNull().default("idle"), // idle, syncing, error
+    errorMessage: text("error_message"),
+    itemCount: integer("item_count").default(0),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("user_sync_states_user_resource_unique").on(
+      table.userId,
+      table.resourceType,
+    ),
+  ],
+);
+
+export const userSyncStatesRelations = relations(userSyncStates, ({ one }) => ({
+  user: one(users, {
+    fields: [userSyncStates.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertUserSyncStateSchema = createInsertSchema(userSyncStates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertUserSyncState = z.infer<typeof insertUserSyncStateSchema>;
+export type UserSyncState = typeof userSyncStates.$inferSelect;
+
+// Audit log for sync operations
+export const syncJobs = pgTable("sync_jobs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id), // nullable for all-user syncs
+  resourceType: varchar("resource_type").notNull(),
+  syncType: varchar("sync_type").notNull(), // full, delta
+  status: varchar("status").notNull(), // started, completed, failed
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  itemsProcessed: integer("items_processed").default(0),
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"),
+});
+
+export const syncJobsRelations = relations(syncJobs, ({ one }) => ({
+  user: one(users, {
+    fields: [syncJobs.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertSyncJobSchema = createInsertSchema(syncJobs).omit({
+  id: true,
+  startedAt: true,
+});
+export type InsertSyncJob = z.infer<typeof insertSyncJobSchema>;
+export type SyncJob = typeof syncJobs.$inferSelect;
