@@ -12,6 +12,7 @@ import {
   boolean,
   date,
   bigint,
+  real,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -847,3 +848,191 @@ export const insertMsDriveItemSchema = createInsertSchema(msDriveItems).omit({
 });
 export type InsertMsDriveItem = z.infer<typeof insertMsDriveItemSchema>;
 export type MsDriveItem = typeof msDriveItems.$inferSelect;
+
+// AI Action Items - Unified action items extracted by AI from emails, meetings, chats
+export const aiActionItems = pgTable(
+  "ai_action_items",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    title: text("title").notNull(),
+    description: text("description"),
+    sourceType: varchar("source_type").notNull(), // email, meeting, chat, task, manual
+    sourceId: varchar("source_id"),
+    sourceUrl: text("source_url"),
+    priority: varchar("priority").notNull().default("medium"), // low, medium, high, urgent
+    status: varchar("status").notNull().default("pending"), // pending, in_progress, completed, dismissed
+    dueDate: timestamp("due_date"),
+    completedAt: timestamp("completed_at"),
+    extractedAt: timestamp("extracted_at").notNull(),
+    confidence: real("confidence").notNull(), // AI confidence score 0-1
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("ai_action_items_user_status_idx").on(table.userId, table.status),
+    index("ai_action_items_user_priority_idx").on(table.userId, table.priority),
+    index("ai_action_items_due_date_idx").on(table.dueDate),
+  ],
+);
+
+export const aiActionItemsRelations = relations(aiActionItems, ({ one }) => ({
+  user: one(users, {
+    fields: [aiActionItems.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertAiActionItemSchema = createInsertSchema(aiActionItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertAiActionItem = z.infer<typeof insertAiActionItemSchema>;
+export type AiActionItem = typeof aiActionItems.$inferSelect;
+
+// AI Reminders - Scheduled reminders for users
+export const aiReminders = pgTable(
+  "ai_reminders",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    type: varchar("type").notNull(), // task_overdue, meeting_upcoming, email_unread, action_item, custom
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    relatedType: varchar("related_type"), // task, meeting, email, calendar_event, etc.
+    relatedId: varchar("related_id"),
+    triggerAt: timestamp("trigger_at").notNull(),
+    channel: varchar("channel").notNull(), // in_app, email, teams, push
+    status: varchar("status").notNull().default("pending"), // pending, sent, dismissed, snoozed
+    sentAt: timestamp("sent_at"),
+    snoozedUntil: timestamp("snoozed_until"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("ai_reminders_user_status_idx").on(table.userId, table.status),
+    index("ai_reminders_trigger_at_idx").on(table.triggerAt),
+    index("ai_reminders_user_trigger_idx").on(table.userId, table.triggerAt),
+  ],
+);
+
+export const aiRemindersRelations = relations(aiReminders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [aiReminders.userId],
+    references: [users.id],
+  }),
+  notifications: many(aiNotifications),
+}));
+
+export const insertAiReminderSchema = createInsertSchema(aiReminders).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAiReminder = z.infer<typeof insertAiReminderSchema>;
+export type AiReminder = typeof aiReminders.$inferSelect;
+
+// AI Notifications - Notification delivery tracking
+export const aiNotifications = pgTable(
+  "ai_notifications",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    reminderId: varchar("reminder_id").references(() => aiReminders.id),
+    type: varchar("type").notNull(), // reminder, insight, alert, report
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    channel: varchar("channel").notNull(), // in_app, email, teams, push
+    status: varchar("status").notNull().default("pending"), // pending, delivered, read, failed
+    sentAt: timestamp("sent_at"),
+    readAt: timestamp("read_at"),
+    failedReason: text("failed_reason"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("ai_notifications_user_status_idx").on(table.userId, table.status),
+    index("ai_notifications_user_type_idx").on(table.userId, table.type),
+    index("ai_notifications_reminder_idx").on(table.reminderId),
+  ],
+);
+
+export const aiNotificationsRelations = relations(
+  aiNotifications,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [aiNotifications.userId],
+      references: [users.id],
+    }),
+    reminder: one(aiReminders, {
+      fields: [aiNotifications.reminderId],
+      references: [aiReminders.id],
+    }),
+  }),
+);
+
+export const insertAiNotificationSchema = createInsertSchema(
+  aiNotifications,
+).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAiNotification = z.infer<typeof insertAiNotificationSchema>;
+export type AiNotification = typeof aiNotifications.$inferSelect;
+
+// AI Insights - AI-generated insights and reports
+export const aiInsights = pgTable(
+  "ai_insights",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").references(() => users.id), // nullable for org-wide insights
+    type: varchar("type").notNull(), // productivity_report, workload_analysis, communication_pattern, meeting_summary, weekly_digest
+    scope: varchar("scope").notNull(), // user, team, department, organization
+    title: text("title").notNull(),
+    summary: text("summary").notNull(),
+    data: jsonb("data").notNull(), // structured insight data
+    score: real("score"), // productivity score, sentiment score, etc.
+    period: varchar("period"), // daily, weekly, monthly
+    periodStart: timestamp("period_start"),
+    periodEnd: timestamp("period_end"),
+    generatedAt: timestamp("generated_at").notNull(),
+    expiresAt: timestamp("expires_at"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("ai_insights_user_type_idx").on(table.userId, table.type),
+    index("ai_insights_scope_idx").on(table.scope),
+    index("ai_insights_generated_at_idx").on(table.generatedAt),
+    index("ai_insights_user_period_idx").on(table.userId, table.period),
+  ],
+);
+
+export const aiInsightsRelations = relations(aiInsights, ({ one }) => ({
+  user: one(users, {
+    fields: [aiInsights.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertAiInsightSchema = createInsertSchema(aiInsights).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAiInsight = z.infer<typeof insertAiInsightSchema>;
+export type AiInsight = typeof aiInsights.$inferSelect;
