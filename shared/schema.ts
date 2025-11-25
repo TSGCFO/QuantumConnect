@@ -467,19 +467,25 @@ export type InsertMsCalendarEvent = z.infer<typeof insertMsCalendarEventSchema>;
 export type MsCalendarEvent = typeof msCalendarEvents.$inferSelect;
 
 // Microsoft 365 Calendar - Attendees for calendar events
-export const msEventAttendees = pgTable("ms_event_attendees", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id")
-    .references(() => msCalendarEvents.id)
-    .notNull(),
-  email: varchar("email").notNull(),
-  name: text("name"),
-  type: varchar("type").notNull(), // required, optional, resource
-  responseStatus: varchar("response_status"), // none, organizer, tentativelyAccepted, accepted, declined
-  responseTime: timestamp("response_time"),
-});
+export const msEventAttendees = pgTable(
+  "ms_event_attendees",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    eventId: varchar("event_id")
+      .references(() => msCalendarEvents.id)
+      .notNull(),
+    email: varchar("email").notNull(),
+    name: text("name"),
+    type: varchar("type").notNull(), // required, optional, resource
+    responseStatus: varchar("response_status"), // none, organizer, tentativelyAccepted, accepted, declined
+    responseTime: timestamp("response_time"),
+  },
+  (table) => [
+    index("ms_event_attendees_event_id_idx").on(table.eventId),
+  ],
+);
 
 export const msEventAttendeesRelations = relations(
   msEventAttendees,
@@ -533,34 +539,41 @@ export type InsertMsTodoList = z.infer<typeof insertMsTodoListSchema>;
 export type MsTodoList = typeof msTodoLists.$inferSelect;
 
 // Microsoft To Do - Tasks
-export const msTodoTasks = pgTable("ms_todo_tasks", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  listId: varchar("list_id")
-    .references(() => msTodoLists.id)
-    .notNull(),
-  userId: varchar("user_id")
-    .references(() => users.id)
-    .notNull(),
-  msTaskId: varchar("ms_task_id").unique().notNull(),
-  title: text("title").notNull(),
-  body: text("body"),
-  importance: varchar("importance").notNull().default("normal"), // low, normal, high
-  status: varchar("status").notNull().default("notStarted"), // notStarted, inProgress, completed, waitingOnOthers, deferred
-  isReminderOn: boolean("is_reminder_on").default(false),
-  reminderDateTime: timestamp("reminder_date_time", { withTimezone: true }),
-  dueDateTime: timestamp("due_date_time", { withTimezone: true }),
-  completedDateTime: timestamp("completed_date_time", { withTimezone: true }),
-  startDateTime: timestamp("start_date_time", { withTimezone: true }),
-  categories: text("categories").array(),
-  hasAttachments: boolean("has_attachments").default(false),
-  linkedResources: jsonb("linked_resources"), // array of {webUrl, applicationName, displayName}
-  recurrence: jsonb("recurrence"), // recurrence pattern
-  checklistItems: jsonb("checklist_items"), // array of {displayName, isChecked}
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export const msTodoTasks = pgTable(
+  "ms_todo_tasks",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    listId: varchar("list_id")
+      .references(() => msTodoLists.id)
+      .notNull(),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    msTaskId: varchar("ms_task_id").unique().notNull(),
+    title: text("title").notNull(),
+    body: text("body"),
+    importance: varchar("importance").notNull().default("normal"), // low, normal, high
+    status: varchar("status").notNull().default("notStarted"), // notStarted, inProgress, completed, waitingOnOthers, deferred
+    isReminderOn: boolean("is_reminder_on").default(false),
+    reminderDateTime: timestamp("reminder_date_time", { withTimezone: true }),
+    dueDateTime: timestamp("due_date_time", { withTimezone: true }),
+    completedDateTime: timestamp("completed_date_time", { withTimezone: true }),
+    startDateTime: timestamp("start_date_time", { withTimezone: true }),
+    categories: text("categories").array(),
+    hasAttachments: boolean("has_attachments").default(false),
+    linkedResources: jsonb("linked_resources"), // array of {webUrl, applicationName, displayName}
+    recurrence: jsonb("recurrence"), // recurrence pattern
+    checklistItems: jsonb("checklist_items"), // array of {displayName, isChecked}
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("ms_todo_tasks_list_id_idx").on(table.listId),
+    index("ms_todo_tasks_user_status_idx").on(table.userId, table.status),
+  ],
+);
 
 export const msTodoTasksRelations = relations(msTodoTasks, ({ one }) => ({
   list: one(msTodoLists, {
@@ -596,8 +609,8 @@ export const msPresenceSnapshots = pgTable(
     statusMessage: text("status_message"),
     outOfOfficeMessage: text("out_of_office_message"),
     isOutOfOffice: boolean("is_out_of_office").default(false),
-    recordedAt: timestamp("recorded_at").notNull(),
-    expiresAt: timestamp("expires_at"),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
     createdAt: timestamp("created_at").defaultNow(),
   },
   (table) => [
@@ -637,8 +650,8 @@ export const msChatThreads = pgTable("ms_chat_threads", {
   msChatId: varchar("ms_chat_id").unique().notNull(),
   chatType: varchar("chat_type").notNull(), // oneOnOne, group, meeting
   topic: text("topic"),
-  createdDateTime: timestamp("created_date_time").notNull(),
-  lastUpdatedDateTime: timestamp("last_updated_date_time").notNull(),
+  createdDateTime: timestamp("created_date_time", { withTimezone: true }).notNull(),
+  lastUpdatedDateTime: timestamp("last_updated_date_time", { withTimezone: true }).notNull(),
   tenantId: varchar("tenant_id").notNull(),
   webUrl: text("web_url"),
   onlineMeetingInfo: jsonb("online_meeting_info"), // {meetingId, joinWebUrl}
@@ -658,20 +671,26 @@ export type InsertMsChatThread = z.infer<typeof insertMsChatThreadSchema>;
 export type MsChatThread = typeof msChatThreads.$inferSelect;
 
 // Microsoft Teams Chat - Participants in chat threads
-export const msChatParticipants = pgTable("ms_chat_participants", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  chatId: varchar("chat_id")
-    .references(() => msChatThreads.id)
-    .notNull(),
-  userId: varchar("user_id").references(() => users.id),
-  msUserId: varchar("ms_user_id").notNull(),
-  displayName: text("display_name").notNull(),
-  email: varchar("email").notNull(),
-  roles: text("roles").array(), // owner, guest, etc.
-  addedDateTime: timestamp("added_date_time").notNull(),
-});
+export const msChatParticipants = pgTable(
+  "ms_chat_participants",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    chatId: varchar("chat_id")
+      .references(() => msChatThreads.id)
+      .notNull(),
+    userId: varchar("user_id").references(() => users.id),
+    msUserId: varchar("ms_user_id").notNull(),
+    displayName: text("display_name").notNull(),
+    email: varchar("email").notNull(),
+    roles: text("roles").array(), // owner, guest, etc.
+    addedDateTime: timestamp("added_date_time", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("ms_chat_participants_chat_id_idx").on(table.chatId),
+  ],
+);
 
 export const msChatParticipantsRelations = relations(
   msChatParticipants,
@@ -698,31 +717,38 @@ export type InsertMsChatParticipant = z.infer<
 export type MsChatParticipant = typeof msChatParticipants.$inferSelect;
 
 // Microsoft Teams Chat - Chat messages
-export const msChatMessages = pgTable("ms_chat_messages", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  chatId: varchar("chat_id")
-    .references(() => msChatThreads.id)
-    .notNull(),
-  msMessageId: varchar("ms_message_id").unique().notNull(),
-  senderId: varchar("sender_id").references(() => users.id),
-  senderMsId: varchar("sender_ms_id").notNull(),
-  senderDisplayName: text("sender_display_name").notNull(),
-  messageType: varchar("message_type").notNull(), // message, chatEvent, typing, unknownFutureValue
-  body: text("body").notNull(),
-  bodyContentType: varchar("body_content_type").notNull(), // text, html
-  importance: varchar("importance").notNull().default("normal"), // normal, high, urgent
-  mentions: jsonb("mentions"), // array of {id, mentionText, mentioned: {id, displayName}}
-  attachments: jsonb("attachments"), // array of {id, contentType, contentUrl, name}
-  reactions: jsonb("reactions"), // array of {reactionType, createdDateTime, user}
-  sentDateTime: timestamp("sent_date_time").notNull(),
-  lastModifiedDateTime: timestamp("last_modified_date_time"),
-  lastEditedDateTime: timestamp("last_edited_date_time"),
-  deletedDateTime: timestamp("deleted_date_time"),
-  isDeleted: boolean("is_deleted").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export const msChatMessages = pgTable(
+  "ms_chat_messages",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    chatId: varchar("chat_id")
+      .references(() => msChatThreads.id)
+      .notNull(),
+    msMessageId: varchar("ms_message_id").unique().notNull(),
+    senderId: varchar("sender_id").references(() => users.id),
+    senderMsId: varchar("sender_ms_id").notNull(),
+    senderDisplayName: text("sender_display_name").notNull(),
+    messageType: varchar("message_type").notNull(), // message, chatEvent, typing, unknownFutureValue
+    body: text("body").notNull(),
+    bodyContentType: varchar("body_content_type").notNull(), // text, html
+    importance: varchar("importance").notNull().default("normal"), // normal, high, urgent
+    mentions: jsonb("mentions"), // array of {id, mentionText, mentioned: {id, displayName}}
+    attachments: jsonb("attachments"), // array of {id, contentType, contentUrl, name}
+    reactions: jsonb("reactions"), // array of {reactionType, createdDateTime, user}
+    sentDateTime: timestamp("sent_date_time", { withTimezone: true }).notNull(),
+    lastModifiedDateTime: timestamp("last_modified_date_time", { withTimezone: true }),
+    lastEditedDateTime: timestamp("last_edited_date_time", { withTimezone: true }),
+    deletedDateTime: timestamp("deleted_date_time", { withTimezone: true }),
+    isDeleted: boolean("is_deleted").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("ms_chat_messages_chat_id_idx").on(table.chatId),
+    index("ms_chat_messages_sender_id_idx").on(table.senderId),
+  ],
+);
 
 export const msChatMessagesRelations = relations(msChatMessages, ({ one }) => ({
   chat: one(msChatThreads, {
@@ -821,8 +847,8 @@ export const msDriveItems = pgTable(
     createdByEmail: varchar("created_by_email"),
     lastModifiedByDisplayName: text("last_modified_by_display_name"),
     lastModifiedByEmail: varchar("last_modified_by_email"),
-    lastModifiedDateTime: timestamp("last_modified_date_time").notNull(),
-    createdDateTime: timestamp("created_date_time").notNull(),
+    lastModifiedDateTime: timestamp("last_modified_date_time", { withTimezone: true }).notNull(),
+    createdDateTime: timestamp("created_date_time", { withTimezone: true }).notNull(),
     sharingLinks: jsonb("sharing_links"), // array of {id, type, scope, webUrl}
     permissions: jsonb("permissions"), // array of permission info
     contentHash: varchar("content_hash"),
