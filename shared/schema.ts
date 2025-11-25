@@ -484,6 +484,7 @@ export const msEventAttendees = pgTable(
   },
   (table) => [
     index("ms_event_attendees_event_id_idx").on(table.eventId),
+    uniqueIndex("ms_event_attendees_event_email_idx").on(table.eventId, table.email),
   ],
 );
 
