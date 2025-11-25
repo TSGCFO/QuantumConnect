@@ -1016,6 +1016,611 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // ============================================
+  // Microsoft 365 Data Sync Routes
+  // ============================================
+
+  // Calendar Sync Routes
+  app.post("/api/calendar/sync", isAuthenticated, logActivity("sync_calendar"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const client = await getUncachableOutlookClient();
+      
+      const now = new Date();
+      const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      const events = await client
+        .api("/me/calendar/calendarView")
+        .query({
+          startDateTime: startDate.toISOString(),
+          endDateTime: endDate.toISOString()
+        })
+        .select("id,subject,body,start,end,location,isAllDay,isCancelled,organizer,attendees,recurrence,categories,importance,sensitivity,showAs,webLink,onlineMeeting,onlineMeetingUrl")
+        .top(100)
+        .get();
+      
+      let syncedCount = 0;
+      for (const event of events.value) {
+        await storage.upsertCalendarEvent({
+          msEventId: event.id,
+          userId,
+          subject: event.subject,
+          bodyContent: event.body?.content || null,
+          bodyPreview: event.bodyPreview || null,
+          start: new Date(event.start.dateTime),
+          end: new Date(event.end.dateTime),
+          location: event.location?.displayName || null,
+          isAllDay: event.isAllDay || false,
+          isCancelled: event.isCancelled || false,
+          organizer: event.organizer?.emailAddress ? {
+            email: event.organizer.emailAddress.address,
+            name: event.organizer.emailAddress.name
+          } : null,
+          categories: event.categories || [],
+          importance: event.importance || "normal",
+          sensitivity: event.sensitivity || "normal",
+          showAs: event.showAs || "busy",
+          webLink: event.webLink || null,
+          onlineMeetingUrl: event.onlineMeetingUrl || event.onlineMeeting?.joinUrl || null,
+        });
+        
+        if (event.attendees && event.attendees.length > 0) {
+          const dbEvent = await storage.getCalendarEvent(event.id);
+          if (dbEvent) {
+            for (const att of event.attendees) {
+              await storage.upsertEventAttendee({
+                eventId: dbEvent.id,
+                email: att.emailAddress?.address || "",
+                name: att.emailAddress?.name || null,
+                type: att.type || "required",
+                responseStatus: att.status?.response || "none",
+              });
+            }
+          }
+        }
+        
+        syncedCount++;
+      }
+      
+      await storage.upsertUserSyncState({
+        userId,
+        resourceType: "calendar",
+        lastSyncedAt: new Date(),
+        status: "completed",
+      });
+      
+      res.json({ message: `Synced ${syncedCount} calendar events` });
+    } catch (error) {
+      console.error("Error syncing calendar:", error);
+      res.status(500).json({ message: "Failed to sync calendar" });
+    }
+  });
+
+  app.get("/api/calendar/events", isAuthenticated, logActivity("view_calendar"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { start, end } = req.query;
+      const startDate = start ? new Date(start as string) : undefined;
+      const endDate = end ? new Date(end as string) : undefined;
+      const events = await storage.getCalendarEvents(userId, startDate, endDate);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching calendar events:", error);
+      res.status(500).json({ message: "Failed to fetch calendar events" });
+    }
+  });
+
+  // Contacts Sync Routes
+  app.post("/api/contacts/sync", isAuthenticated, logActivity("sync_contacts"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const client = await getUncachableOutlookClient();
+      
+      const contacts = await client
+        .api("/me/contacts")
+        .select("id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,companyName,jobTitle,department,businessAddress")
+        .top(200)
+        .get();
+      
+      let syncedCount = 0;
+      for (const contact of contacts.value) {
+        await storage.upsertContact({
+          msContactId: contact.id,
+          userId,
+          displayName: contact.displayName || "Unknown Contact",
+          givenName: contact.givenName || null,
+          surname: contact.surname || null,
+          emailAddresses: contact.emailAddresses || [],
+          phoneNumbers: contact.businessPhones?.map((phone: string) => ({ type: "business", number: phone })).concat(
+            contact.mobilePhone ? [{ type: "mobile", number: contact.mobilePhone }] : []
+          ) || null,
+          companyName: contact.companyName || null,
+          jobTitle: contact.jobTitle || null,
+          department: contact.department || null,
+          addresses: contact.businessAddress ? [contact.businessAddress] : null,
+          categories: [],
+        });
+        syncedCount++;
+      }
+      
+      await storage.upsertUserSyncState({
+        userId,
+        resourceType: "contacts",
+        lastSyncedAt: new Date(),
+        status: "completed",
+      });
+      
+      res.json({ message: `Synced ${syncedCount} contacts` });
+    } catch (error) {
+      console.error("Error syncing contacts:", error);
+      res.status(500).json({ message: "Failed to sync contacts" });
+    }
+  });
+
+  app.get("/api/contacts", isAuthenticated, logActivity("view_contacts"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const contacts = await storage.getContacts(userId);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      res.status(500).json({ message: "Failed to fetch contacts" });
+    }
+  });
+
+  app.get("/api/contacts/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: "Query parameter 'q' is required" });
+      }
+      const contacts = await storage.searchContacts(userId, query);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error searching contacts:", error);
+      res.status(500).json({ message: "Failed to search contacts" });
+    }
+  });
+
+  // Drive Items (OneDrive/SharePoint) Sync Routes
+  app.post("/api/drive/sync", isAuthenticated, logActivity("sync_drive"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const client = await getUncachableOutlookClient();
+      
+      const files = await client
+        .api("/me/drive/root/children")
+        .select("id,name,file,folder,size,webUrl,createdDateTime,lastModifiedDateTime,parentReference,createdBy,lastModifiedBy")
+        .top(100)
+        .get();
+      
+      let syncedCount = 0;
+      const now = new Date();
+      for (const file of files.value) {
+        await storage.upsertDriveItem({
+          msDriveItemId: file.id,
+          userId,
+          name: file.name,
+          mimeType: file.file?.mimeType || (file.folder ? "folder" : null),
+          size: file.size || null,
+          webUrl: file.webUrl || null,
+          source: "onedrive",
+          driveId: file.parentReference?.driveId || "unknown",
+          parentId: file.parentReference?.id || null,
+          parentPath: file.parentReference?.path || "/",
+          createdDateTime: file.createdDateTime ? new Date(file.createdDateTime) : now,
+          lastModifiedDateTime: file.lastModifiedDateTime ? new Date(file.lastModifiedDateTime) : now,
+          createdByEmail: file.createdBy?.user?.email || null,
+          lastModifiedByEmail: file.lastModifiedBy?.user?.email || null,
+        });
+        syncedCount++;
+      }
+      
+      await storage.upsertUserSyncState({
+        userId,
+        resourceType: "onedrive",
+        lastSyncedAt: new Date(),
+        status: "completed",
+      });
+      
+      res.json({ message: `Synced ${syncedCount} files from OneDrive` });
+    } catch (error) {
+      console.error("Error syncing drive:", error);
+      res.status(500).json({ message: "Failed to sync drive items" });
+    }
+  });
+
+  app.get("/api/drive/items", isAuthenticated, logActivity("view_drive"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const source = req.query.source as string;
+      const items = await storage.getDriveItems(userId, source);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching drive items:", error);
+      res.status(500).json({ message: "Failed to fetch drive items" });
+    }
+  });
+
+  app.get("/api/drive/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: "Query parameter 'q' is required" });
+      }
+      const items = await storage.searchDriveItems(userId, query);
+      res.json(items);
+    } catch (error) {
+      console.error("Error searching drive items:", error);
+      res.status(500).json({ message: "Failed to search drive items" });
+    }
+  });
+
+  // Microsoft To Do Sync Routes
+  app.post("/api/todo/sync", isAuthenticated, logActivity("sync_todo"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const client = await getUncachableOutlookClient();
+      
+      const lists = await client
+        .api("/me/todo/lists")
+        .select("id,displayName,isOwner,isShared,wellknownListName")
+        .get();
+      
+      let listsCount = 0;
+      let tasksCount = 0;
+      
+      for (const list of lists.value) {
+        await storage.upsertTodoList({
+          msListId: list.id,
+          userId,
+          displayName: list.displayName,
+          isOwner: list.isOwner || false,
+          isShared: list.isShared || false,
+          wellknownListName: list.wellknownListName || null,
+        });
+        listsCount++;
+        
+        const tasks = await client
+          .api(`/me/todo/lists/${list.id}/tasks`)
+          .select("id,title,body,importance,status,isReminderOn,reminderDateTime,dueDateTime,completedDateTime,createdDateTime,lastModifiedDateTime,categories")
+          .get();
+        
+        const dbList = await storage.getTodoLists(userId);
+        const currentList = dbList.find(l => l.msListId === list.id);
+        
+        if (currentList) {
+          for (const task of tasks.value) {
+            await storage.upsertTodoTask({
+              msTaskId: task.id,
+              listId: currentList.id,
+              userId,
+              title: task.title,
+              body: task.body?.content || null,
+              importance: task.importance || "normal",
+              status: task.status || "notStarted",
+              isReminderOn: task.isReminderOn || false,
+              reminderDateTime: task.reminderDateTime?.dateTime ? new Date(task.reminderDateTime.dateTime) : null,
+              dueDateTime: task.dueDateTime?.dateTime ? new Date(task.dueDateTime.dateTime) : null,
+              completedDateTime: task.completedDateTime?.dateTime ? new Date(task.completedDateTime.dateTime) : null,
+              categories: task.categories || [],
+            });
+            tasksCount++;
+          }
+        }
+      }
+      
+      await storage.upsertUserSyncState({
+        userId,
+        resourceType: "todo",
+        lastSyncedAt: new Date(),
+        status: "completed",
+      });
+      
+      res.json({ message: `Synced ${listsCount} lists and ${tasksCount} tasks` });
+    } catch (error) {
+      console.error("Error syncing To Do:", error);
+      res.status(500).json({ message: "Failed to sync To Do" });
+    }
+  });
+
+  app.get("/api/todo/lists", isAuthenticated, logActivity("view_todo"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const lists = await storage.getTodoLists(userId);
+      res.json(lists);
+    } catch (error) {
+      console.error("Error fetching To Do lists:", error);
+      res.status(500).json({ message: "Failed to fetch To Do lists" });
+    }
+  });
+
+  app.get("/api/todo/tasks", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tasks = await storage.getTodoTasksByUser(userId);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching To Do tasks:", error);
+      res.status(500).json({ message: "Failed to fetch To Do tasks" });
+    }
+  });
+
+  app.get("/api/todo/lists/:listId/tasks", isAuthenticated, async (req: any, res) => {
+    try {
+      const { listId } = req.params;
+      const tasks = await storage.getTodoTasks(listId);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching list tasks:", error);
+      res.status(500).json({ message: "Failed to fetch list tasks" });
+    }
+  });
+
+  // ============================================
+  // AI Features Routes
+  // ============================================
+
+  // AI Action Items
+  app.get("/api/ai/action-items", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = req.query.status as string;
+      const items = await storage.getAiActionItems(userId, status);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching action items:", error);
+      res.status(500).json({ message: "Failed to fetch action items" });
+    }
+  });
+
+  app.post("/api/ai/action-items", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, description, sourceType, sourceId, dueDate, priority, confidence } = req.body;
+      
+      const item = await storage.createAiActionItem({
+        userId,
+        title,
+        description,
+        sourceType,
+        sourceId,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        priority: priority || "medium",
+        status: "pending",
+        extractedAt: new Date(),
+        confidence: confidence || 0.8,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating action item:", error);
+      res.status(500).json({ message: "Failed to create action item" });
+    }
+  });
+
+  app.patch("/api/ai/action-items/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const item = await storage.updateAiActionItem(id, req.body);
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating action item:", error);
+      res.status(500).json({ message: "Failed to update action item" });
+    }
+  });
+
+  // AI Reminders
+  app.get("/api/ai/reminders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = req.query.status as string;
+      const reminders = await storage.getUserReminders(userId, status);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+      res.status(500).json({ message: "Failed to fetch reminders" });
+    }
+  });
+
+  app.post("/api/ai/reminders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, message, triggerAt, relatedType, relatedId, type, channel } = req.body;
+      
+      const reminder = await storage.createAiReminder({
+        userId,
+        title,
+        message,
+        triggerAt: new Date(triggerAt),
+        relatedType,
+        relatedId,
+        type: type || "custom",
+        channel: channel || "in_app",
+        status: "pending",
+      });
+      
+      res.json(reminder);
+    } catch (error) {
+      console.error("Error creating reminder:", error);
+      res.status(500).json({ message: "Failed to create reminder" });
+    }
+  });
+
+  app.patch("/api/ai/reminders/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const reminder = await storage.updateAiReminder(id, req.body);
+      res.json(reminder);
+    } catch (error) {
+      console.error("Error updating reminder:", error);
+      res.status(500).json({ message: "Failed to update reminder" });
+    }
+  });
+
+  app.get("/api/ai/reminders/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      const before = req.query.before ? new Date(req.query.before as string) : undefined;
+      const reminders = await storage.getPendingReminders(before);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching pending reminders:", error);
+      res.status(500).json({ message: "Failed to fetch pending reminders" });
+    }
+  });
+
+  // AI Notifications
+  app.get("/api/ai/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = req.query.status as string;
+      const notifications = await storage.getUserNotifications(userId, status);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/ai/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, body, type, channel } = req.body;
+      
+      const notification = await storage.createAiNotification({
+        userId,
+        title,
+        body: body || "",
+        type: type || "alert",
+        channel: channel || "in_app",
+        status: "pending",
+      });
+      
+      res.json(notification);
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      res.status(500).json({ message: "Failed to create notification" });
+    }
+  });
+
+  app.patch("/api/ai/notifications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const notification = await storage.updateAiNotification(id, req.body);
+      res.json(notification);
+    } catch (error) {
+      console.error("Error updating notification:", error);
+      res.status(500).json({ message: "Failed to update notification" });
+    }
+  });
+
+  app.post("/api/ai/notifications/mark-all-read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notifications = await storage.getUserNotifications(userId, "unread");
+      for (const notification of notifications) {
+        await storage.updateAiNotification(notification.id, { status: "read" });
+      }
+      res.json({ message: `Marked ${notifications.length} notifications as read` });
+    } catch (error) {
+      console.error("Error marking notifications:", error);
+      res.status(500).json({ message: "Failed to mark notifications" });
+    }
+  });
+
+  // AI Insights
+  app.get("/api/ai/insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const type = req.query.type as string;
+      const insights = await storage.getAiInsights(userId, type);
+      res.json(insights);
+    } catch (error) {
+      console.error("Error fetching insights:", error);
+      res.status(500).json({ message: "Failed to fetch insights" });
+    }
+  });
+
+  app.post("/api/ai/insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { type, title, summary, data, score, scope } = req.body;
+      
+      const insight = await storage.createAiInsight({
+        userId,
+        type,
+        title,
+        summary,
+        data: data || {},
+        score,
+        scope: scope || "user",
+        generatedAt: new Date(),
+      });
+      
+      res.json(insight);
+    } catch (error) {
+      console.error("Error creating insight:", error);
+      res.status(500).json({ message: "Failed to create insight" });
+    }
+  });
+
+  // ============================================
+  // Sync Status Routes
+  // ============================================
+
+  app.get("/api/sync/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const states = await storage.getSyncStatesForUser(userId);
+      res.json(states);
+    } catch (error) {
+      console.error("Error fetching sync status:", error);
+      res.status(500).json({ message: "Failed to fetch sync status" });
+    }
+  });
+
+  app.get("/api/sync/jobs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const jobs = await storage.getRecentSyncJobs(userId, limit);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching sync jobs:", error);
+      res.status(500).json({ message: "Failed to fetch sync jobs" });
+    }
+  });
+
+  app.post("/api/sync/full", isAuthenticated, logActivity("full_sync"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const job = await storage.createSyncJob({
+        userId,
+        resourceType: "full",
+        syncType: "full",
+        status: "started",
+      });
+      
+      await storage.updateSyncJob(job.id, {
+        status: "completed",
+        completedAt: new Date(),
+      });
+      
+      res.json({ 
+        message: "Full sync initiated",
+        jobId: job.id,
+        note: "Use individual sync endpoints (/api/calendar/sync, /api/contacts/sync, etc.) to sync specific resources"
+      });
+    } catch (error) {
+      console.error("Error initiating full sync:", error);
+      res.status(500).json({ message: "Failed to initiate full sync" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
