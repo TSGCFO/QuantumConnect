@@ -2,7 +2,7 @@
 
 ## Overview
 
-An AI-powered ERP employee portal designed for 3PL Ontario that serves as a comprehensive organizational intelligence platform. The system's core mission is to **track every activity across all Microsoft 365 applications** used by the organization, link this data to users within the organizational hierarchy, and leverage AI to provide actionable insights at multiple levels.
+The AI-powered ERP employee portal for 3PL Ontario is an organizational intelligence platform. Its primary function is to track all activities across Microsoft 365 applications, link this data to the organizational hierarchy, and use AI to provide actionable insights at individual employee, manager, and department head levels. This system aims to enhance productivity, improve collaboration, and ensure compliance within the organization.
 
 ### Core Capabilities
 
@@ -45,399 +45,185 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Framework**: React with TypeScript using Vite as the build tool and development server.
-
-**UI Component System**: Built on shadcn/ui components (Radix UI primitives) with a custom design system following Microsoft Fluent Design principles. The component library emphasizes:
-
-- Consistent spacing using Tailwind's utility-first approach
-- Inter font family for clean, enterprise-grade typography
-- Responsive layouts with mobile-first breakpoints
-- Accessible components via Radix UI primitives
-
-**Styling Approach**: Tailwind CSS with custom design tokens defined in CSS variables. Theme system supports light/dark modes with carefully crafted color palettes for cards, popovers, buttons, and semantic states (primary, secondary, muted, destructive, accent).
-
-**State Management**: TanStack Query (React Query) for server state management with custom query client configuration. Authentication state managed through custom `useAuth` hook with session-based persistence.
-
-**Routing**: Wouter for lightweight client-side routing with role-based route protection (employee, manager, admin roles).
-
-**Key Design Decisions**:
-
-- No React Server Components (RSC) - traditional SPA approach for simpler deployment
-- Path aliases configured for clean imports (`@/` for client code, `@shared/` for shared types)
-- Separation of concerns: UI components isolated from business logic and API calls
+The frontend uses React with TypeScript (Vite), built on shadcn/ui components following Microsoft Fluent Design principles. Styling is handled by Tailwind CSS with custom design tokens, supporting light/dark modes. TanStack Query manages server state, while a custom `useAuth` hook handles authentication. Wouter provides client-side routing with role-based protection. Key decisions include using a traditional SPA approach, path aliases for clean imports, and clear separation of concerns.
 
 ### Backend Architecture
 
-**Framework**: Express.js with TypeScript running on Node.js.
-
-**Development vs Production**:
-
-- Development mode uses Vite middleware for hot module replacement
-- Production serves pre-built static assets from dist/public directory
-- Separate entry points (`index-dev.ts` vs `index-prod.ts`) for environment-specific setup
-
-**Authentication & Authorization**:
-
-- Replit Auth integration using OpenID Connect (OIDC) via Passport.js strategy
-- Session management with PostgreSQL-backed session store (`connect-pg-simple`)
-- Role-based access control (employee, manager, admin) enforced at route level
-- Session TTL of 1 week with secure, httpOnly cookies
-
-**API Design**:
-
-- RESTful endpoints organized by resource type (documents, tasks, meetings, emails, communications)
-- Activity logging middleware tracks user actions for audit trails
-- Multer middleware for file upload handling (in-memory storage)
-
-**Key Architectural Patterns**:
-
-- Storage abstraction layer separating database operations from route handlers
-- Centralized error handling and logging with formatted timestamps
-- Request/response interception for performance monitoring on `/api` routes
+The backend is an Express.js application with TypeScript. It supports both development (Vite middleware) and production (static asset serving) environments. Authentication and authorization are managed via Replit Auth (Passport.js) and PostgreSQL-backed session management, enforcing role-based access control (employee, manager, admin). The API is RESTful, with activity logging and Multer for file uploads. Core architectural patterns include a storage abstraction layer, centralized error handling, and request/response interception.
 
 ### Data Storage
 
-**Database**: PostgreSQL via Neon serverless with WebSocket support for connection pooling.
-
-**ORM**: Drizzle ORM providing type-safe database queries with schema-first approach.
-
-**Schema Design** (38 tables total):
-
----
+The system uses PostgreSQL (Neon serverless) with Drizzle ORM for type-safe queries. The database schema includes 38 tables, categorized as:
 
 #### Core Tables
-
-- **users**: Core authentication table with role-based access (employee/manager/admin), department assignment, and profile metadata
-- **documents**: Knowledge hub storage with category classification (policy/training/operational), file metadata, and search capabilities
-- **tasks**: Task management with assignment, priority, status tracking, and due dates
-- **meetings**: Meeting records with AI-generated summaries and extracted action items
-- **emails**: Synced from Outlook with sender/recipient tracking and read status
-- **hubspot_communications**: CRM communication logs with contact/company associations
-- **activity_logs**: Audit trail capturing user actions, resource access, and IP/user agent data
-- **sessions**: PostgreSQL-backed session storage for authentication persistence
-
----
+- `users`: Authentication with role-based access (employee/manager/admin), department assignment, profile metadata
+- `documents`: Knowledge hub with category classification, file metadata, search capabilities
+- `tasks`: Task management with assignment, priority, status tracking, due dates
+- `meetings`: Meeting records with AI-generated summaries and action items
+- `emails`: Synced from Outlook with sender/recipient tracking, read status
+- `hubspot_communications`: CRM logs with contact/company associations
+- `activity_logs`: Audit trail for user actions, resource access, IP/user agent
+- `sessions`: PostgreSQL-backed session storage
 
 #### Organizational Structure Tables
-
-- **departments**: Hierarchical department structure with:
+- `departments`: Hierarchical structure with:
   - `name`, `code`, `description` for identification
-  - `headId` references the department head (user)
+  - `headId` references department head (user)
   - `parentDepartmentId` for nested hierarchy (e.g., Sales → Inside Sales → SDR Team)
-  - Enables organizational reporting and permission inheritance
-
-- **user_department_memberships**: Many-to-many relationship allowing users to belong to multiple departments:
+- `user_department_memberships`: Many-to-many user-department relationships:
   - `userId`, `departmentId` for the association
-  - `role` field: "member", "manager", or "head"
+  - `role`: "member", "manager", or "head"
   - `joinedAt`, `leftAt` for historical tracking
-  - Supports matrix organizations and cross-functional teams
-
----
 
 #### Graph Permission Catalog Tables
-
-These tables document and track Microsoft Graph API permissions, enabling the system to understand what data it can access and audit its usage.
-
-- **permission_categories**: Groups permissions by functional area (e.g., "Mail", "Calendar", "Files", "Teams")
-  - `name`, `description`
-  - Unique index on name for upsert operations
-
-- **graph_permissions**: Core permission definitions from Microsoft Graph:
-  - `name`: Permission identifier (e.g., "Mail.Read", "Calendars.ReadWrite")
-  - `displayName`: Human-readable name
-  - `permissionId`: Microsoft's internal ID
-  - `type`: "Delegated" or "Application"
-  - `scope`: Permission scope
-  - `adminConsentRequired`: Whether admin must approve
-  - `assignedDate`: When permission was granted to this app
-  - `riskLevel`: "LOW", "MEDIUM", or "HIGH" based on data sensitivity
-  - `description`: What the permission enables
-  - `categoryId`: Links to permission_categories
-
-- **graph_permission_endpoints**: API endpoints each permission enables:
-  - `permissionId`: Links to graph_permissions
-  - `method`: HTTP method (GET, POST, PATCH, DELETE)
-  - `path`: API path (e.g., "/me/messages", "/users/{id}/calendar")
-  - `description`: What the endpoint does
-
-- **graph_permission_examples**: Code samples for using permissions:
-  - `permissionId`: Links to graph_permissions
-  - `language`: Programming language (javascript, python, csharp, etc.)
-  - `code`: Example code snippet
-  - `description`: What the example demonstrates
-
-- **graph_permission_grants**: Tracks which permissions are granted to users/groups/apps:
-  - `permissionId`: The permission being granted
-  - `granteeType`: "user", "group", or "service_principal"
-  - `granteeId`: ID of the grantee
-  - `grantType`: "delegated" or "application"
-  - `scope`: "organization", "site", "team", "mailbox"
-  - `scopeResourceId`: Links to resources table if scoped
-  - `consentedAt`, `expiresAt`: Grant lifecycle
-  - `grantedById`: Who approved the grant
-
----
+Documents and tracks Microsoft Graph API permissions:
+- `permission_categories`: Groups permissions by area (Mail, Calendar, Files, Teams)
+- `graph_permissions`: Permission definitions with name, type, scope, adminConsentRequired, riskLevel
+- `graph_permission_endpoints`: API endpoints each permission enables (method, path)
+- `graph_permission_examples`: Code samples in multiple languages
+- `graph_permission_grants`: Tracks permissions granted to users/groups/apps
 
 #### Unified Resource & Activity Tracking Tables
-
-These tables provide a central registry for all items synced from Microsoft Graph, enabling cross-resource reporting and AI analysis.
-
-- **resources**: Generic registry unifying all synced M365 items:
-  - `type`: "meeting", "call", "chat", "email", "file", "calendar_event", "task"
-  - `sourceSystem`: "graph", "teams", "outlook", "sharepoint"
-  - `externalId`: Original ID from Microsoft Graph
-  - `ownerUserId`: Who owns/created the resource
-  - `departmentId`: Which department it belongs to
-  - `title`, `summary`: Human-readable identifiers
-  - `occurredAt`: When the resource was created/occurred
-  - `metadata`: Flexible JSON for source-specific data
-  - Unique index on (sourceSystem, externalId) prevents duplicates
-
-- **activities**: Links resources to actors for reporting:
-  - `resourceId`: The resource involved
-  - `actorUserId`: Who performed the action
-  - `targetUserId`: Who was affected (e.g., email recipient)
-  - `departmentId`: Organizational context
-  - `type`: Action type (e.g., "sent", "attended", "modified")
-  - `status`: Current status
-  - `occurredAt`: When it happened
-  - `durationSeconds`: For meetings/calls
-  - `sentimentScore`: AI-analyzed sentiment (0-1)
-  - `qualityScore`: AI-assessed quality metric
-  - `metrics`: Flexible JSON for action-specific data
-
----
+- `resources`: Generic registry for all synced M365 items (meetings, calls, chats, emails, files)
+  - `type`, `sourceSystem`, `externalId` for identification
+  - `ownerUserId`, `departmentId` for organizational context
+  - `title`, `summary`, `occurredAt`, `metadata`
+- `activities`: Links resources to actors for reporting
+  - `resourceId`, `actorUserId`, `targetUserId`, `departmentId`
+  - `type`, `status`, `occurredAt`, `durationSeconds`
+  - `sentimentScore`, `qualityScore`, `metrics` for AI analysis
 
 #### Governance & Audit Tables
-
-- **policies**: Rules governing AI behavior and data access:
-  - `name`, `description`: Policy identification
-  - `scope`: "organization", "department", or "team"
-  - `departmentId`: If scoped to a specific department
-  - `enforcementRules`: JSON defining what the policy controls
-  - `isActive`: Whether policy is currently enforced
-  - Example: Restrict AI from summarizing HR-sensitive meetings
-
-- **audit_events**: Comprehensive audit trail for AI actions and permission usage:
-  - `actorType`: "user", "ai_system", or "service"
-  - `actorId`: Who/what performed the action
-  - `action`: What was done
-  - `permissionId`: Which Graph permission was used
-  - `policyId`: Which policy was evaluated
-  - `targetUserId`: Affected user
-  - `targetResourceId`: Affected resource
-  - `outcome`: "pending", "succeeded", "failed", "denied"
-  - `detail`: JSON with action-specific context
-  - `occurredAt`: Timestamp
-
----
+- `policies`: Rules for AI behavior and data access
+  - `name`, `description`, `scope` (organization/department/team)
+  - `departmentId`, `enforcementRules` (JSON), `isActive`
+- `audit_events`: Comprehensive audit trail
+  - `actorType` (user/ai_system/service), `actorId`, `action`
+  - `permissionId`, `policyId`, `targetUserId`, `targetResourceId`
+  - `outcome` (pending/succeeded/failed/denied), `detail`
 
 #### Microsoft 365 Sync Infrastructure
-
-- **ms_user_profiles**: Extended Microsoft 365 user data (manager, job title, location, timezone)
-- **user_sync_states**: Per-user delta sync tracking with tokens for incremental updates
-- **sync_jobs**: Sync job history with status, timing, and error tracking
-
----
+- `ms_user_profiles`: Extended M365 user data (manager, job title, timezone)
+- `user_sync_states`: Per-user delta sync tracking with tokens
+- `sync_jobs`: Sync job history with status, timing, error tracking
 
 #### Microsoft 365 Data Tables
-
-- **ms_calendar_events**: Calendar events with recurrence, attendees, and online meeting links
-- **ms_event_attendees**: Event participant data with response status
-- **ms_recurrence_patterns**: Recurring event pattern definitions
-- **ms_todo_lists**: Microsoft To Do task lists per user
-- **ms_todo_tasks**: Individual tasks with reminders, due dates, and checklists
-- **ms_presence_snapshots**: Teams presence/availability status history
-- **ms_chat_threads**: Teams chat threads (1:1, group, meeting chats)
-- **ms_chat_participants**: Chat participant membership
-- **ms_chat_messages**: Chat messages with sender and content
-- **ms_contacts**: Outlook contacts with phone, email, and address data
-- **ms_drive_items**: OneDrive/SharePoint file metadata
-
----
+- `ms_calendar_events`: Calendar with recurrence, attendees, online meeting links
+- `ms_event_attendees`: Participant data with response status
+- `ms_recurrence_patterns`: Recurring event patterns
+- `ms_todo_lists`: Microsoft To Do task lists
+- `ms_todo_tasks`: Tasks with reminders, due dates, checklists
+- `ms_presence_snapshots`: Teams presence/availability history
+- `ms_chat_threads`: Teams chats (1:1, group, meeting)
+- `ms_chat_participants`: Chat membership
+- `ms_chat_messages`: Messages with sender and content
+- `ms_contacts`: Outlook contacts with phone, email, address
+- `ms_drive_items`: OneDrive/SharePoint file metadata
 
 #### AI Enablement Tables
+- `ai_action_items`: AI-extracted action items with confidence scores
+- `ai_reminders`: Proactive reminder system with scheduling
+- `ai_notifications`: Multi-channel notification queue
+- `ai_insights`: AI-generated productivity insights and reports
 
-- **ai_action_items**: AI-extracted action items from meetings/emails with confidence scores
-- **ai_reminders**: Proactive reminder system with scheduling and delivery tracking
-- **ai_notifications**: User notification queue with multi-channel support
-- **ai_insights**: AI-generated productivity insights and reports
-
----
-
-**Migration Strategy**: Drizzle Kit for schema migrations with `npm run db:push` for safe updates.
+Drizzle Kit is used for schema migrations (`npm run db:push`).
 
 ### Permission Ingestion Service
 
 **Location**: `server/services/permissionIngestion.ts`
 
-**Purpose**: Populates the Graph Permission Catalog by parsing markdown documentation files that describe each Microsoft Graph permission.
+**Purpose**: Populates the Graph Permission Catalog by parsing markdown documentation files describing Microsoft Graph permissions.
 
-**Source Data**: `docs/api-permissions/permissions/` contains 280+ markdown files, each documenting a single Graph permission with:
-- Permission name and display name
-- Type (Delegated/Application) and scope
-- Admin consent requirements
-- Risk level assessment
+**Source Data**: `docs/api-permissions/permissions/` contains 280+ markdown files documenting:
+- Permission name, display name, type (Delegated/Application)
+- Admin consent requirements and risk level
 - API endpoints enabled by the permission
 - Code examples in multiple languages
 
-**How It Works**:
-
-1. **Parse Category Index** (`README.md`): Extracts permission categories and maps each permission file to its category
-
-2. **Upsert Categories**: Creates or updates `permission_categories` records for each category (e.g., "Mail", "Calendar", "Files")
-
-3. **Parse Permission Files**: For each `.md` file:
-   - Extracts metadata using regex patterns
-   - Parses API endpoints from structured sections
-   - Extracts code examples from fenced code blocks
-
-4. **Upsert Permissions**: Creates or updates `graph_permissions` with:
-   - All metadata fields
-   - Link to parent category
-   - Replace (not append) endpoints and examples
-
 **Key Function**:
 ```typescript
-ingestGraphPermissionDocs(rootDir?: string): Promise<PermissionIngestionStats>
-```
-
-**Returns**:
-```typescript
-{
+ingestGraphPermissionDocs(rootDir?: string): Promise<{
   categoriesUpserted: number;
   permissionsProcessed: number;
   endpointsProcessed: number;
   examplesProcessed: number;
-}
+}>
 ```
 
 **Storage Methods** (in `server/storage.ts`):
-- `upsertPermissionCategory(data)`: Insert or update category by name
-- `upsertGraphPermission(data)`: Insert or update permission by name
-- `replaceGraphPermissionEndpoints(permissionId, endpoints)`: Replace all endpoints for a permission
-- `replaceGraphPermissionExamples(permissionId, examples)`: Replace all examples for a permission
+- `upsertPermissionCategory(data)`: Insert/update category by name
+- `upsertGraphPermission(data)`: Insert/update permission by name
+- `replaceGraphPermissionEndpoints(permissionId, endpoints)`: Replace endpoints
+- `replaceGraphPermissionExamples(permissionId, examples)`: Replace examples
 
 ### Sync Services
 
 **Location**: `server/services/sync.ts`
 
 **Sync Functions** (with pagination and delta token support):
-- `syncCalendarEvents`: Calendar events with attendees and recurrence patterns
-- `syncContacts`: Outlook contacts with phone/email/address data
-- `syncDriveItems`: OneDrive/SharePoint files with recursive folder scanning
+- `syncCalendarEvents`: Calendar events with attendees and recurrence
+- `syncContacts`: Outlook contacts
+- `syncDriveItems`: OneDrive/SharePoint files
 - `syncTodoLists`: Microsoft To Do lists and tasks
 - `syncChatThreads`: Teams chats with participants and messages
 - `syncPresence`: Current user presence status
-- `syncAllResources`: Orchestrates parallel sync of all resources
+- `syncAllResources`: Orchestrates parallel sync
 
 **AI Helper Functions**:
-- `extractActionItemsFromCalendar`: GPT-4o extracts action items from meeting subjects/descriptions
-- `generateDailyDigest`: Creates AI-powered daily productivity insights
-- `scheduleUpcomingReminders`: Auto-schedules reminders for events and overdue tasks
+- `extractActionItemsFromCalendar`: GPT-4o extracts action items
+- `generateDailyDigest`: AI-powered productivity insights
+- `scheduleUpcomingReminders`: Auto-schedules reminders
 
 **Key Features**:
-- Delta sync support using Microsoft Graph `@odata.deltaLink` for incremental updates
-- Pre-loaded Maps for O(1) existing record lookups (no O(n²) database access)
-- Sync job tracking with start/end timestamps and item counts
-- Error accumulation with graceful degradation
+- Delta sync using `@odata.deltaLink` for incremental updates
+- Pre-loaded Maps for O(1) record lookups
+- Sync job tracking with error accumulation
 
 ### Sync Scheduler
 
 **Location**: `server/services/syncScheduler.ts`
 
 **Tiered Scheduling** (node-cron):
-- **Presence**: Every 5 minutes - Real-time availability status
-- **Calendar/Chat/ToDo**: Every 30 minutes - Core productivity data
-- **Files/Contacts**: Every 2 hours - Less frequently changing data
+- Presence: Every 5 minutes
+- Calendar/Chat/ToDo: Every 30 minutes
+- Files/Contacts: Every 2 hours
 
 **Queue Management**:
 - In-memory job queue with sequential per-user processing
-- User locks prevent concurrent Microsoft Graph calls for same user
-- Configurable concurrency (default 2 parallel users)
-- Exponential backoff retry (5 max retries with delays: 1s, 2s, 4s, 8s, 16s)
+- User locks prevent concurrent Graph calls
+- Exponential backoff retry (5 max retries)
 
 **API Endpoints**:
-- `POST /api/sync/manual` - User triggers sync of their own data
-- `GET /api/sync/status` - View user's sync history and queue status
-- `GET /api/admin/sync/stats` - Admin: Queue statistics
-- `POST /api/admin/sync/all` - Admin: Trigger sync for all users
-- `GET /api/admin/sync/jobs` - Admin: View all recent sync jobs
-- `POST /api/admin/sync/user/:userId` - Admin: Sync specific user
+- `POST /api/sync/manual` - User triggers own sync
+- `GET /api/sync/status` - User's sync history
+- `GET /api/admin/sync/stats` - Queue statistics (admin)
+- `POST /api/admin/sync/all` - Sync all users (admin)
+- `POST /api/admin/sync/user/:userId` - Sync specific user (admin)
 
 ### Admin M365 Account Linking
 
 **Location**: `client/src/pages/admin.tsx`
 
-**Purpose**: Allows administrators to link portal users to their Microsoft 365 accounts. This is required before the sync services can fetch data for a user.
-
-**How It Works**:
-1. Admin navigates to the Admin page (/admin)
-2. The "M365 Linking" tab shows all portal users with their current link status
-3. For unlinked users, admin clicks "Link" to open a dialog with searchable M365 users
-4. Admin selects the matching M365 account and confirms the link
-5. The system creates a record in `ms_user_profiles` storing the `msUserId` (Microsoft Graph ID)
-6. Sync services use this `msUserId` to fetch data via `/users/{msUserId}/` Graph API endpoints
+Allows administrators to link portal users to Microsoft 365 accounts:
+1. Admin views users with M365 link status
+2. Clicks "Link" to search M365 users
+3. Selects matching account and confirms
+4. Creates `ms_user_profiles` record with `msUserId`
+5. Sync services use this ID for Graph API calls
 
 **Admin API Endpoints**:
-- `GET /api/admin/users` - Lists portal users with M365 link status
-- `POST /api/admin/users/:userId/link-m365` - Links portal user to M365 account
-- `DELETE /api/admin/users/:userId/link-m365` - Unlinks portal user from M365
-- `GET /api/admin/m365-user/:msUserId` - Fetches M365 user details
+- `GET /api/admin/users` - Lists users with M365 status
+- `POST /api/admin/users/:userId/link-m365` - Link user
+- `DELETE /api/admin/users/:userId/link-m365` - Unlink user
 
-**Security**: All admin endpoints require the user to have `role: "admin"` - enforced at route level
+## External Dependencies
 
-**Lifecycle**:
-- Auto-starts on server startup
-- Graceful shutdown waits for in-flight jobs (30s timeout)
-- Handles SIGTERM/SIGINT for clean container stops
-
-### External Dependencies
-
-**Microsoft Graph API Integration**:
-
-- **Outlook**: Email synchronization with access to inbox, sent items, and metadata
-- **OneDrive**: Document storage and retrieval capabilities
-- **SharePoint**: Enterprise content management integration
-- OAuth token management with automatic refresh using Replit Connectors API
-- Uncacheable client pattern ensures fresh access tokens per request
-
-**HubSpot API Integration**:
-
-- CRM communication logging (calls, emails, meetings, notes)
-- Contact and company association tracking
-- OAuth authentication via Replit Connectors with token refresh
-- API client initialization using `@hubspot/api-client` package
-
-**OpenAI GPT Integration**:
-
-- Model: GPT-5 for AI-powered features
-- **Meeting Summarization**: Analyzes transcripts to generate concise summaries and extract action items
-- **Document Q&A**: Answers questions about uploaded documents using RAG-like context
-- JSON response format for structured data extraction
-- Error handling with fallback responses when AI processing fails
-
-**Replit Platform Services**:
-
-- **Replit Auth**: Authentication provider with OIDC integration
-- **Replit Connectors**: Managed OAuth flows for third-party integrations (Microsoft, HubSpot)
-- Environment variables for secure credential storage
-- Development tooling: Cartographer for code mapping, runtime error overlay, dev banner
-
-**UI Dependencies**:
-
-- Radix UI primitives for accessible, unstyled components
-- Lucide React for consistent iconography
-- React Hook Form with Zod validation for form management
-- CMDK for command palette functionality
-- Vaul for drawer components
-
-**Development Tools**:
-
-- TypeScript for type safety across frontend and backend
-- ESBuild for production backend bundling
-- PostCSS with Tailwind and Autoprefixer
-- tsx for TypeScript execution in development
+- **Microsoft Graph API**: Outlook, OneDrive, SharePoint integration with OAuth via Replit Connectors
+- **HubSpot API**: CRM communication logging via Replit Connectors
+- **OpenAI GPT**: GPT-5 for meeting summarization, document Q&A, structured extraction
+- **Replit Platform**: Auth (OIDC), Connectors (OAuth), environment variables
+- **UI**: Radix UI, Lucide React, React Hook Form, Zod, CMDK, Vaul
+- **Development**: TypeScript, ESBuild, PostCSS, Tailwind, tsx
 
 ---
 
@@ -445,30 +231,33 @@ ingestGraphPermissionDocs(rootDir?: string): Promise<PermissionIngestionStats>
 
 ### Completed (Recent Merge Commits)
 
-- **Graph Permission Catalog Schema**: All 5 tables defined with proper relationships
-- **Permission Ingestion Service**: Parses markdown docs and populates database
-- **Storage Methods**: CRUD operations for permissions, categories, endpoints, examples
-- **Organizational Structure**: Departments table with hierarchy and user memberships
-- **Resource & Activity Framework**: Unified tracking tables with proper indexes
-- **Governance Framework**: Policies and audit_events tables with relationships
-- **Permission Documentation**: 280+ markdown files in `docs/api-permissions/`
+**Schema Complete:**
+- Graph Permission Catalog (5 tables): `permission_categories`, `graph_permissions`, `graph_permission_endpoints`, `graph_permission_examples`, `graph_permission_grants`
+- Organizational Structure (2 tables): `departments`, `user_department_memberships`
+- Resource & Activity Tracking (2 tables): `resources`, `activities`
+- Governance Framework (2 tables): `policies`, `audit_events`
+- All Drizzle relations defined with proper indexes
+
+**Services Complete:**
+- Permission Ingestion Service (`permissionIngestion.ts`)
+- Storage methods for permission CRUD operations
+- Permission documentation (280+ markdown files in `docs/api-permissions/`)
 
 ### Still Required
 
 1. **Database Migration**
-   - Run `npm run db:push` to create the new tables in PostgreSQL
-   - Verify all indexes and constraints are applied
+   - Run `npm run db:push` to create new tables in PostgreSQL
+   - Verify all indexes and constraints applied
 
 2. **Permission Ingestion Trigger**
    - Add API endpoint: `POST /api/admin/permissions/ingest`
-   - Or CLI command to run ingestion on demand
-   - Consider scheduled refresh (weekly?) for permission updates
+   - Or CLI command for on-demand ingestion
+   - Consider scheduled refresh (weekly)
 
 3. **Permission Catalog Admin UI**
    - Browse permissions by category
-   - View permission details (endpoints, examples, risk level)
+   - View details (endpoints, examples, risk level)
    - Search/filter capabilities
-   - Track which permissions are in use by the app
 
 4. **Department Management UI**
    - Create/edit departments and hierarchy
@@ -478,22 +267,20 @@ ingestGraphPermissionDocs(rootDir?: string): Promise<PermissionIngestionStats>
 5. **Resource-Activity Integration**
    - Update sync services to create `resources` records
    - Generate `activities` when syncing M365 data
-   - Link activities to departments for reporting
+   - Link activities to departments
 
 6. **AI Integration with New Schema**
-   - Use `resources`/`activities` for AI analysis instead of individual tables
+   - Use `resources`/`activities` for AI analysis
    - Create `audit_events` when AI accesses data
    - Evaluate `policies` before AI actions
-   - Generate department-level insights for managers
+   - Generate department-level insights
 
 7. **Manager/Department Head Reports**
-   - Dashboard for department heads showing:
-     - Team activity summaries
-     - Missed follow-up alerts
-     - Performance metrics from meeting analysis
-     - Cross-team collaboration stats
+   - Team activity summaries
+   - Missed follow-up alerts
+   - Performance metrics from meeting analysis
 
 8. **Policy Engine Implementation**
-   - Define initial policy rules (JSON schema)
-   - Build policy evaluation logic
+   - Define policy rule schema (JSON)
+   - Build evaluation logic
    - Integrate with AI decision points
