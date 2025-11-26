@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { 
   MessageSquare, 
@@ -207,6 +208,9 @@ export default function Meetings() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Upload Meeting Notes</DialogTitle>
+                <DialogDescription>
+                  Upload meeting notes or transcripts to generate AI-powered summaries and action items.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleUpload} className="space-y-4">
                 <div>
@@ -388,6 +392,9 @@ export default function Meetings() {
                   {selectedMeeting.source}
                 </Badge>
               </DialogTitle>
+              <DialogDescription>
+                View meeting details, AI-generated summary, and extracted action items.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-6">
               <div>

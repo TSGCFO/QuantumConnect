@@ -21,6 +21,21 @@ import {
   getUserChats,
   getChatMessages
 } from "./integrations/teams-app";
+// Import sync services
+import {
+  syncCalendarEvents,
+  syncContacts,
+  syncDriveItems,
+  syncTodoLists,
+  syncChatThreads,
+  syncPresence,
+  syncAllResources,
+  extractActionItemsFromCalendar,
+  generateDailyDigest,
+  scheduleUpcomingReminders,
+} from "./services/sync";
+import { startScheduler, stopScheduler, enqueueSync, enqueueSyncForAllUsers, getQueueStats, manualSyncUser } from "./services/syncScheduler";
+import { isDirectGraphConfigured, getMissingCredentials, getDirectGraphClient, getAllUsers } from "./integrations/microsoft-graph";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -59,6 +74,209 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Microsoft Graph API status and test endpoint
+  app.get("/api/graph/status", async (req, res) => {
+    try {
+      const configured = isDirectGraphConfigured();
+      const missing = getMissingCredentials();
+      
+      if (!configured) {
+        return res.json({
+          configured: false,
+          missing,
+          message: "Microsoft Graph API not configured. Missing Azure AD credentials.",
+        });
+      }
+
+      // Try to make a simple API call to verify the connection
+      try {
+        const client = getDirectGraphClient();
+        const orgResponse = await client.api("/organization").select("id,displayName").get();
+        const org = orgResponse.value?.[0];
+        
+        return res.json({
+          configured: true,
+          connected: true,
+          organization: org?.displayName || "Unknown",
+          organizationId: org?.id,
+          message: "Microsoft Graph API connected successfully!",
+        });
+      } catch (apiError: any) {
+        return res.json({
+          configured: true,
+          connected: false,
+          error: apiError.message,
+          message: "Azure AD credentials configured but API connection failed.",
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({
+        configured: false,
+        error: error.message,
+        message: "Error checking Graph API status",
+      });
+    }
+  });
+
+  // Get all Microsoft 365 users (for admin linking)
+  app.get("/api/graph/users", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!isDirectGraphConfigured()) {
+        return res.status(400).json({
+          message: "Microsoft Graph API not configured",
+          missing: getMissingCredentials(),
+        });
+      }
+
+      const usersResponse = await getAllUsers({ top: 100 });
+      res.json(usersResponse.value || []);
+    } catch (error: any) {
+      console.error("Error fetching Graph users:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch Microsoft 365 users" });
+    }
+  });
+
+  // Admin: Get all portal users with their M365 link status
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const portalUsers = await storage.getAllUsers();
+      const msProfiles = await storage.getAllMsUserProfiles();
+      
+      // Create a map for quick lookup
+      const profileMap = new Map(msProfiles.map(p => [p.userId, p]));
+      
+      // Combine portal users with their M365 link status
+      const usersWithStatus = portalUsers.map(user => ({
+        ...user,
+        msProfile: profileMap.get(user.id) || null,
+        isLinked: profileMap.has(user.id),
+      }));
+
+      res.json(usersWithStatus);
+    } catch (error: any) {
+      console.error("Error fetching admin users:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Link a portal user to a Microsoft 365 account
+  app.post("/api/admin/users/:userId/link-m365", isAuthenticated, logActivity("link_m365_account"), async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+      const { msUserId, displayName, mail, jobTitle, department, officeLocation } = req.body;
+
+      if (!msUserId) {
+        return res.status(400).json({ message: "Microsoft 365 user ID is required" });
+      }
+
+      // Check if the portal user exists
+      const portalUser = await storage.getUser(userId);
+      if (!portalUser) {
+        return res.status(404).json({ message: "Portal user not found" });
+      }
+
+      // Check if the M365 user is already linked to another portal user
+      const existingProfile = await storage.getMsUserProfileByMsUserId(msUserId);
+      if (existingProfile && existingProfile.userId !== userId) {
+        return res.status(400).json({ 
+          message: "This Microsoft 365 account is already linked to another portal user" 
+        });
+      }
+
+      // Create or update the MS user profile
+      const profile = await storage.upsertMsUserProfile({
+        userId,
+        msUserId,
+        jobTitle: jobTitle || null,
+        department: department || null,
+        officeLocation: officeLocation || null,
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully linked ${portalUser.email || portalUser.firstName} to Microsoft 365 account`,
+        profile,
+      });
+    } catch (error: any) {
+      console.error("Error linking M365 account:", error);
+      res.status(500).json({ message: error.message || "Failed to link Microsoft 365 account" });
+    }
+  });
+
+  // Admin: Unlink a portal user from Microsoft 365
+  app.delete("/api/admin/users/:userId/link-m365", isAuthenticated, logActivity("unlink_m365_account"), async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+
+      // Check if the portal user exists
+      const portalUser = await storage.getUser(userId);
+      if (!portalUser) {
+        return res.status(404).json({ message: "Portal user not found" });
+      }
+
+      // Delete the MS user profile
+      await storage.deleteMsUserProfile(userId);
+
+      res.json({
+        success: true,
+        message: `Successfully unlinked ${portalUser.email || portalUser.firstName} from Microsoft 365`,
+      });
+    } catch (error: any) {
+      console.error("Error unlinking M365 account:", error);
+      res.status(500).json({ message: error.message || "Failed to unlink Microsoft 365 account" });
+    }
+  });
+
+  // Admin: Get Microsoft 365 user details by ID (using User.Read.All permission)
+  app.get("/api/admin/m365-user/:msUserId", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      if (!isDirectGraphConfigured()) {
+        return res.status(400).json({
+          message: "Microsoft Graph API not configured",
+          missing: getMissingCredentials(),
+        });
+      }
+
+      const { msUserId } = req.params;
+      const client = getDirectGraphClient();
+      
+      // Use User.Read.All permission to get user details
+      const userDetails = await client
+        .api(`/users/${msUserId}`)
+        .select("id,displayName,mail,userPrincipalName,jobTitle,department,officeLocation,mobilePhone,businessPhones")
+        .get();
+
+      res.json(userDetails);
+    } catch (error: any) {
+      console.error("Error fetching M365 user details:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch Microsoft 365 user details" });
     }
   });
 
@@ -1014,6 +1232,750 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: "Failed to update user" });
       }
     },
+  );
+
+  // ============================================
+  // Microsoft 365 Data Sync Routes
+  // ============================================
+
+  // Calendar Sync Routes
+  app.post("/api/calendar/sync", isAuthenticated, logActivity("sync_calendar"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { daysBack, daysForward, useDelta } = req.body || {};
+      
+      const result = await syncCalendarEvents(userId, { daysBack, daysForward, useDelta });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} calendar events (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync calendar",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing calendar:", error);
+      res.status(500).json({ message: "Failed to sync calendar" });
+    }
+  });
+
+  app.get("/api/calendar/events", isAuthenticated, logActivity("view_calendar"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { start, end } = req.query;
+      const startDate = start ? new Date(start as string) : undefined;
+      const endDate = end ? new Date(end as string) : undefined;
+      const events = await storage.getCalendarEvents(userId, startDate, endDate);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching calendar events:", error);
+      res.status(500).json({ message: "Failed to fetch calendar events" });
+    }
+  });
+
+  // Contacts Sync Routes
+  app.post("/api/contacts/sync", isAuthenticated, logActivity("sync_contacts"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { pageSize, useDelta } = req.body || {};
+      
+      const result = await syncContacts(userId, { pageSize, useDelta });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} contacts (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync contacts",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing contacts:", error);
+      res.status(500).json({ message: "Failed to sync contacts" });
+    }
+  });
+
+  app.get("/api/contacts", isAuthenticated, logActivity("view_contacts"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const contacts = await storage.getContacts(userId);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+      res.status(500).json({ message: "Failed to fetch contacts" });
+    }
+  });
+
+  app.get("/api/contacts/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: "Query parameter 'q' is required" });
+      }
+      const contacts = await storage.searchContacts(userId, query);
+      res.json(contacts);
+    } catch (error) {
+      console.error("Error searching contacts:", error);
+      res.status(500).json({ message: "Failed to search contacts" });
+    }
+  });
+
+  // Drive Items (OneDrive/SharePoint) Sync Routes
+  app.post("/api/drive/sync", isAuthenticated, logActivity("sync_drive"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { source, pageSize, recursive } = req.body || {};
+      
+      const result = await syncDriveItems(userId, { source, pageSize, recursive });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} drive items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync drive items",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing drive:", error);
+      res.status(500).json({ message: "Failed to sync drive items" });
+    }
+  });
+
+  app.get("/api/drive/items", isAuthenticated, logActivity("view_drive"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const source = req.query.source as string;
+      const items = await storage.getDriveItems(userId, source);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching drive items:", error);
+      res.status(500).json({ message: "Failed to fetch drive items" });
+    }
+  });
+
+  app.get("/api/drive/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const query = req.query.q as string;
+      if (!query) {
+        return res.status(400).json({ message: "Query parameter 'q' is required" });
+      }
+      const items = await storage.searchDriveItems(userId, query);
+      res.json(items);
+    } catch (error) {
+      console.error("Error searching drive items:", error);
+      res.status(500).json({ message: "Failed to search drive items" });
+    }
+  });
+
+  // Microsoft To Do Sync Routes
+  app.post("/api/todo/sync", isAuthenticated, logActivity("sync_todo"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { includeTasks } = req.body || {};
+      
+      const result = await syncTodoLists(userId, { includeTasks });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} todo items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync To Do",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing To Do:", error);
+      res.status(500).json({ message: "Failed to sync To Do" });
+    }
+  });
+
+  app.get("/api/todo/lists", isAuthenticated, logActivity("view_todo"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const lists = await storage.getTodoLists(userId);
+      res.json(lists);
+    } catch (error) {
+      console.error("Error fetching To Do lists:", error);
+      res.status(500).json({ message: "Failed to fetch To Do lists" });
+    }
+  });
+
+  app.get("/api/todo/tasks", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const tasks = await storage.getTodoTasksByUser(userId);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching To Do tasks:", error);
+      res.status(500).json({ message: "Failed to fetch To Do tasks" });
+    }
+  });
+
+  app.get("/api/todo/lists/:listId/tasks", isAuthenticated, async (req: any, res) => {
+    try {
+      const { listId } = req.params;
+      const tasks = await storage.getTodoTasks(listId);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching list tasks:", error);
+      res.status(500).json({ message: "Failed to fetch list tasks" });
+    }
+  });
+
+  // ============================================
+  // AI Features Routes
+  // ============================================
+
+  // AI Action Items
+  app.get("/api/ai/action-items", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = req.query.status as string;
+      const items = await storage.getAiActionItems(userId, status);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching action items:", error);
+      res.status(500).json({ message: "Failed to fetch action items" });
+    }
+  });
+
+  app.post("/api/ai/action-items", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, description, sourceType, sourceId, dueDate, priority, confidence } = req.body;
+      
+      const item = await storage.createAiActionItem({
+        userId,
+        title,
+        description,
+        sourceType,
+        sourceId,
+        dueDate: dueDate ? new Date(dueDate) : null,
+        priority: priority || "medium",
+        status: "pending",
+        extractedAt: new Date(),
+        confidence: confidence || 0.8,
+      });
+      
+      res.json(item);
+    } catch (error) {
+      console.error("Error creating action item:", error);
+      res.status(500).json({ message: "Failed to create action item" });
+    }
+  });
+
+  app.patch("/api/ai/action-items/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const item = await storage.updateAiActionItem(id, req.body);
+      res.json(item);
+    } catch (error) {
+      console.error("Error updating action item:", error);
+      res.status(500).json({ message: "Failed to update action item" });
+    }
+  });
+
+  // AI Reminders
+  app.get("/api/ai/reminders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = req.query.status as string;
+      const reminders = await storage.getUserReminders(userId, status);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+      res.status(500).json({ message: "Failed to fetch reminders" });
+    }
+  });
+
+  app.post("/api/ai/reminders", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, message, triggerAt, relatedType, relatedId, type, channel } = req.body;
+      
+      const reminder = await storage.createAiReminder({
+        userId,
+        title,
+        message,
+        triggerAt: new Date(triggerAt),
+        relatedType,
+        relatedId,
+        type: type || "custom",
+        channel: channel || "in_app",
+        status: "pending",
+      });
+      
+      res.json(reminder);
+    } catch (error) {
+      console.error("Error creating reminder:", error);
+      res.status(500).json({ message: "Failed to create reminder" });
+    }
+  });
+
+  app.patch("/api/ai/reminders/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const reminder = await storage.updateAiReminder(id, req.body);
+      res.json(reminder);
+    } catch (error) {
+      console.error("Error updating reminder:", error);
+      res.status(500).json({ message: "Failed to update reminder" });
+    }
+  });
+
+  app.get("/api/ai/reminders/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      const before = req.query.before ? new Date(req.query.before as string) : undefined;
+      const reminders = await storage.getPendingReminders(before);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching pending reminders:", error);
+      res.status(500).json({ message: "Failed to fetch pending reminders" });
+    }
+  });
+
+  // AI Notifications
+  app.get("/api/ai/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const status = req.query.status as string;
+      const notifications = await storage.getUserNotifications(userId, status);
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.post("/api/ai/notifications", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { title, body, type, channel } = req.body;
+      
+      const notification = await storage.createAiNotification({
+        userId,
+        title,
+        body: body || "",
+        type: type || "alert",
+        channel: channel || "in_app",
+        status: "pending",
+      });
+      
+      res.json(notification);
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      res.status(500).json({ message: "Failed to create notification" });
+    }
+  });
+
+  app.patch("/api/ai/notifications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const notification = await storage.updateAiNotification(id, req.body);
+      res.json(notification);
+    } catch (error) {
+      console.error("Error updating notification:", error);
+      res.status(500).json({ message: "Failed to update notification" });
+    }
+  });
+
+  app.post("/api/ai/notifications/mark-all-read", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const notifications = await storage.getUserNotifications(userId, "unread");
+      for (const notification of notifications) {
+        await storage.updateAiNotification(notification.id, { status: "read" });
+      }
+      res.json({ message: `Marked ${notifications.length} notifications as read` });
+    } catch (error) {
+      console.error("Error marking notifications:", error);
+      res.status(500).json({ message: "Failed to mark notifications" });
+    }
+  });
+
+  // AI Insights
+  app.get("/api/ai/insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const type = req.query.type as string;
+      const insights = await storage.getAiInsights(userId, type);
+      res.json(insights);
+    } catch (error) {
+      console.error("Error fetching insights:", error);
+      res.status(500).json({ message: "Failed to fetch insights" });
+    }
+  });
+
+  app.post("/api/ai/insights", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { type, title, summary, data, score, scope } = req.body;
+      
+      const insight = await storage.createAiInsight({
+        userId,
+        type,
+        title,
+        summary,
+        data: data || {},
+        score,
+        scope: scope || "user",
+        generatedAt: new Date(),
+      });
+      
+      res.json(insight);
+    } catch (error) {
+      console.error("Error creating insight:", error);
+      res.status(500).json({ message: "Failed to create insight" });
+    }
+  });
+
+  // ============================================
+  // Sync Status Routes
+  // ============================================
+
+  app.get("/api/sync/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const states = await storage.getSyncStatesForUser(userId);
+      res.json(states);
+    } catch (error) {
+      console.error("Error fetching sync status:", error);
+      res.status(500).json({ message: "Failed to fetch sync status" });
+    }
+  });
+
+  app.get("/api/sync/jobs", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const jobs = await storage.getRecentSyncJobs(userId, limit);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching sync jobs:", error);
+      res.status(500).json({ message: "Failed to fetch sync jobs" });
+    }
+  });
+
+  app.post("/api/sync/full", isAuthenticated, logActivity("full_sync"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { 
+        includeCalendar, 
+        includeContacts, 
+        includeDrive, 
+        includeTodo, 
+        includeChat, 
+        includePresence 
+      } = req.body || {};
+      
+      const result = await syncAllResources(userId, {
+        includeCalendar,
+        includeContacts,
+        includeDrive,
+        includeTodo,
+        includeChat,
+        includePresence,
+      });
+      
+      res.json({ 
+        message: result.summary,
+        success: result.success,
+        results: result.results,
+      });
+    } catch (error) {
+      console.error("Error initiating full sync:", error);
+      res.status(500).json({ message: "Failed to initiate full sync" });
+    }
+  });
+
+  // ============================================
+  // AI Extraction and Processing Routes
+  // ============================================
+
+  app.post("/api/ai/extract-action-items", isAuthenticated, logActivity("extract_action_items"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { daysBack, daysForward } = req.body || {};
+      
+      const result = await extractActionItemsFromCalendar(userId, { daysBack, daysForward });
+      
+      res.json({
+        success: result.success,
+        itemsCreated: result.itemsCreated,
+        summary: result.summary,
+        errors: result.errors,
+      });
+    } catch (error) {
+      console.error("Error extracting action items:", error);
+      res.status(500).json({ message: "Failed to extract action items" });
+    }
+  });
+
+  app.post("/api/ai/generate-daily-digest", isAuthenticated, logActivity("generate_digest"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { date } = req.body || {};
+      
+      const result = await generateDailyDigest(userId, { 
+        date: date ? new Date(date) : undefined 
+      });
+      
+      res.json({
+        success: result.success,
+        itemsCreated: result.itemsCreated,
+        summary: result.summary,
+        errors: result.errors,
+      });
+    } catch (error) {
+      console.error("Error generating daily digest:", error);
+      res.status(500).json({ message: "Failed to generate daily digest" });
+    }
+  });
+
+  app.post("/api/ai/schedule-reminders", isAuthenticated, logActivity("schedule_reminders"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { daysAhead, reminderMinutesBefore } = req.body || {};
+      
+      const result = await scheduleUpcomingReminders(userId, { 
+        daysAhead, 
+        reminderMinutesBefore 
+      });
+      
+      res.json({
+        success: result.success,
+        itemsCreated: result.itemsCreated,
+        summary: result.summary,
+        errors: result.errors,
+      });
+    } catch (error) {
+      console.error("Error scheduling reminders:", error);
+      res.status(500).json({ message: "Failed to schedule reminders" });
+    }
+  });
+
+  // Chat Sync Routes
+  app.post("/api/chat/sync", isAuthenticated, logActivity("sync_chat"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit, includeMessages, messagesPerChat } = req.body || {};
+      
+      const result = await syncChatThreads(userId, { limit, includeMessages, messagesPerChat });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} chat items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync chats",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing chats:", error);
+      res.status(500).json({ message: "Failed to sync chats" });
+    }
+  });
+
+  // Presence Sync Routes
+  app.post("/api/presence/sync", isAuthenticated, logActivity("sync_presence"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const result = await syncPresence(userId);
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced presence status`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync presence",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing presence:", error);
+      res.status(500).json({ message: "Failed to sync presence" });
+    }
+  });
+
+  // ===== SYNC MANAGEMENT ROUTES =====
+
+  // Manual sync for authenticated user - sync their own data
+  app.post(
+    "/api/sync/manual",
+    isAuthenticated,
+    logActivity("manual_sync"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const { resources } = req.body;
+        
+        await manualSyncUser(userId, resources);
+        
+        res.json({ 
+          message: "Sync jobs queued successfully",
+          resources: resources || ["presence", "calendar", "todo", "chat", "contacts", "drive"]
+        });
+      } catch (error) {
+        console.error("Error queuing manual sync:", error);
+        res.status(500).json({ message: "Failed to queue sync jobs" });
+      }
+    }
+  );
+
+  // Get sync status for authenticated user
+  app.get(
+    "/api/sync/status",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        
+        const recentJobs = await storage.getRecentSyncJobs(userId, 10);
+        const syncStates = await storage.getAllUserSyncStates(userId);
+        
+        res.json({
+          recentJobs,
+          syncStates,
+          queueStats: getQueueStats()
+        });
+      } catch (error) {
+        console.error("Error getting sync status:", error);
+        res.status(500).json({ message: "Failed to get sync status" });
+      }
+    }
+  );
+
+  // ===== ADMIN SYNC ROUTES =====
+
+  // Get queue stats (admin only)
+  app.get(
+    "/api/admin/sync/stats",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const stats = getQueueStats();
+        res.json(stats);
+      } catch (error) {
+        console.error("Error getting sync stats:", error);
+        res.status(500).json({ message: "Failed to get sync stats" });
+      }
+    }
+  );
+
+  // Trigger sync for all users (admin only)
+  app.post(
+    "/api/admin/sync/all",
+    isAuthenticated,
+    logActivity("admin_sync_all"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const { resourceType } = req.body;
+        
+        if (resourceType) {
+          await enqueueSyncForAllUsers(resourceType);
+          res.json({ message: `Queued ${resourceType} sync for all users` });
+        } else {
+          const types = ["presence", "calendar", "todo", "chat", "contacts", "drive"];
+          for (const type of types) {
+            await enqueueSyncForAllUsers(type);
+          }
+          res.json({ message: "Queued full sync for all users" });
+        }
+      } catch (error) {
+        console.error("Error triggering admin sync:", error);
+        res.status(500).json({ message: "Failed to trigger sync" });
+      }
+    }
+  );
+
+  // Get recent sync jobs for all users (admin only)
+  app.get(
+    "/api/admin/sync/jobs",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const limit = parseInt(req.query.limit as string) || 50;
+        const jobs = await storage.getAllRecentSyncJobs(limit);
+        
+        res.json(jobs);
+      } catch (error) {
+        console.error("Error getting sync jobs:", error);
+        res.status(500).json({ message: "Failed to get sync jobs" });
+      }
+    }
+  );
+
+  // Sync specific user (admin only)
+  app.post(
+    "/api/admin/sync/user/:targetUserId",
+    isAuthenticated,
+    logActivity("admin_sync_user"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (!user || user.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const { targetUserId } = req.params;
+        const { resources } = req.body;
+        
+        await manualSyncUser(targetUserId, resources);
+        
+        res.json({ 
+          message: `Sync queued for user ${targetUserId}`,
+          resources: resources || ["presence", "calendar", "todo", "chat", "contacts", "drive"]
+        });
+      } catch (error) {
+        console.error("Error triggering user sync:", error);
+        res.status(500).json({ message: "Failed to trigger user sync" });
+      }
+    }
   );
 
   const httpServer = createServer(app);

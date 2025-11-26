@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -129,6 +130,9 @@ export default function Knowledge() {
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Ask the AI Assistant</DialogTitle>
+                <DialogDescription>
+                  Ask questions about company knowledge and get AI-powered answers.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAskAI} className="space-y-4">
                 <div>
@@ -178,6 +182,9 @@ export default function Knowledge() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Upload Document</DialogTitle>
+                <DialogDescription>
+                  Add a document to the knowledge hub for easy access and AI-powered search.
+                </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleUpload} className="space-y-4">
                 <div>

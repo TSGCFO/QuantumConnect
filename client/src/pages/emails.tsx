@@ -10,6 +10,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Mail, Search, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -162,6 +163,9 @@ export default function Emails() {
               <DialogTitle>
                 {selectedEmail.subject || "(No subject)"}
               </DialogTitle>
+              <DialogDescription>
+                View the full email content and details.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">

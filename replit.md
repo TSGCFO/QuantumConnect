@@ -68,8 +68,9 @@ Preferred communication style: Simple, everyday language.
 
 **ORM**: Drizzle ORM providing type-safe database queries with schema-first approach.
 
-**Schema Design**:
+**Schema Design** (26 tables total):
 
+**Core Tables:**
 - **Users**: Core authentication table with role-based access (employee/manager/admin), department assignment, and profile metadata
 - **Documents**: Knowledge hub storage with category classification (policy/training/operational), file metadata, and search capabilities
 - **Tasks**: Task management with assignment, priority, status tracking, and due dates
@@ -79,7 +80,105 @@ Preferred communication style: Simple, everyday language.
 - **Activity Logs**: Audit trail capturing user actions, resource access, and IP/user agent data
 - **Sessions**: PostgreSQL-backed session storage for authentication persistence
 
-**Migration Strategy**: Drizzle Kit for schema migrations stored in `/migrations` directory.
+**Microsoft 365 Sync Infrastructure:**
+- **ms_user_profiles**: Extended Microsoft 365 user data (manager, job title, location, timezone)
+- **user_sync_states**: Per-user delta sync tracking with tokens for incremental updates
+- **sync_jobs**: Sync job history with status, timing, and error tracking
+
+**Microsoft 365 Data Tables:**
+- **ms_calendar_events**: Calendar events with recurrence, attendees, and online meeting links
+- **ms_event_attendees**: Event participant data with response status
+- **ms_recurrence_patterns**: Recurring event pattern definitions
+- **ms_todo_lists**: Microsoft To Do task lists per user
+- **ms_todo_tasks**: Individual tasks with reminders, due dates, and checklists
+- **ms_presence_snapshots**: Teams presence/availability status history
+- **ms_chat_threads**: Teams chat threads (1:1, group, meeting chats)
+- **ms_chat_participants**: Chat participant membership
+- **ms_chat_messages**: Chat messages with sender and content
+- **ms_contacts**: Outlook contacts with phone, email, and address data
+- **ms_drive_items**: OneDrive/SharePoint file metadata
+
+**AI Enablement Tables:**
+- **ai_action_items**: AI-extracted action items from meetings/emails with confidence scores
+- **ai_reminders**: Proactive reminder system with scheduling and delivery tracking
+- **ai_notifications**: User notification queue with multi-channel support
+- **ai_insights**: AI-generated productivity insights and reports
+
+**Migration Strategy**: Drizzle Kit for schema migrations with `npm run db:push` for safe updates.
+
+### Sync Services
+
+**Location**: `server/services/sync.ts`
+
+**Sync Functions** (with pagination and delta token support):
+- `syncCalendarEvents`: Calendar events with attendees and recurrence patterns
+- `syncContacts`: Outlook contacts with phone/email/address data
+- `syncDriveItems`: OneDrive/SharePoint files with recursive folder scanning
+- `syncTodoLists`: Microsoft To Do lists and tasks
+- `syncChatThreads`: Teams chats with participants and messages
+- `syncPresence`: Current user presence status
+- `syncAllResources`: Orchestrates parallel sync of all resources
+
+**AI Helper Functions**:
+- `extractActionItemsFromCalendar`: GPT-4o extracts action items from meeting subjects/descriptions
+- `generateDailyDigest`: Creates AI-powered daily productivity insights
+- `scheduleUpcomingReminders`: Auto-schedules reminders for events and overdue tasks
+
+**Key Features**:
+- Delta sync support using Microsoft Graph `@odata.deltaLink` for incremental updates
+- Pre-loaded Maps for O(1) existing record lookups (no O(n²) database access)
+- Sync job tracking with start/end timestamps and item counts
+- Error accumulation with graceful degradation
+
+### Sync Scheduler
+
+**Location**: `server/services/syncScheduler.ts`
+
+**Tiered Scheduling** (node-cron):
+- **Presence**: Every 5 minutes - Real-time availability status
+- **Calendar/Chat/ToDo**: Every 30 minutes - Core productivity data
+- **Files/Contacts**: Every 2 hours - Less frequently changing data
+
+**Queue Management**:
+- In-memory job queue with sequential per-user processing
+- User locks prevent concurrent Microsoft Graph calls for same user
+- Configurable concurrency (default 2 parallel users)
+- Exponential backoff retry (5 max retries with delays: 1s, 2s, 4s, 8s, 16s)
+
+**API Endpoints**:
+- `POST /api/sync/manual` - User triggers sync of their own data
+- `GET /api/sync/status` - View user's sync history and queue status
+- `GET /api/admin/sync/stats` - Admin: Queue statistics
+- `POST /api/admin/sync/all` - Admin: Trigger sync for all users
+- `GET /api/admin/sync/jobs` - Admin: View all recent sync jobs
+- `POST /api/admin/sync/user/:userId` - Admin: Sync specific user
+
+### Admin M365 Account Linking
+
+**Location**: `client/src/pages/admin.tsx`
+
+**Purpose**: Allows administrators to link portal users to their Microsoft 365 accounts. This is required before the sync services can fetch data for a user.
+
+**How It Works**:
+1. Admin navigates to the Admin page (/admin)
+2. The "M365 Linking" tab shows all portal users with their current link status
+3. For unlinked users, admin clicks "Link" to open a dialog with searchable M365 users
+4. Admin selects the matching M365 account and confirms the link
+5. The system creates a record in `ms_user_profiles` storing the `msUserId` (Microsoft Graph ID)
+6. Sync services use this `msUserId` to fetch data via `/users/{msUserId}/` Graph API endpoints
+
+**Admin API Endpoints**:
+- `GET /api/admin/users` - Lists portal users with M365 link status
+- `POST /api/admin/users/:userId/link-m365` - Links portal user to M365 account
+- `DELETE /api/admin/users/:userId/link-m365` - Unlinks portal user from M365
+- `GET /api/admin/m365-user/:msUserId` - Fetches M365 user details
+
+**Security**: All admin endpoints require the user to have `role: "admin"` - enforced at route level
+
+**Lifecycle**:
+- Auto-starts on server startup
+- Graceful shutdown waits for in-flight jobs (30s timeout)
+- Handles SIGTERM/SIGINT for clean container stops
 
 ### External Dependencies
 
