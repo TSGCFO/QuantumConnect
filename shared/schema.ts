@@ -1204,3 +1204,438 @@ export const insertAiInsightSchema = createInsertSchema(aiInsights).omit({
 });
 export type InsertAiInsight = z.infer<typeof insertAiInsightSchema>;
 export type AiInsight = typeof aiInsights.$inferSelect;
+
+// Departments and organizational hierarchy
+export const departments = pgTable(
+  "departments",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: text("name").notNull(),
+    code: varchar("code"),
+    description: text("description"),
+    headId: varchar("head_id").references(() => users.id),
+    parentDepartmentId: varchar("parent_department_id").references(() => departments.id),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("departments_code_unique").on(table.code),
+    index("departments_parent_idx").on(table.parentDepartmentId),
+  ],
+);
+
+// Department membership to support multi-department assignments
+export const userDepartmentMemberships = pgTable(
+  "user_department_memberships",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    departmentId: varchar("department_id")
+      .references(() => departments.id)
+      .notNull(),
+    role: varchar("role").notNull().default("member"), // member, manager, head
+    joinedAt: timestamp("joined_at").defaultNow(),
+    leftAt: timestamp("left_at"),
+  },
+  (table) => [
+    uniqueIndex("user_department_unique").on(table.userId, table.departmentId),
+    index("user_department_role_idx").on(table.departmentId, table.role),
+  ],
+);
+
+// Generic resource registry to unify items synced from Microsoft Graph
+export const resources = pgTable(
+  "resources",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    type: varchar("type").notNull(), // meeting, call, chat, email, file, calendar_event, task
+    sourceSystem: varchar("source_system").notNull(), // graph, teams, outlook, sharepoint
+    externalId: varchar("external_id").notNull(),
+    ownerUserId: varchar("owner_user_id").references(() => users.id),
+    departmentId: varchar("department_id").references(() => departments.id),
+    title: text("title"),
+    summary: text("summary"),
+    occurredAt: timestamp("occurred_at"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("resources_source_external_unique").on(
+      table.sourceSystem,
+      table.externalId,
+    ),
+    index("resources_owner_type_idx").on(table.ownerUserId, table.type),
+    index("resources_department_idx").on(table.departmentId),
+  ],
+);
+
+// Activity records that tie resources to actors for reporting
+export const activities = pgTable(
+  "activities",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    resourceId: varchar("resource_id")
+      .references(() => resources.id)
+      .notNull(),
+    actorUserId: varchar("actor_user_id").references(() => users.id),
+    targetUserId: varchar("target_user_id").references(() => users.id),
+    departmentId: varchar("department_id").references(() => departments.id),
+    type: varchar("type").notNull(),
+    status: varchar("status"),
+    occurredAt: timestamp("occurred_at").notNull(),
+    durationSeconds: integer("duration_seconds"),
+    sentimentScore: real("sentiment_score"),
+    qualityScore: real("quality_score"),
+    metrics: jsonb("metrics"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("activities_resource_idx").on(table.resourceId),
+    index("activities_actor_idx").on(table.actorUserId, table.type),
+    index("activities_department_idx").on(table.departmentId, table.occurredAt),
+  ],
+);
+
+// Catalog of Microsoft Graph permissions sourced from docs
+export const graphPermissions = pgTable(
+  "graph_permissions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(), // e.g., Mail.Read
+    displayName: text("display_name"),
+    description: text("description"),
+    type: varchar("type").notNull(), // Delegated or Application
+    category: varchar("category"),
+    adminConsentRequired: boolean("admin_consent_required").default(false),
+    riskLevel: varchar("risk_level"),
+    sourceDocPath: text("source_doc_path"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("graph_permissions_name_unique").on(table.name),
+    index("graph_permissions_category_idx").on(table.category),
+  ],
+);
+
+// API endpoints associated with Microsoft Graph permissions
+export const graphPermissionEndpoints = pgTable(
+  "graph_permission_endpoints",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    permissionId: varchar("permission_id")
+      .references(() => graphPermissions.id)
+      .notNull(),
+    method: varchar("method").notNull(),
+    path: text("path").notNull(),
+    resourceType: varchar("resource_type"),
+    description: text("description"),
+    exampleUrl: text("example_url"),
+  },
+  (table) => [
+    index("graph_permission_endpoints_permission_idx").on(table.permissionId),
+    uniqueIndex("graph_permission_endpoint_unique").on(
+      table.permissionId,
+      table.method,
+      table.path,
+    ),
+  ],
+);
+
+// Granted permissions tied to users, groups, or resources
+export const graphPermissionGrants = pgTable(
+  "graph_permission_grants",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    permissionId: varchar("permission_id")
+      .references(() => graphPermissions.id)
+      .notNull(),
+    granteeType: varchar("grantee_type").notNull(), // user, group, service_principal
+    granteeId: varchar("grantee_id").notNull(),
+    grantType: varchar("grant_type").notNull(), // delegated, application
+    scope: varchar("scope"), // organization, site, team, mailbox
+    scopeResourceId: varchar("scope_resource_id").references(() => resources.id),
+    consentedAt: timestamp("consented_at"),
+    expiresAt: timestamp("expires_at"),
+    grantedById: varchar("granted_by_id").references(() => users.id),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("graph_permission_grants_permission_idx").on(table.permissionId),
+    index("graph_permission_grants_grantee_idx").on(
+      table.granteeType,
+      table.granteeId,
+    ),
+    index("graph_permission_grants_scope_idx").on(table.scope, table.scopeResourceId),
+  ],
+);
+
+// Policies that govern AI actions and data handling
+export const policies = pgTable("policies", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  scope: varchar("scope").default("organization"), // organization, department, team
+  departmentId: varchar("department_id").references(() => departments.id),
+  enforcementRules: jsonb("enforcement_rules").notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Audit events for AI actions and permission usage
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    actorType: varchar("actor_type").notNull(), // user, ai_system, service
+    actorId: varchar("actor_id"),
+    action: varchar("action").notNull(),
+    permissionId: varchar("permission_id").references(() => graphPermissions.id),
+    policyId: varchar("policy_id").references(() => policies.id),
+    targetUserId: varchar("target_user_id").references(() => users.id),
+    targetResourceId: varchar("target_resource_id").references(() => resources.id),
+    outcome: varchar("outcome").notNull().default("pending"), // pending, succeeded, failed, denied
+    detail: jsonb("detail"),
+    occurredAt: timestamp("occurred_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("audit_events_actor_idx").on(table.actorType, table.actorId),
+    index("audit_events_permission_idx").on(table.permissionId),
+    index("audit_events_resource_idx").on(table.targetResourceId),
+    index("audit_events_policy_idx").on(table.policyId),
+  ],
+);
+
+export const departmentsRelations = relations(
+  departments,
+  ({ one, many }) => ({
+    head: one(users, {
+      fields: [departments.headId],
+      references: [users.id],
+    }),
+    parent: one(departments, {
+      fields: [departments.parentDepartmentId],
+      references: [departments.id],
+      relationName: "departmentParent",
+    }),
+    children: many(departments, { relationName: "departmentParent" }),
+    memberships: many(userDepartmentMemberships),
+  }),
+);
+
+export const userDepartmentMembershipsRelations = relations(
+  userDepartmentMemberships,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [userDepartmentMemberships.userId],
+      references: [users.id],
+    }),
+    department: one(departments, {
+      fields: [userDepartmentMemberships.departmentId],
+      references: [departments.id],
+    }),
+  }),
+);
+
+export const resourcesRelations = relations(resources, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [resources.ownerUserId],
+    references: [users.id],
+  }),
+  department: one(departments, {
+    fields: [resources.departmentId],
+    references: [departments.id],
+  }),
+  activities: many(activities),
+  grants: many(graphPermissionGrants),
+  auditEvents: many(auditEvents),
+}));
+
+export const activitiesRelations = relations(activities, ({ one }) => ({
+  resource: one(resources, {
+    fields: [activities.resourceId],
+    references: [resources.id],
+  }),
+  actor: one(users, {
+    fields: [activities.actorUserId],
+    references: [users.id],
+  }),
+  target: one(users, {
+    fields: [activities.targetUserId],
+    references: [users.id],
+  }),
+  department: one(departments, {
+    fields: [activities.departmentId],
+    references: [departments.id],
+  }),
+}));
+
+export const graphPermissionsRelations = relations(
+  graphPermissions,
+  ({ many }) => ({
+    endpoints: many(graphPermissionEndpoints),
+    grants: many(graphPermissionGrants),
+    auditEvents: many(auditEvents),
+  }),
+);
+
+export const graphPermissionEndpointsRelations = relations(
+  graphPermissionEndpoints,
+  ({ one }) => ({
+    permission: one(graphPermissions, {
+      fields: [graphPermissionEndpoints.permissionId],
+      references: [graphPermissions.id],
+    }),
+  }),
+);
+
+export const graphPermissionGrantsRelations = relations(
+  graphPermissionGrants,
+  ({ one }) => ({
+    permission: one(graphPermissions, {
+      fields: [graphPermissionGrants.permissionId],
+      references: [graphPermissions.id],
+    }),
+    scopeResource: one(resources, {
+      fields: [graphPermissionGrants.scopeResourceId],
+      references: [resources.id],
+    }),
+    grantedBy: one(users, {
+      fields: [graphPermissionGrants.grantedById],
+      references: [users.id],
+    }),
+  }),
+);
+
+export const policiesRelations = relations(policies, ({ one, many }) => ({
+  department: one(departments, {
+    fields: [policies.departmentId],
+    references: [departments.id],
+  }),
+  auditEvents: many(auditEvents),
+}));
+
+export const auditEventsRelations = relations(auditEvents, ({ one }) => ({
+  permission: one(graphPermissions, {
+    fields: [auditEvents.permissionId],
+    references: [graphPermissions.id],
+  }),
+  policy: one(policies, {
+    fields: [auditEvents.policyId],
+    references: [policies.id],
+  }),
+  targetUser: one(users, {
+    fields: [auditEvents.targetUserId],
+    references: [users.id],
+  }),
+  targetResource: one(resources, {
+    fields: [auditEvents.targetResourceId],
+    references: [resources.id],
+  }),
+}));
+
+export const insertDepartmentSchema = createInsertSchema(departments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
+export type Department = typeof departments.$inferSelect;
+
+export const insertUserDepartmentMembershipSchema = createInsertSchema(
+  userDepartmentMemberships,
+).omit({
+  id: true,
+});
+export type InsertUserDepartmentMembership = z.infer<
+  typeof insertUserDepartmentMembershipSchema
+>;
+export type UserDepartmentMembership =
+  typeof userDepartmentMemberships.$inferSelect;
+
+export const insertResourceSchema = createInsertSchema(resources).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertResource = z.infer<typeof insertResourceSchema>;
+export type Resource = typeof resources.$inferSelect;
+
+export const insertActivitySchema = createInsertSchema(activities).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertActivity = z.infer<typeof insertActivitySchema>;
+export type Activity = typeof activities.$inferSelect;
+
+export const insertGraphPermissionSchema = createInsertSchema(graphPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermission = z.infer<typeof insertGraphPermissionSchema>;
+export type GraphPermission = typeof graphPermissions.$inferSelect;
+
+export const insertGraphPermissionEndpointSchema = createInsertSchema(
+  graphPermissionEndpoints,
+).omit({
+  id: true,
+});
+export type InsertGraphPermissionEndpoint = z.infer<
+  typeof insertGraphPermissionEndpointSchema
+>;
+export type GraphPermissionEndpoint =
+  typeof graphPermissionEndpoints.$inferSelect;
+
+export const insertGraphPermissionGrantSchema = createInsertSchema(
+  graphPermissionGrants,
+).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertGraphPermissionGrant = z.infer<
+  typeof insertGraphPermissionGrantSchema
+>;
+export type GraphPermissionGrant = typeof graphPermissionGrants.$inferSelect;
+
+export const insertPolicySchema = createInsertSchema(policies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPolicy = z.infer<typeof insertPolicySchema>;
+export type Policy = typeof policies.$inferSelect;
+
+export const insertAuditEventSchema = createInsertSchema(auditEvents).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAuditEvent = z.infer<typeof insertAuditEventSchema>;
+export type AuditEvent = typeof auditEvents.$inferSelect;
