@@ -33,14 +33,14 @@ export interface AiExtractionResult {
   errors: string[];
 }
 
-// Permission requirements for each sync resource type
+// Permission requirements for each sync resource type (Application permissions)
 const PERMISSION_REQUIREMENTS: Record<string, string[]> = {
   calendar: ["Calendars.Read", "Calendars.ReadWrite"],
-  contacts: ["Contacts.Read", "Contacts.ReadWrite"],
-  drive: ["Files.Read", "Files.ReadWrite"],
-  todo: ["Tasks.Read", "Tasks.ReadWrite", "Tasks.ReadWrite.All"],
-  chat: ["Chat.Read", "Chat.ReadBasic", "Chat.ReadWrite"],
-  presence: ["Presence.Read", "Presence.ReadWrite.All"],
+  contacts: ["Contacts.Read"],
+  drive: ["Files.Read.All", "Files.ReadWrite.All"],
+  todo: ["Tasks.Read.All", "Tasks.ReadWrite.All"],
+  chat: ["Chat.Read.All", "Chat.ReadWrite.All"],
+  presence: ["Presence.Read.All"],
 };
 
 // Helper function to check if an error is a permission (403) error
@@ -51,15 +51,27 @@ function isPermissionError(error: any): boolean {
 // Helper function to format permission error messages
 function formatPermissionError(resourceType: string, error: any): string {
   const requiredPerms = PERMISSION_REQUIREMENTS[resourceType] || [];
-  const errorBody = error?.body || "";
+  
+  // Safely extract error message from various Graph error formats
+  let errorMessage = "";
+  if (error?.body) {
+    if (typeof error.body === "string") {
+      errorMessage = error.body;
+    } else if (typeof error.body === "object") {
+      // Graph errors often have error.body.error.message structure
+      errorMessage = error.body?.error?.message || JSON.stringify(error.body);
+    }
+  } else if (error?.message) {
+    errorMessage = error.message;
+  }
   
   // Try to extract required scopes from the error message
-  const match = errorBody.match(/API requires one of '([^']+)'/);
+  const match = errorMessage.match(/API requires one of '([^']+)'/);
   const actualRequired = match ? match[1] : requiredPerms.join(" or ");
   
   return `Missing permission for ${resourceType} sync. Required: ${actualRequired}. ` +
-    `The Microsoft 365 connector needs additional permissions. ` +
-    `Please contact your administrator to add the required scopes.`;
+    `The Azure AD app needs additional permissions. ` +
+    `Please add the required application permissions in the Azure Portal.`;
 }
 
 function getOpenAI(): OpenAI | null {
