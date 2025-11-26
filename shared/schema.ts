@@ -183,6 +183,147 @@ export const insertActivityLogSchema = createInsertSchema(activityLogs).omit({
 export type InsertActivityLog = z.infer<typeof insertActivityLogSchema>;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 
+// Graph permission catalog
+export const permissionCategories = pgTable(
+  "permission_categories",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [uniqueIndex("permission_categories_name_unique").on(table.name)],
+);
+
+export const graphPermissions = pgTable(
+  "graph_permissions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    displayName: text("display_name"),
+    permissionId: varchar("permission_id"),
+    type: varchar("type"),
+    scope: varchar("scope"),
+    adminConsentRequired: boolean("admin_consent_required").default(false),
+    assignedDate: timestamp("assigned_date"),
+    categoryId: varchar("category_id").references(() => permissionCategories.id),
+    description: text("description"),
+    riskLevel: varchar("risk_level"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("graph_permissions_name_unique").on(table.name),
+    index("graph_permissions_category_idx").on(table.categoryId),
+  ],
+);
+
+export const graphPermissionEndpoints = pgTable(
+  "graph_permission_endpoints",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    permissionId: varchar("permission_id").references(() => graphPermissions.id),
+    method: varchar("method"),
+    path: text("path").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [index("graph_permission_endpoints_permission_idx").on(table.permissionId)],
+);
+
+export const graphPermissionExamples = pgTable(
+  "graph_permission_examples",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    permissionId: varchar("permission_id").references(() => graphPermissions.id),
+    language: varchar("language").notNull(),
+    code: text("code").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [index("graph_permission_examples_permission_idx").on(table.permissionId)],
+);
+
+export const permissionCategoriesRelations = relations(
+  permissionCategories,
+  ({ many }) => ({
+    permissions: many(graphPermissions),
+  }),
+);
+
+export const graphPermissionsRelations = relations(
+  graphPermissions,
+  ({ one, many }) => ({
+    category: one(permissionCategories, {
+      fields: [graphPermissions.categoryId],
+      references: [permissionCategories.id],
+    }),
+    endpoints: many(graphPermissionEndpoints),
+    examples: many(graphPermissionExamples),
+  }),
+);
+
+export const graphPermissionEndpointsRelations = relations(
+  graphPermissionEndpoints,
+  ({ one }) => ({
+    permission: one(graphPermissions, {
+      fields: [graphPermissionEndpoints.permissionId],
+      references: [graphPermissions.id],
+    }),
+  }),
+);
+
+export const graphPermissionExamplesRelations = relations(
+  graphPermissionExamples,
+  ({ one }) => ({
+    permission: one(graphPermissions, {
+      fields: [graphPermissionExamples.permissionId],
+      references: [graphPermissions.id],
+    }),
+  }),
+);
+
+export const insertPermissionCategorySchema = createInsertSchema(
+  permissionCategories,
+).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPermissionCategory = z.infer<
+  typeof insertPermissionCategorySchema
+>;
+export type PermissionCategory = typeof permissionCategories.$inferSelect;
+
+export const insertGraphPermissionSchema = createInsertSchema(graphPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermission = z.infer<typeof insertGraphPermissionSchema>;
+export type GraphPermission = typeof graphPermissions.$inferSelect;
+
+export const insertGraphPermissionEndpointSchema = createInsertSchema(
+  graphPermissionEndpoints,
+).omit({ id: true, createdAt: true });
+export type InsertGraphPermissionEndpoint = z.infer<
+  typeof insertGraphPermissionEndpointSchema
+>;
+export type GraphPermissionEndpoint = typeof graphPermissionEndpoints.$inferSelect;
+
+export const insertGraphPermissionExampleSchema = createInsertSchema(
+  graphPermissionExamples,
+).omit({ id: true, createdAt: true });
+export type InsertGraphPermissionExample = z.infer<
+  typeof insertGraphPermissionExampleSchema
+>;
+export type GraphPermissionExample = typeof graphPermissionExamples.$inferSelect;
+
 // Email communications from Outlook
 export const emails = pgTable("emails", {
   id: varchar("id")
