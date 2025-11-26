@@ -2,7 +2,40 @@
 
 ## Overview
 
-An AI-powered employee portal designed for 3PL Ontario that integrates document management, task tracking, meeting analysis, and communication logging. The system leverages Microsoft 365 ecosystem integrations (Outlook, OneDrive, SharePoint) and HubSpot for comprehensive workflow automation and AI-enhanced productivity features.
+An AI-powered ERP employee portal designed for 3PL Ontario that serves as a comprehensive organizational intelligence platform. The system's core mission is to **track every activity across all Microsoft 365 applications** used by the organization, link this data to users within the organizational hierarchy, and leverage AI to provide actionable insights at multiple levels.
+
+### Core Capabilities
+
+**1. Comprehensive M365 Activity Tracking**
+- Captures all interactions across Microsoft 365: Teams meetings/chats, Outlook emails, OneDrive/SharePoint files, calendar events, To-Do tasks, and presence status
+- Unified data model links every activity to specific users and departments
+- Delta sync ensures near-real-time data without excessive API calls
+
+**2. Organizational Intelligence**
+- Full department hierarchy with parent/child relationships and department heads
+- Multi-department user memberships (employees can belong to multiple departments)
+- Manager-employee relationships for reporting chains
+- Resource and activity tracking tied to organizational structure
+
+**3. Dual-Level AI Insights**
+
+*For Department Heads & Managers:*
+- Employee performance reports and activity summaries
+- Missed follow-up alerts (e.g., sales calls without follow-through)
+- Meeting transcript analysis to identify action items and commitments
+- Team productivity metrics and workload analysis
+- Cross-department collaboration insights
+
+*For Individual Employees:*
+- Personal task reminders and deadline alerts
+- AI-extracted action items from emails and meetings
+- Proactive suggestions based on work patterns
+- Daily/weekly productivity digests
+
+**4. Governance & Compliance**
+- Policy engine to control AI behavior and data access
+- Comprehensive audit trail for all AI actions and permission usage
+- Graph API permission catalog documenting what data is accessible
 
 ## User Preferences
 
@@ -68,24 +101,147 @@ Preferred communication style: Simple, everyday language.
 
 **ORM**: Drizzle ORM providing type-safe database queries with schema-first approach.
 
-**Schema Design** (26 tables total):
+**Schema Design** (38 tables total):
 
-**Core Tables:**
-- **Users**: Core authentication table with role-based access (employee/manager/admin), department assignment, and profile metadata
-- **Documents**: Knowledge hub storage with category classification (policy/training/operational), file metadata, and search capabilities
-- **Tasks**: Task management with assignment, priority, status tracking, and due dates
-- **Meetings**: Meeting records with AI-generated summaries and extracted action items
-- **Emails**: Synced from Outlook with sender/recipient tracking and read status
-- **HubSpot Communications**: CRM communication logs with contact/company associations
-- **Activity Logs**: Audit trail capturing user actions, resource access, and IP/user agent data
-- **Sessions**: PostgreSQL-backed session storage for authentication persistence
+---
 
-**Microsoft 365 Sync Infrastructure:**
+#### Core Tables
+
+- **users**: Core authentication table with role-based access (employee/manager/admin), department assignment, and profile metadata
+- **documents**: Knowledge hub storage with category classification (policy/training/operational), file metadata, and search capabilities
+- **tasks**: Task management with assignment, priority, status tracking, and due dates
+- **meetings**: Meeting records with AI-generated summaries and extracted action items
+- **emails**: Synced from Outlook with sender/recipient tracking and read status
+- **hubspot_communications**: CRM communication logs with contact/company associations
+- **activity_logs**: Audit trail capturing user actions, resource access, and IP/user agent data
+- **sessions**: PostgreSQL-backed session storage for authentication persistence
+
+---
+
+#### Organizational Structure Tables
+
+- **departments**: Hierarchical department structure with:
+  - `name`, `code`, `description` for identification
+  - `headId` references the department head (user)
+  - `parentDepartmentId` for nested hierarchy (e.g., Sales → Inside Sales → SDR Team)
+  - Enables organizational reporting and permission inheritance
+
+- **user_department_memberships**: Many-to-many relationship allowing users to belong to multiple departments:
+  - `userId`, `departmentId` for the association
+  - `role` field: "member", "manager", or "head"
+  - `joinedAt`, `leftAt` for historical tracking
+  - Supports matrix organizations and cross-functional teams
+
+---
+
+#### Graph Permission Catalog Tables
+
+These tables document and track Microsoft Graph API permissions, enabling the system to understand what data it can access and audit its usage.
+
+- **permission_categories**: Groups permissions by functional area (e.g., "Mail", "Calendar", "Files", "Teams")
+  - `name`, `description`
+  - Unique index on name for upsert operations
+
+- **graph_permissions**: Core permission definitions from Microsoft Graph:
+  - `name`: Permission identifier (e.g., "Mail.Read", "Calendars.ReadWrite")
+  - `displayName`: Human-readable name
+  - `permissionId`: Microsoft's internal ID
+  - `type`: "Delegated" or "Application"
+  - `scope`: Permission scope
+  - `adminConsentRequired`: Whether admin must approve
+  - `assignedDate`: When permission was granted to this app
+  - `riskLevel`: "LOW", "MEDIUM", or "HIGH" based on data sensitivity
+  - `description`: What the permission enables
+  - `categoryId`: Links to permission_categories
+
+- **graph_permission_endpoints**: API endpoints each permission enables:
+  - `permissionId`: Links to graph_permissions
+  - `method`: HTTP method (GET, POST, PATCH, DELETE)
+  - `path`: API path (e.g., "/me/messages", "/users/{id}/calendar")
+  - `description`: What the endpoint does
+
+- **graph_permission_examples**: Code samples for using permissions:
+  - `permissionId`: Links to graph_permissions
+  - `language`: Programming language (javascript, python, csharp, etc.)
+  - `code`: Example code snippet
+  - `description`: What the example demonstrates
+
+- **graph_permission_grants**: Tracks which permissions are granted to users/groups/apps:
+  - `permissionId`: The permission being granted
+  - `granteeType`: "user", "group", or "service_principal"
+  - `granteeId`: ID of the grantee
+  - `grantType`: "delegated" or "application"
+  - `scope`: "organization", "site", "team", "mailbox"
+  - `scopeResourceId`: Links to resources table if scoped
+  - `consentedAt`, `expiresAt`: Grant lifecycle
+  - `grantedById`: Who approved the grant
+
+---
+
+#### Unified Resource & Activity Tracking Tables
+
+These tables provide a central registry for all items synced from Microsoft Graph, enabling cross-resource reporting and AI analysis.
+
+- **resources**: Generic registry unifying all synced M365 items:
+  - `type`: "meeting", "call", "chat", "email", "file", "calendar_event", "task"
+  - `sourceSystem`: "graph", "teams", "outlook", "sharepoint"
+  - `externalId`: Original ID from Microsoft Graph
+  - `ownerUserId`: Who owns/created the resource
+  - `departmentId`: Which department it belongs to
+  - `title`, `summary`: Human-readable identifiers
+  - `occurredAt`: When the resource was created/occurred
+  - `metadata`: Flexible JSON for source-specific data
+  - Unique index on (sourceSystem, externalId) prevents duplicates
+
+- **activities**: Links resources to actors for reporting:
+  - `resourceId`: The resource involved
+  - `actorUserId`: Who performed the action
+  - `targetUserId`: Who was affected (e.g., email recipient)
+  - `departmentId`: Organizational context
+  - `type`: Action type (e.g., "sent", "attended", "modified")
+  - `status`: Current status
+  - `occurredAt`: When it happened
+  - `durationSeconds`: For meetings/calls
+  - `sentimentScore`: AI-analyzed sentiment (0-1)
+  - `qualityScore`: AI-assessed quality metric
+  - `metrics`: Flexible JSON for action-specific data
+
+---
+
+#### Governance & Audit Tables
+
+- **policies**: Rules governing AI behavior and data access:
+  - `name`, `description`: Policy identification
+  - `scope`: "organization", "department", or "team"
+  - `departmentId`: If scoped to a specific department
+  - `enforcementRules`: JSON defining what the policy controls
+  - `isActive`: Whether policy is currently enforced
+  - Example: Restrict AI from summarizing HR-sensitive meetings
+
+- **audit_events**: Comprehensive audit trail for AI actions and permission usage:
+  - `actorType`: "user", "ai_system", or "service"
+  - `actorId`: Who/what performed the action
+  - `action`: What was done
+  - `permissionId`: Which Graph permission was used
+  - `policyId`: Which policy was evaluated
+  - `targetUserId`: Affected user
+  - `targetResourceId`: Affected resource
+  - `outcome`: "pending", "succeeded", "failed", "denied"
+  - `detail`: JSON with action-specific context
+  - `occurredAt`: Timestamp
+
+---
+
+#### Microsoft 365 Sync Infrastructure
+
 - **ms_user_profiles**: Extended Microsoft 365 user data (manager, job title, location, timezone)
 - **user_sync_states**: Per-user delta sync tracking with tokens for incremental updates
 - **sync_jobs**: Sync job history with status, timing, and error tracking
 
-**Microsoft 365 Data Tables:**
+---
+
+#### Microsoft 365 Data Tables
+
 - **ms_calendar_events**: Calendar events with recurrence, attendees, and online meeting links
 - **ms_event_attendees**: Event participant data with response status
 - **ms_recurrence_patterns**: Recurring event pattern definitions
@@ -98,13 +254,69 @@ Preferred communication style: Simple, everyday language.
 - **ms_contacts**: Outlook contacts with phone, email, and address data
 - **ms_drive_items**: OneDrive/SharePoint file metadata
 
-**AI Enablement Tables:**
+---
+
+#### AI Enablement Tables
+
 - **ai_action_items**: AI-extracted action items from meetings/emails with confidence scores
 - **ai_reminders**: Proactive reminder system with scheduling and delivery tracking
 - **ai_notifications**: User notification queue with multi-channel support
 - **ai_insights**: AI-generated productivity insights and reports
 
+---
+
 **Migration Strategy**: Drizzle Kit for schema migrations with `npm run db:push` for safe updates.
+
+### Permission Ingestion Service
+
+**Location**: `server/services/permissionIngestion.ts`
+
+**Purpose**: Populates the Graph Permission Catalog by parsing markdown documentation files that describe each Microsoft Graph permission.
+
+**Source Data**: `docs/api-permissions/permissions/` contains 280+ markdown files, each documenting a single Graph permission with:
+- Permission name and display name
+- Type (Delegated/Application) and scope
+- Admin consent requirements
+- Risk level assessment
+- API endpoints enabled by the permission
+- Code examples in multiple languages
+
+**How It Works**:
+
+1. **Parse Category Index** (`README.md`): Extracts permission categories and maps each permission file to its category
+
+2. **Upsert Categories**: Creates or updates `permission_categories` records for each category (e.g., "Mail", "Calendar", "Files")
+
+3. **Parse Permission Files**: For each `.md` file:
+   - Extracts metadata using regex patterns
+   - Parses API endpoints from structured sections
+   - Extracts code examples from fenced code blocks
+
+4. **Upsert Permissions**: Creates or updates `graph_permissions` with:
+   - All metadata fields
+   - Link to parent category
+   - Replace (not append) endpoints and examples
+
+**Key Function**:
+```typescript
+ingestGraphPermissionDocs(rootDir?: string): Promise<PermissionIngestionStats>
+```
+
+**Returns**:
+```typescript
+{
+  categoriesUpserted: number;
+  permissionsProcessed: number;
+  endpointsProcessed: number;
+  examplesProcessed: number;
+}
+```
+
+**Storage Methods** (in `server/storage.ts`):
+- `upsertPermissionCategory(data)`: Insert or update category by name
+- `upsertGraphPermission(data)`: Insert or update permission by name
+- `replaceGraphPermissionEndpoints(permissionId, endpoints)`: Replace all endpoints for a permission
+- `replaceGraphPermissionExamples(permissionId, examples)`: Replace all examples for a permission
 
 ### Sync Services
 
@@ -226,3 +438,62 @@ Preferred communication style: Simple, everyday language.
 - ESBuild for production backend bundling
 - PostCSS with Tailwind and Autoprefixer
 - tsx for TypeScript execution in development
+
+---
+
+## Implementation Status & Next Steps
+
+### Completed (Recent Merge Commits)
+
+- **Graph Permission Catalog Schema**: All 5 tables defined with proper relationships
+- **Permission Ingestion Service**: Parses markdown docs and populates database
+- **Storage Methods**: CRUD operations for permissions, categories, endpoints, examples
+- **Organizational Structure**: Departments table with hierarchy and user memberships
+- **Resource & Activity Framework**: Unified tracking tables with proper indexes
+- **Governance Framework**: Policies and audit_events tables with relationships
+- **Permission Documentation**: 280+ markdown files in `docs/api-permissions/`
+
+### Still Required
+
+1. **Database Migration**
+   - Run `npm run db:push` to create the new tables in PostgreSQL
+   - Verify all indexes and constraints are applied
+
+2. **Permission Ingestion Trigger**
+   - Add API endpoint: `POST /api/admin/permissions/ingest`
+   - Or CLI command to run ingestion on demand
+   - Consider scheduled refresh (weekly?) for permission updates
+
+3. **Permission Catalog Admin UI**
+   - Browse permissions by category
+   - View permission details (endpoints, examples, risk level)
+   - Search/filter capabilities
+   - Track which permissions are in use by the app
+
+4. **Department Management UI**
+   - Create/edit departments and hierarchy
+   - Assign department heads
+   - Manage user memberships
+
+5. **Resource-Activity Integration**
+   - Update sync services to create `resources` records
+   - Generate `activities` when syncing M365 data
+   - Link activities to departments for reporting
+
+6. **AI Integration with New Schema**
+   - Use `resources`/`activities` for AI analysis instead of individual tables
+   - Create `audit_events` when AI accesses data
+   - Evaluate `policies` before AI actions
+   - Generate department-level insights for managers
+
+7. **Manager/Department Head Reports**
+   - Dashboard for department heads showing:
+     - Team activity summaries
+     - Missed follow-up alerts
+     - Performance metrics from meeting analysis
+     - Cross-team collaboration stats
+
+8. **Policy Engine Implementation**
+   - Define initial policy rules (JSON schema)
+   - Build policy evaluation logic
+   - Integrate with AI decision points
