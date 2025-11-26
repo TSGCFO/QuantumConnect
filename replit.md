@@ -68,8 +68,9 @@ Preferred communication style: Simple, everyday language.
 
 **ORM**: Drizzle ORM providing type-safe database queries with schema-first approach.
 
-**Schema Design**:
+**Schema Design** (26 tables total):
 
+**Core Tables:**
 - **Users**: Core authentication table with role-based access (employee/manager/admin), department assignment, and profile metadata
 - **Documents**: Knowledge hub storage with category classification (policy/training/operational), file metadata, and search capabilities
 - **Tasks**: Task management with assignment, priority, status tracking, and due dates
@@ -79,7 +80,55 @@ Preferred communication style: Simple, everyday language.
 - **Activity Logs**: Audit trail capturing user actions, resource access, and IP/user agent data
 - **Sessions**: PostgreSQL-backed session storage for authentication persistence
 
-**Migration Strategy**: Drizzle Kit for schema migrations stored in `/migrations` directory.
+**Microsoft 365 Sync Infrastructure:**
+- **ms_user_profiles**: Extended Microsoft 365 user data (manager, job title, location, timezone)
+- **user_sync_states**: Per-user delta sync tracking with tokens for incremental updates
+- **sync_jobs**: Sync job history with status, timing, and error tracking
+
+**Microsoft 365 Data Tables:**
+- **ms_calendar_events**: Calendar events with recurrence, attendees, and online meeting links
+- **ms_event_attendees**: Event participant data with response status
+- **ms_recurrence_patterns**: Recurring event pattern definitions
+- **ms_todo_lists**: Microsoft To Do task lists per user
+- **ms_todo_tasks**: Individual tasks with reminders, due dates, and checklists
+- **ms_presence_snapshots**: Teams presence/availability status history
+- **ms_chat_threads**: Teams chat threads (1:1, group, meeting chats)
+- **ms_chat_participants**: Chat participant membership
+- **ms_chat_messages**: Chat messages with sender and content
+- **ms_contacts**: Outlook contacts with phone, email, and address data
+- **ms_drive_items**: OneDrive/SharePoint file metadata
+
+**AI Enablement Tables:**
+- **ai_action_items**: AI-extracted action items from meetings/emails with confidence scores
+- **ai_reminders**: Proactive reminder system with scheduling and delivery tracking
+- **ai_notifications**: User notification queue with multi-channel support
+- **ai_insights**: AI-generated productivity insights and reports
+
+**Migration Strategy**: Drizzle Kit for schema migrations with `npm run db:push` for safe updates.
+
+### Sync Services
+
+**Location**: `server/services/sync.ts`
+
+**Sync Functions** (with pagination and delta token support):
+- `syncCalendarEvents`: Calendar events with attendees and recurrence patterns
+- `syncContacts`: Outlook contacts with phone/email/address data
+- `syncDriveItems`: OneDrive/SharePoint files with recursive folder scanning
+- `syncTodoLists`: Microsoft To Do lists and tasks
+- `syncChatThreads`: Teams chats with participants and messages
+- `syncPresence`: Current user presence status
+- `syncAllResources`: Orchestrates parallel sync of all resources
+
+**AI Helper Functions**:
+- `extractActionItemsFromCalendar`: GPT-4o extracts action items from meeting subjects/descriptions
+- `generateDailyDigest`: Creates AI-powered daily productivity insights
+- `scheduleUpcomingReminders`: Auto-schedules reminders for events and overdue tasks
+
+**Key Features**:
+- Delta sync support using Microsoft Graph `@odata.deltaLink` for incremental updates
+- Pre-loaded Maps for O(1) existing record lookups (no O(n²) database access)
+- Sync job tracking with start/end timestamps and item counts
+- Error accumulation with graceful degradation
 
 ### External Dependencies
 
