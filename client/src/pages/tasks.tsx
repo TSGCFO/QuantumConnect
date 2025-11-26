@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -121,6 +122,9 @@ export default function Tasks() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Task</DialogTitle>
+              <DialogDescription>
+                Add a new task to track your action items and deadlines.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>

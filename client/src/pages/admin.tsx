@@ -503,6 +503,9 @@ export default function Admin() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit User</DialogTitle>
+              <DialogDescription>
+                Update the user's role and department settings.
+              </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleUpdateUser} className="space-y-4">
               <div>
