@@ -8,6 +8,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 
 import viteConfig from "../vite.config";
 import runApp from "./app";
+import { startScheduler, stopScheduler } from "./services/syncScheduler";
 
 export async function setupVite(app: Express, server: Server) {
   const viteLogger = createLogger();
@@ -60,4 +61,19 @@ export async function setupVite(app: Express, server: Server) {
 
 (async () => {
   await runApp(setupVite);
+  
+  startScheduler();
+  console.log("Sync scheduler started");
+  
+  process.on("SIGTERM", async () => {
+    console.log("SIGTERM received, stopping scheduler...");
+    await stopScheduler();
+    process.exit(0);
+  });
+
+  process.on("SIGINT", async () => {
+    console.log("SIGINT received, stopping scheduler...");
+    await stopScheduler();
+    process.exit(0);
+  });
 })();

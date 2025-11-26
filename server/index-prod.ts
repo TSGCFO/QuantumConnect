@@ -4,6 +4,7 @@ import { type Server } from "node:http";
 
 import express, { type Express } from "express";
 import runApp from "./app";
+import { startScheduler, stopScheduler } from "./services/syncScheduler";
 
 export async function serveStatic(app: Express, _server: Server) {
   const distPath = path.resolve(import.meta.dirname, "public");
@@ -24,4 +25,19 @@ export async function serveStatic(app: Express, _server: Server) {
 
 (async () => {
   await runApp(serveStatic);
+  
+  startScheduler();
+  console.log("Sync scheduler started");
+  
+  process.on("SIGTERM", async () => {
+    console.log("SIGTERM received, stopping scheduler...");
+    await stopScheduler();
+    process.exit(0);
+  });
+
+  process.on("SIGINT", async () => {
+    console.log("SIGINT received, stopping scheduler...");
+    await stopScheduler();
+    process.exit(0);
+  });
 })();

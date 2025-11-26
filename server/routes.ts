@@ -34,6 +34,7 @@ import {
   generateDailyDigest,
   scheduleUpcomingReminders,
 } from "./services/sync";
+import { startScheduler, stopScheduler, enqueueSync, enqueueSyncForAllUsers, getQueueStats, manualSyncUser } from "./services/syncScheduler";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1613,6 +1614,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to sync presence" });
     }
   });
+
+  // ===== SYNC MANAGEMENT ROUTES =====
+
+  // Manual sync for authenticated user - sync their own data
+  app.post(
+    "/api/sync/manual",
+    isAuthenticated,
+    logActivity("manual_sync"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const { resources } = req.body;
+        
+        await manualSyncUser(userId, resources);
+        
+        res.json({ 
+          message: "Sync jobs queued successfully",
+          resources: resources || ["presence", "calendar", "todo", "chat", "contacts", "drive"]
+        });
+      } catch (error) {
+        console.error("Error queuing manual sync:", error);
+        res.status(500).json({ message: "Failed to queue sync jobs" });
+      }
+    }
+  );
+
+  // Get sync status for authenticated user
+  app.get(
+    "/api/sync/status",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        
+        const recentJobs = await storage.getRecentSyncJobs(userId, 10);
+        const syncStates = await storage.getAllUserSyncStates(userId);
+        
+        res.json({
+          recentJobs,
+          syncStates,
+          queueStats: getQueueStats()
+        });
+      } catch (error) {
+        console.error("Error getting sync status:", error);
+        res.status(500).json({ message: "Failed to get sync status" });
+      }
+    }
+  );
+
+  // ===== ADMIN SYNC ROUTES =====
+
+  // Get queue stats (admin only)
+  app.get(
+    "/api/admin/sync/stats",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (user?.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const stats = getQueueStats();
+        res.json(stats);
+      } catch (error) {
+        console.error("Error getting sync stats:", error);
+        res.status(500).json({ message: "Failed to get sync stats" });
+      }
+    }
+  );
+
+  // Trigger sync for all users (admin only)
+  app.post(
+    "/api/admin/sync/all",
+    isAuthenticated,
+    logActivity("admin_sync_all"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (user?.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const { resourceType } = req.body;
+        
+        if (resourceType) {
+          await enqueueSyncForAllUsers(resourceType);
+          res.json({ message: `Queued ${resourceType} sync for all users` });
+        } else {
+          const types = ["presence", "calendar", "todo", "chat", "contacts", "drive"];
+          for (const type of types) {
+            await enqueueSyncForAllUsers(type);
+          }
+          res.json({ message: "Queued full sync for all users" });
+        }
+      } catch (error) {
+        console.error("Error triggering admin sync:", error);
+        res.status(500).json({ message: "Failed to trigger sync" });
+      }
+    }
+  );
+
+  // Get recent sync jobs for all users (admin only)
+  app.get(
+    "/api/admin/sync/jobs",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (user?.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const limit = parseInt(req.query.limit as string) || 50;
+        const jobs = await storage.getAllRecentSyncJobs(limit);
+        
+        res.json(jobs);
+      } catch (error) {
+        console.error("Error getting sync jobs:", error);
+        res.status(500).json({ message: "Failed to get sync jobs" });
+      }
+    }
+  );
+
+  // Sync specific user (admin only)
+  app.post(
+    "/api/admin/sync/user/:targetUserId",
+    isAuthenticated,
+    logActivity("admin_sync_user"),
+    async (req: any, res) => {
+      try {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        if (user?.role !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
+        
+        const { targetUserId } = req.params;
+        const { resources } = req.body;
+        
+        await manualSyncUser(targetUserId, resources);
+        
+        res.json({ 
+          message: `Sync queued for user ${targetUserId}`,
+          resources: resources || ["presence", "calendar", "todo", "chat", "contacts", "drive"]
+        });
+      } catch (error) {
+        console.error("Error triggering user sync:", error);
+        res.status(500).json({ message: "Failed to trigger user sync" });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
 

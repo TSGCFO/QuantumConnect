@@ -136,6 +136,8 @@ export interface IStorage {
   createSyncJob(job: InsertSyncJob): Promise<SyncJob>;
   updateSyncJob(id: string, data: Partial<SyncJob>): Promise<SyncJob>;
   getRecentSyncJobs(userId?: string, limit?: number): Promise<SyncJob[]>;
+  getAllUserSyncStates(userId: string): Promise<UserSyncState[]>;
+  getAllRecentSyncJobs(limit?: number): Promise<SyncJob[]>;
 
   // Calendar
   upsertCalendarEvent(event: InsertMsCalendarEvent): Promise<MsCalendarEvent>;
@@ -620,6 +622,21 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(syncJobs.startedAt))
         .limit(limit);
     }
+    return await db
+      .select()
+      .from(syncJobs)
+      .orderBy(desc(syncJobs.startedAt))
+      .limit(limit);
+  }
+
+  async getAllUserSyncStates(userId: string): Promise<UserSyncState[]> {
+    return await db
+      .select()
+      .from(userSyncStates)
+      .where(eq(userSyncStates.userId, userId));
+  }
+
+  async getAllRecentSyncJobs(limit: number = 50): Promise<SyncJob[]> {
     return await db
       .select()
       .from(syncJobs)
