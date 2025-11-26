@@ -21,6 +21,19 @@ import {
   getUserChats,
   getChatMessages
 } from "./integrations/teams-app";
+// Import sync services
+import {
+  syncCalendarEvents,
+  syncContacts,
+  syncDriveItems,
+  syncTodoLists,
+  syncChatThreads,
+  syncPresence,
+  syncAllResources,
+  extractActionItemsFromCalendar,
+  generateDailyDigest,
+  scheduleUpcomingReminders,
+} from "./services/sync";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -1024,73 +1037,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/calendar/sync", isAuthenticated, logActivity("sync_calendar"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const client = await getUncachableOutlookClient();
+      const { daysBack, daysForward, useDelta } = req.body || {};
       
-      const now = new Date();
-      const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const result = await syncCalendarEvents(userId, { daysBack, daysForward, useDelta });
       
-      const events = await client
-        .api("/me/calendar/calendarView")
-        .query({
-          startDateTime: startDate.toISOString(),
-          endDateTime: endDate.toISOString()
-        })
-        .select("id,subject,body,start,end,location,isAllDay,isCancelled,organizer,attendees,recurrence,categories,importance,sensitivity,showAs,webLink,onlineMeeting,onlineMeetingUrl")
-        .top(100)
-        .get();
-      
-      let syncedCount = 0;
-      for (const event of events.value) {
-        await storage.upsertCalendarEvent({
-          msEventId: event.id,
-          userId,
-          subject: event.subject,
-          bodyContent: event.body?.content || null,
-          bodyPreview: event.bodyPreview || null,
-          start: new Date(event.start.dateTime),
-          end: new Date(event.end.dateTime),
-          location: event.location?.displayName || null,
-          isAllDay: event.isAllDay || false,
-          isCancelled: event.isCancelled || false,
-          organizer: event.organizer?.emailAddress ? {
-            email: event.organizer.emailAddress.address,
-            name: event.organizer.emailAddress.name
-          } : null,
-          categories: event.categories || [],
-          importance: event.importance || "normal",
-          sensitivity: event.sensitivity || "normal",
-          showAs: event.showAs || "busy",
-          webLink: event.webLink || null,
-          onlineMeetingUrl: event.onlineMeetingUrl || event.onlineMeeting?.joinUrl || null,
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} calendar events (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
         });
-        
-        if (event.attendees && event.attendees.length > 0) {
-          const dbEvent = await storage.getCalendarEvent(event.id);
-          if (dbEvent) {
-            for (const att of event.attendees) {
-              await storage.upsertEventAttendee({
-                eventId: dbEvent.id,
-                email: att.emailAddress?.address || "",
-                name: att.emailAddress?.name || null,
-                type: att.type || "required",
-                responseStatus: att.status?.response || "none",
-              });
-            }
-          }
-        }
-        
-        syncedCount++;
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync calendar",
+          errors: result.errors
+        });
       }
-      
-      await storage.upsertUserSyncState({
-        userId,
-        resourceType: "calendar",
-        lastSyncedAt: new Date(),
-        status: "completed",
-      });
-      
-      res.json({ message: `Synced ${syncedCount} calendar events` });
     } catch (error) {
       console.error("Error syncing calendar:", error);
       res.status(500).json({ message: "Failed to sync calendar" });
@@ -1115,43 +1076,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contacts/sync", isAuthenticated, logActivity("sync_contacts"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const client = await getUncachableOutlookClient();
+      const { pageSize, useDelta } = req.body || {};
       
-      const contacts = await client
-        .api("/me/contacts")
-        .select("id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,companyName,jobTitle,department,businessAddress")
-        .top(200)
-        .get();
+      const result = await syncContacts(userId, { pageSize, useDelta });
       
-      let syncedCount = 0;
-      for (const contact of contacts.value) {
-        await storage.upsertContact({
-          msContactId: contact.id,
-          userId,
-          displayName: contact.displayName || "Unknown Contact",
-          givenName: contact.givenName || null,
-          surname: contact.surname || null,
-          emailAddresses: contact.emailAddresses || [],
-          phoneNumbers: contact.businessPhones?.map((phone: string) => ({ type: "business", number: phone })).concat(
-            contact.mobilePhone ? [{ type: "mobile", number: contact.mobilePhone }] : []
-          ) || null,
-          companyName: contact.companyName || null,
-          jobTitle: contact.jobTitle || null,
-          department: contact.department || null,
-          addresses: contact.businessAddress ? [contact.businessAddress] : null,
-          categories: [],
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} contacts (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
         });
-        syncedCount++;
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync contacts",
+          errors: result.errors
+        });
       }
-      
-      await storage.upsertUserSyncState({
-        userId,
-        resourceType: "contacts",
-        lastSyncedAt: new Date(),
-        status: "completed",
-      });
-      
-      res.json({ message: `Synced ${syncedCount} contacts` });
     } catch (error) {
       console.error("Error syncing contacts:", error);
       res.status(500).json({ message: "Failed to sync contacts" });
@@ -1188,44 +1127,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/drive/sync", isAuthenticated, logActivity("sync_drive"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const client = await getUncachableOutlookClient();
+      const { source, pageSize, recursive } = req.body || {};
       
-      const files = await client
-        .api("/me/drive/root/children")
-        .select("id,name,file,folder,size,webUrl,createdDateTime,lastModifiedDateTime,parentReference,createdBy,lastModifiedBy")
-        .top(100)
-        .get();
+      const result = await syncDriveItems(userId, { source, pageSize, recursive });
       
-      let syncedCount = 0;
-      const now = new Date();
-      for (const file of files.value) {
-        await storage.upsertDriveItem({
-          msDriveItemId: file.id,
-          userId,
-          name: file.name,
-          mimeType: file.file?.mimeType || (file.folder ? "folder" : null),
-          size: file.size || null,
-          webUrl: file.webUrl || null,
-          source: "onedrive",
-          driveId: file.parentReference?.driveId || "unknown",
-          parentId: file.parentReference?.id || null,
-          parentPath: file.parentReference?.path || "/",
-          createdDateTime: file.createdDateTime ? new Date(file.createdDateTime) : now,
-          lastModifiedDateTime: file.lastModifiedDateTime ? new Date(file.lastModifiedDateTime) : now,
-          createdByEmail: file.createdBy?.user?.email || null,
-          lastModifiedByEmail: file.lastModifiedBy?.user?.email || null,
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} drive items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
         });
-        syncedCount++;
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync drive items",
+          errors: result.errors
+        });
       }
-      
-      await storage.upsertUserSyncState({
-        userId,
-        resourceType: "onedrive",
-        lastSyncedAt: new Date(),
-        status: "completed",
-      });
-      
-      res.json({ message: `Synced ${syncedCount} files from OneDrive` });
     } catch (error) {
       console.error("Error syncing drive:", error);
       res.status(500).json({ message: "Failed to sync drive items" });
@@ -1263,64 +1179,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/todo/sync", isAuthenticated, logActivity("sync_todo"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const client = await getUncachableOutlookClient();
+      const { includeTasks } = req.body || {};
       
-      const lists = await client
-        .api("/me/todo/lists")
-        .select("id,displayName,isOwner,isShared,wellknownListName")
-        .get();
+      const result = await syncTodoLists(userId, { includeTasks });
       
-      let listsCount = 0;
-      let tasksCount = 0;
-      
-      for (const list of lists.value) {
-        await storage.upsertTodoList({
-          msListId: list.id,
-          userId,
-          displayName: list.displayName,
-          isOwner: list.isOwner || false,
-          isShared: list.isShared || false,
-          wellknownListName: list.wellknownListName || null,
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} todo items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
         });
-        listsCount++;
-        
-        const tasks = await client
-          .api(`/me/todo/lists/${list.id}/tasks`)
-          .select("id,title,body,importance,status,isReminderOn,reminderDateTime,dueDateTime,completedDateTime,createdDateTime,lastModifiedDateTime,categories")
-          .get();
-        
-        const dbList = await storage.getTodoLists(userId);
-        const currentList = dbList.find(l => l.msListId === list.id);
-        
-        if (currentList) {
-          for (const task of tasks.value) {
-            await storage.upsertTodoTask({
-              msTaskId: task.id,
-              listId: currentList.id,
-              userId,
-              title: task.title,
-              body: task.body?.content || null,
-              importance: task.importance || "normal",
-              status: task.status || "notStarted",
-              isReminderOn: task.isReminderOn || false,
-              reminderDateTime: task.reminderDateTime?.dateTime ? new Date(task.reminderDateTime.dateTime) : null,
-              dueDateTime: task.dueDateTime?.dateTime ? new Date(task.dueDateTime.dateTime) : null,
-              completedDateTime: task.completedDateTime?.dateTime ? new Date(task.completedDateTime.dateTime) : null,
-              categories: task.categories || [],
-            });
-            tasksCount++;
-          }
-        }
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync To Do",
+          errors: result.errors
+        });
       }
-      
-      await storage.upsertUserSyncState({
-        userId,
-        resourceType: "todo",
-        lastSyncedAt: new Date(),
-        status: "completed",
-      });
-      
-      res.json({ message: `Synced ${listsCount} lists and ${tasksCount} tasks` });
     } catch (error) {
       console.error("Error syncing To Do:", error);
       res.status(500).json({ message: "Failed to sync To Do" });
@@ -1597,27 +1470,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync/full", isAuthenticated, logActivity("full_sync"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const { 
+        includeCalendar, 
+        includeContacts, 
+        includeDrive, 
+        includeTodo, 
+        includeChat, 
+        includePresence 
+      } = req.body || {};
       
-      const job = await storage.createSyncJob({
-        userId,
-        resourceType: "full",
-        syncType: "full",
-        status: "started",
-      });
-      
-      await storage.updateSyncJob(job.id, {
-        status: "completed",
-        completedAt: new Date(),
+      const result = await syncAllResources(userId, {
+        includeCalendar,
+        includeContacts,
+        includeDrive,
+        includeTodo,
+        includeChat,
+        includePresence,
       });
       
       res.json({ 
-        message: "Full sync initiated",
-        jobId: job.id,
-        note: "Use individual sync endpoints (/api/calendar/sync, /api/contacts/sync, etc.) to sync specific resources"
+        message: result.summary,
+        success: result.success,
+        results: result.results,
       });
     } catch (error) {
       console.error("Error initiating full sync:", error);
       res.status(500).json({ message: "Failed to initiate full sync" });
+    }
+  });
+
+  // ============================================
+  // AI Extraction and Processing Routes
+  // ============================================
+
+  app.post("/api/ai/extract-action-items", isAuthenticated, logActivity("extract_action_items"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { daysBack, daysForward } = req.body || {};
+      
+      const result = await extractActionItemsFromCalendar(userId, { daysBack, daysForward });
+      
+      res.json({
+        success: result.success,
+        itemsCreated: result.itemsCreated,
+        summary: result.summary,
+        errors: result.errors,
+      });
+    } catch (error) {
+      console.error("Error extracting action items:", error);
+      res.status(500).json({ message: "Failed to extract action items" });
+    }
+  });
+
+  app.post("/api/ai/generate-daily-digest", isAuthenticated, logActivity("generate_digest"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { date } = req.body || {};
+      
+      const result = await generateDailyDigest(userId, { 
+        date: date ? new Date(date) : undefined 
+      });
+      
+      res.json({
+        success: result.success,
+        itemsCreated: result.itemsCreated,
+        summary: result.summary,
+        errors: result.errors,
+      });
+    } catch (error) {
+      console.error("Error generating daily digest:", error);
+      res.status(500).json({ message: "Failed to generate daily digest" });
+    }
+  });
+
+  app.post("/api/ai/schedule-reminders", isAuthenticated, logActivity("schedule_reminders"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { daysAhead, reminderMinutesBefore } = req.body || {};
+      
+      const result = await scheduleUpcomingReminders(userId, { 
+        daysAhead, 
+        reminderMinutesBefore 
+      });
+      
+      res.json({
+        success: result.success,
+        itemsCreated: result.itemsCreated,
+        summary: result.summary,
+        errors: result.errors,
+      });
+    } catch (error) {
+      console.error("Error scheduling reminders:", error);
+      res.status(500).json({ message: "Failed to schedule reminders" });
+    }
+  });
+
+  // Chat Sync Routes
+  app.post("/api/chat/sync", isAuthenticated, logActivity("sync_chat"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { limit, includeMessages, messagesPerChat } = req.body || {};
+      
+      const result = await syncChatThreads(userId, { limit, includeMessages, messagesPerChat });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} chat items (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync chats",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing chats:", error);
+      res.status(500).json({ message: "Failed to sync chats" });
+    }
+  });
+
+  // Presence Sync Routes
+  app.post("/api/presence/sync", isAuthenticated, logActivity("sync_presence"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      const result = await syncPresence(userId);
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced presence status`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync presence",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing presence:", error);
+      res.status(500).json({ message: "Failed to sync presence" });
     }
   });
 
