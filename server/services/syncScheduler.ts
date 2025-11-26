@@ -348,40 +348,22 @@ export function startScheduler(): void {
   });
   cronJobs.push(presenceJob);
 
-  const calendarJob = cron.schedule("*/30 * * * *", async () => {
+  const calendarChatTodoJob = cron.schedule("*/30 * * * *", async () => {
     if (isShuttingDown) return;
-    log("Cron triggered: Calendar sync (every 30 minutes)");
+    log("Cron triggered: Calendar/Chat/ToDo sync (every 30 minutes)");
     await enqueueSyncForAllUsers("calendar");
-  });
-  cronJobs.push(calendarJob);
-
-  const chatJob = cron.schedule("*/30 * * * *", async () => {
-    if (isShuttingDown) return;
-    log("Cron triggered: Chat sync (every 30 minutes)");
     await enqueueSyncForAllUsers("chat");
-  });
-  cronJobs.push(chatJob);
-
-  const todoJob = cron.schedule("*/30 * * * *", async () => {
-    if (isShuttingDown) return;
-    log("Cron triggered: ToDo sync (every 30 minutes)");
     await enqueueSyncForAllUsers("todo");
   });
-  cronJobs.push(todoJob);
+  cronJobs.push(calendarChatTodoJob);
 
-  const filesJob = cron.schedule("0 */2 * * *", async () => {
+  const filesContactsJob = cron.schedule("0 */2 * * *", async () => {
     if (isShuttingDown) return;
-    log("Cron triggered: Files/Drive sync (every 2 hours)");
+    log("Cron triggered: Files/Contacts sync (every 2 hours)");
     await enqueueSyncForAllUsers("drive");
-  });
-  cronJobs.push(filesJob);
-
-  const contactsJob = cron.schedule("0 */2 * * *", async () => {
-    if (isShuttingDown) return;
-    log("Cron triggered: Contacts sync (every 2 hours)");
     await enqueueSyncForAllUsers("contacts");
   });
-  cronJobs.push(contactsJob);
+  cronJobs.push(filesContactsJob);
 
   log("Sync scheduler started with the following schedules:");
   log("  - Presence: Every 5 minutes (*/5 * * * *)");
