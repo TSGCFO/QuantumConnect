@@ -35,6 +35,7 @@ import {
   scheduleUpcomingReminders,
 } from "./services/sync";
 import { startScheduler, stopScheduler, enqueueSync, enqueueSyncForAllUsers, getQueueStats, manualSyncUser } from "./services/syncScheduler";
+import { isDirectGraphConfigured, getMissingCredentials, getDirectGraphClient, getAllUsers } from "./integrations/microsoft-graph";
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -73,6 +74,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Microsoft Graph API status and test endpoint
+  app.get("/api/graph/status", async (req, res) => {
+    try {
+      const configured = isDirectGraphConfigured();
+      const missing = getMissingCredentials();
+      
+      if (!configured) {
+        return res.json({
+          configured: false,
+          missing,
+          message: "Microsoft Graph API not configured. Missing Azure AD credentials.",
+        });
+      }
+
+      // Try to make a simple API call to verify the connection
+      try {
+        const client = getDirectGraphClient();
+        const orgResponse = await client.api("/organization").select("id,displayName").get();
+        const org = orgResponse.value?.[0];
+        
+        return res.json({
+          configured: true,
+          connected: true,
+          organization: org?.displayName || "Unknown",
+          organizationId: org?.id,
+          message: "Microsoft Graph API connected successfully!",
+        });
+      } catch (apiError: any) {
+        return res.json({
+          configured: true,
+          connected: false,
+          error: apiError.message,
+          message: "Azure AD credentials configured but API connection failed.",
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({
+        configured: false,
+        error: error.message,
+        message: "Error checking Graph API status",
+      });
+    }
+  });
+
+  // Get all Microsoft 365 users (for admin linking)
+  app.get("/api/graph/users", isAuthenticated, async (req: any, res) => {
+    try {
+      if (!isDirectGraphConfigured()) {
+        return res.status(400).json({
+          message: "Microsoft Graph API not configured",
+          missing: getMissingCredentials(),
+        });
+      }
+
+      const usersResponse = await getAllUsers({ top: 100 });
+      res.json(usersResponse.value || []);
+    } catch (error: any) {
+      console.error("Error fetching Graph users:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch Microsoft 365 users" });
     }
   });
 
