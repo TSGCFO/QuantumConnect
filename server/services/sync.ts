@@ -1,6 +1,19 @@
 import { storage } from "../storage";
-import { getUncachableOutlookClient } from "../integrations/outlook";
-import { getUserChats, getChatMessages } from "../integrations/teams-app";
+import { 
+  getDirectGraphClient, 
+  isDirectGraphConfigured,
+  getMissingCredentials,
+  getCalendarView,
+  getCalendarEventsDelta,
+  getContacts,
+  getDriveItems,
+  getTodoLists,
+  getTodoTasks,
+  getUserChatsDirectGraph,
+  getChatMessagesDirectGraph,
+  getUserPresence,
+  getUserProfile,
+} from "../integrations/microsoft-graph";
 import OpenAI from "openai";
 
 export interface SyncResult {
@@ -56,6 +69,23 @@ function getOpenAI(): OpenAI | null {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
+// Helper to get Microsoft user ID for a given internal user ID
+async function getMicrosoftUserId(userId: string): Promise<string | null> {
+  const profile = await storage.getMsUserProfile(userId);
+  return profile?.msUserId || null;
+}
+
+// Helper to check if direct Graph API is available
+function checkGraphApiConfigured(): void {
+  if (!isDirectGraphConfigured()) {
+    const missing = getMissingCredentials();
+    throw new Error(
+      `Microsoft Graph API not configured. Missing credentials: ${missing.join(", ")}. ` +
+      `Add AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET to enable full Microsoft 365 sync.`
+    );
+  }
+}
+
 export async function syncCalendarEvents(
   userId: string,
   options: { daysBack?: number; daysForward?: number; useDelta?: boolean } = {}
@@ -63,6 +93,21 @@ export async function syncCalendarEvents(
   const { daysBack = 30, daysForward = 30, useDelta = false } = options;
 
   try {
+    // Check if direct Graph API is configured
+    checkGraphApiConfigured();
+
+    // Get Microsoft user ID for this user
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
     const job = await storage.createSyncJob({
       userId,
       resourceType: "calendar",
@@ -70,7 +115,7 @@ export async function syncCalendarEvents(
       status: "running",
     });
 
-    const client = await getUncachableOutlookClient();
+    const client = getDirectGraphClient();
     const now = new Date();
     const startDate = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
     const endDate = new Date(now.getTime() + daysForward * 24 * 60 * 60 * 1000);
@@ -107,7 +152,7 @@ export async function syncCalendarEvents(
           // First time delta sync - start with the delta endpoint
           // Note: CalendarView delta does not support $top, use Prefer header for page size
           response = await client
-            .api("/me/calendarView/delta")
+            .api(`/users/${msUserId}/calendarView/delta`)
             .query({
               startDateTime: startDate.toISOString(),
               endDateTime: endDate.toISOString(),
@@ -120,7 +165,7 @@ export async function syncCalendarEvents(
         } else {
           // Full sync - use calendarView with date range (no delta)
           response = await client
-            .api("/me/calendar/calendarView")
+            .api(`/users/${msUserId}/calendarView`)
             .query({
               startDateTime: startDate.toISOString(),
               endDateTime: endDate.toISOString(),
@@ -128,11 +173,11 @@ export async function syncCalendarEvents(
             .select(
               "id,subject,body,bodyPreview,start,end,location,isAllDay,isCancelled,organizer,attendees,recurrence,categories,importance,sensitivity,showAs,webLink,onlineMeeting,onlineMeetingUrl"
             )
-            .top(50)
+            .header("Prefer", "odata.maxpagesize=50")
             .get();
         }
 
-        for (const event of response.value) {
+        for (const event of response.value || []) {
           try {
             // Use O(1) Map lookup instead of re-querying the database
             const existing = existingEvents.get(event.id);
@@ -230,12 +275,22 @@ export async function syncCalendarEvents(
       throw error;
     }
   } catch (error: any) {
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("calendar", error)],
+        permissionError: true,
+      };
+    }
     return {
       success: false,
       itemsProcessed: 0,
       itemsCreated: 0,
       itemsUpdated: 0,
-      errors: [error.message],
+      errors: [error.message || "Unknown error during calendar sync"],
     };
   }
 }
@@ -247,6 +302,21 @@ export async function syncContacts(
   const { pageSize = 200, useDelta = false } = options;
 
   try {
+    // Check if direct Graph API is configured
+    checkGraphApiConfigured();
+
+    // Get Microsoft user ID for this user
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
     const job = await storage.createSyncJob({
       userId,
       resourceType: "contacts",
@@ -254,7 +324,7 @@ export async function syncContacts(
       status: "running",
     });
 
-    const client = await getUncachableOutlookClient();
+    const client = getDirectGraphClient();
     let itemsProcessed = 0;
     let itemsCreated = 0;
     let itemsUpdated = 0;
@@ -286,7 +356,7 @@ export async function syncContacts(
         } else if (useDelta) {
           // First time delta sync - start with the delta endpoint
           response = await client
-            .api("/me/contacts/delta")
+            .api(`/users/${msUserId}/contacts/delta`)
             .select(
               "id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,companyName,jobTitle,department,businessAddress,personalNotes,categories,birthday"
             )
@@ -295,7 +365,7 @@ export async function syncContacts(
         } else {
           // Full sync - use contacts endpoint (no delta)
           response = await client
-            .api("/me/contacts")
+            .api(`/users/${msUserId}/contacts`)
             .select(
               "id,displayName,givenName,surname,emailAddresses,businessPhones,mobilePhone,companyName,jobTitle,department,businessAddress,personalNotes,categories,birthday"
             )
@@ -387,12 +457,22 @@ export async function syncContacts(
       throw error;
     }
   } catch (error: any) {
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("contacts", error)],
+        permissionError: true,
+      };
+    }
     return {
       success: false,
       itemsProcessed: 0,
       itemsCreated: 0,
       itemsUpdated: 0,
-      errors: [error.message],
+      errors: [error.message || "Unknown error during contacts sync"],
     };
   }
 }
@@ -404,6 +484,21 @@ export async function syncDriveItems(
   const { source = "onedrive", pageSize = 100, recursive = false } = options;
 
   try {
+    // Check if direct Graph API is configured
+    checkGraphApiConfigured();
+
+    // Get Microsoft user ID for this user
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
     const job = await storage.createSyncJob({
       userId,
       resourceType: source,
@@ -411,7 +506,7 @@ export async function syncDriveItems(
       status: "running",
     });
 
-    const client = await getUncachableOutlookClient();
+    const client = getDirectGraphClient();
     let itemsProcessed = 0;
     let itemsCreated = 0;
     let itemsUpdated = 0;
@@ -433,8 +528,8 @@ export async function syncDriveItems(
         const currentFolder = foldersToProcess.shift()!;
         const apiPath =
           currentFolder === "root"
-            ? "/me/drive/root/children"
-            : `/me/drive/items/${currentFolder}/children`;
+            ? `/users/${msUserId}/drive/root/children`
+            : `/users/${msUserId}/drive/items/${currentFolder}/children`;
 
         nextLink = undefined;
 
@@ -536,12 +631,22 @@ export async function syncDriveItems(
       throw error;
     }
   } catch (error: any) {
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("drive", error)],
+        permissionError: true,
+      };
+    }
     return {
       success: false,
       itemsProcessed: 0,
       itemsCreated: 0,
       itemsUpdated: 0,
-      errors: [error.message],
+      errors: [error.message || "Unknown error during drive items sync"],
     };
   }
 }
@@ -553,6 +658,21 @@ export async function syncTodoLists(
   const { includeTasks = true } = options;
 
   try {
+    // Check if direct Graph API is configured
+    checkGraphApiConfigured();
+
+    // Get Microsoft user ID for this user
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
     const job = await storage.createSyncJob({
       userId,
       resourceType: "todo",
@@ -560,7 +680,7 @@ export async function syncTodoLists(
       status: "running",
     });
 
-    const client = await getUncachableOutlookClient();
+    const client = getDirectGraphClient();
     let itemsProcessed = 0;
     let itemsCreated = 0;
     let itemsUpdated = 0;
@@ -590,7 +710,7 @@ export async function syncTodoLists(
           response = await client.api(nextLink).get();
         } else {
           response = await client
-            .api("/me/todo/lists")
+            .api(`/users/${msUserId}/todo/lists`)
             .select("id,displayName,isOwner,isShared,wellknownListName")
             .get();
         }
@@ -630,7 +750,7 @@ export async function syncTodoLists(
                   taskResponse = await client.api(taskNextLink).get();
                 } else {
                   taskResponse = await client
-                    .api(`/me/todo/lists/${list.id}/tasks`)
+                    .api(`/users/${msUserId}/todo/lists/${list.id}/tasks`)
                     .select(
                       "id,title,body,importance,status,isReminderOn,reminderDateTime,dueDateTime,completedDateTime,startDateTime,createdDateTime,lastModifiedDateTime,categories,hasAttachments,linkedResources,recurrence,checklistItems"
                     )
@@ -727,12 +847,22 @@ export async function syncTodoLists(
       throw error;
     }
   } catch (error: any) {
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("todo", error)],
+        permissionError: true,
+      };
+    }
     return {
       success: false,
       itemsProcessed: 0,
       itemsCreated: 0,
       itemsUpdated: 0,
-      errors: [error.message],
+      errors: [error.message || "Unknown error during todo lists sync"],
     };
   }
 }
@@ -744,6 +874,21 @@ export async function syncChatThreads(
   const { limit = 30, includeMessages = true, messagesPerChat = 50 } = options;
 
   try {
+    // Check if direct Graph API is configured
+    checkGraphApiConfigured();
+
+    // Get Microsoft user ID for this user
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
     const job = await storage.createSyncJob({
       userId,
       resourceType: "chat",
@@ -751,6 +896,7 @@ export async function syncChatThreads(
       status: "running",
     });
 
+    const client = getDirectGraphClient();
     let itemsProcessed = 0;
     let itemsCreated = 0;
     let itemsUpdated = 0;
@@ -762,7 +908,14 @@ export async function syncChatThreads(
         (await storage.getChatThreads(1000)).map(t => [t.msChatId, t])
       );
 
-      const chats = await getUserChats(limit);
+      // Get chats using direct Graph API
+      const chatsResponse = await client
+        .api(`/users/${msUserId}/chats`)
+        .top(limit)
+        .expand("members")
+        .get();
+      
+      const chats = chatsResponse.value || [];
 
       for (const chat of chats) {
         try {
@@ -819,7 +972,12 @@ export async function syncChatThreads(
           // Use dbThread.id directly for messages - no need to re-query
           if (includeMessages) {
             try {
-              const messages = await getChatMessages(chat.id, messagesPerChat);
+              // Get chat messages using direct Graph API
+              const messagesResponse = await client
+                .api(`/chats/${chat.id}/messages`)
+                .top(messagesPerChat)
+                .get();
+              const messages = messagesResponse.value || [];
 
               for (const msg of messages) {
                 try {
@@ -895,18 +1053,43 @@ export async function syncChatThreads(
       throw error;
     }
   } catch (error: any) {
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("chat", error)],
+        permissionError: true,
+      };
+    }
     return {
       success: false,
       itemsProcessed: 0,
       itemsCreated: 0,
       itemsUpdated: 0,
-      errors: [error.message],
+      errors: [error.message || "Unknown error during chat threads sync"],
     };
   }
 }
 
 export async function syncPresence(userId: string): Promise<SyncResult> {
   try {
+    // Check if direct Graph API is configured
+    checkGraphApiConfigured();
+
+    // Get Microsoft user ID for this user
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
     const job = await storage.createSyncJob({
       userId,
       resourceType: "presence",
@@ -914,13 +1097,13 @@ export async function syncPresence(userId: string): Promise<SyncResult> {
       status: "running",
     });
 
-    const client = await getUncachableOutlookClient();
+    const client = getDirectGraphClient();
     let itemsProcessed = 0;
     let itemsCreated = 0;
     const errors: string[] = [];
 
     try {
-      const presenceResponse = await client.api("/me/presence").get();
+      const presenceResponse = await client.api(`/users/${msUserId}/presence`).get();
 
       await storage.createPresenceSnapshot({
         userId,
