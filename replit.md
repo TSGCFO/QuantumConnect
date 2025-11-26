@@ -153,6 +153,28 @@ Preferred communication style: Simple, everyday language.
 - `GET /api/admin/sync/jobs` - Admin: View all recent sync jobs
 - `POST /api/admin/sync/user/:userId` - Admin: Sync specific user
 
+### Admin M365 Account Linking
+
+**Location**: `client/src/pages/admin.tsx`
+
+**Purpose**: Allows administrators to link portal users to their Microsoft 365 accounts. This is required before the sync services can fetch data for a user.
+
+**How It Works**:
+1. Admin navigates to the Admin page (/admin)
+2. The "M365 Linking" tab shows all portal users with their current link status
+3. For unlinked users, admin clicks "Link" to open a dialog with searchable M365 users
+4. Admin selects the matching M365 account and confirms the link
+5. The system creates a record in `ms_user_profiles` storing the `msUserId` (Microsoft Graph ID)
+6. Sync services use this `msUserId` to fetch data via `/users/{msUserId}/` Graph API endpoints
+
+**Admin API Endpoints**:
+- `GET /api/admin/users` - Lists portal users with M365 link status
+- `POST /api/admin/users/:userId/link-m365` - Links portal user to M365 account
+- `DELETE /api/admin/users/:userId/link-m365` - Unlinks portal user from M365
+- `GET /api/admin/m365-user/:msUserId` - Fetches M365 user details
+
+**Security**: All admin endpoints require the user to have `role: "admin"` - enforced at route level
+
 **Lifecycle**:
 - Auto-starts on server startup
 - Graceful shutdown waits for in-flight jobs (30s timeout)
