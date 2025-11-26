@@ -130,6 +130,34 @@ Preferred communication style: Simple, everyday language.
 - Sync job tracking with start/end timestamps and item counts
 - Error accumulation with graceful degradation
 
+### Sync Scheduler
+
+**Location**: `server/services/syncScheduler.ts`
+
+**Tiered Scheduling** (node-cron):
+- **Presence**: Every 5 minutes - Real-time availability status
+- **Calendar/Chat/ToDo**: Every 30 minutes - Core productivity data
+- **Files/Contacts**: Every 2 hours - Less frequently changing data
+
+**Queue Management**:
+- In-memory job queue with sequential per-user processing
+- User locks prevent concurrent Microsoft Graph calls for same user
+- Configurable concurrency (default 2 parallel users)
+- Exponential backoff retry (5 max retries with delays: 1s, 2s, 4s, 8s, 16s)
+
+**API Endpoints**:
+- `POST /api/sync/manual` - User triggers sync of their own data
+- `GET /api/sync/status` - View user's sync history and queue status
+- `GET /api/admin/sync/stats` - Admin: Queue statistics
+- `POST /api/admin/sync/all` - Admin: Trigger sync for all users
+- `GET /api/admin/sync/jobs` - Admin: View all recent sync jobs
+- `POST /api/admin/sync/user/:userId` - Admin: Sync specific user
+
+**Lifecycle**:
+- Auto-starts on server startup
+- Graceful shutdown waits for in-flight jobs (30s timeout)
+- Handles SIGTERM/SIGINT for clean container stops
+
 ### External Dependencies
 
 **Microsoft Graph API Integration**:
