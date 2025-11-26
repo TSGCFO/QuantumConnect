@@ -125,7 +125,10 @@ export interface IStorage {
 
   // MS User Profiles
   getMsUserProfile(userId: string): Promise<MsUserProfile | undefined>;
+  getMsUserProfileByMsUserId(msUserId: string): Promise<MsUserProfile | undefined>;
+  getAllMsUserProfiles(): Promise<MsUserProfile[]>;
   upsertMsUserProfile(profile: InsertMsUserProfile): Promise<MsUserProfile>;
+  deleteMsUserProfile(userId: string): Promise<void>;
 
   // Sync States
   getUserSyncState(userId: string, resourceType: string): Promise<UserSyncState | undefined>;
@@ -549,6 +552,22 @@ export class DatabaseStorage implements IStorage {
       .from(msUserProfiles)
       .where(eq(msUserProfiles.userId, userId));
     return profile || undefined;
+  }
+
+  async getMsUserProfileByMsUserId(msUserId: string): Promise<MsUserProfile | undefined> {
+    const [profile] = await db
+      .select()
+      .from(msUserProfiles)
+      .where(eq(msUserProfiles.msUserId, msUserId));
+    return profile || undefined;
+  }
+
+  async getAllMsUserProfiles(): Promise<MsUserProfile[]> {
+    return await db.select().from(msUserProfiles).orderBy(msUserProfiles.createdAt);
+  }
+
+  async deleteMsUserProfile(userId: string): Promise<void> {
+    await db.delete(msUserProfiles).where(eq(msUserProfiles.userId, userId));
   }
 
   async upsertMsUserProfile(profile: InsertMsUserProfile): Promise<MsUserProfile> {
