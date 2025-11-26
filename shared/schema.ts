@@ -13,6 +13,7 @@ import {
   date,
   bigint,
   real,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -1218,7 +1219,7 @@ export const departments = pgTable(
     code: varchar("code"),
     description: text("description"),
     headId: varchar("head_id").references(() => users.id),
-    parentDepartmentId: varchar("parent_department_id").references(() => departments.id),
+    parentDepartmentId: varchar("parent_department_id").references((): AnyPgColumn => departments.id),
     createdAt: timestamp("created_at").defaultNow(),
     updatedAt: timestamp("updated_at").defaultNow(),
   },
