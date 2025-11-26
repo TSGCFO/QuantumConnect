@@ -139,6 +139,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin: Get all portal users with their M365 link status
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const portalUsers = await storage.getAllUsers();
+      const msProfiles = await storage.getAllMsUserProfiles();
+      
+      // Create a map for quick lookup
+      const profileMap = new Map(msProfiles.map(p => [p.userId, p]));
+      
+      // Combine portal users with their M365 link status
+      const usersWithStatus = portalUsers.map(user => ({
+        ...user,
+        msProfile: profileMap.get(user.id) || null,
+        isLinked: profileMap.has(user.id),
+      }));
+
+      res.json(usersWithStatus);
+    } catch (error: any) {
+      console.error("Error fetching admin users:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch users" });
+    }
+  });
+
+  // Admin: Link a portal user to a Microsoft 365 account
+  app.post("/api/admin/users/:userId/link-m365", isAuthenticated, logActivity("link_m365_account"), async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+      const { msUserId, displayName, mail, jobTitle, department, officeLocation } = req.body;
+
+      if (!msUserId) {
+        return res.status(400).json({ message: "Microsoft 365 user ID is required" });
+      }
+
+      // Check if the portal user exists
+      const portalUser = await storage.getUser(userId);
+      if (!portalUser) {
+        return res.status(404).json({ message: "Portal user not found" });
+      }
+
+      // Check if the M365 user is already linked to another portal user
+      const existingProfile = await storage.getMsUserProfileByMsUserId(msUserId);
+      if (existingProfile && existingProfile.userId !== userId) {
+        return res.status(400).json({ 
+          message: "This Microsoft 365 account is already linked to another portal user" 
+        });
+      }
+
+      // Create or update the MS user profile
+      const profile = await storage.upsertMsUserProfile({
+        userId,
+        msUserId,
+        jobTitle: jobTitle || null,
+        department: department || null,
+        officeLocation: officeLocation || null,
+      });
+
+      res.json({
+        success: true,
+        message: `Successfully linked ${portalUser.email || portalUser.firstName} to Microsoft 365 account`,
+        profile,
+      });
+    } catch (error: any) {
+      console.error("Error linking M365 account:", error);
+      res.status(500).json({ message: error.message || "Failed to link Microsoft 365 account" });
+    }
+  });
+
+  // Admin: Unlink a portal user from Microsoft 365
+  app.delete("/api/admin/users/:userId/link-m365", isAuthenticated, logActivity("unlink_m365_account"), async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const { userId } = req.params;
+
+      // Check if the portal user exists
+      const portalUser = await storage.getUser(userId);
+      if (!portalUser) {
+        return res.status(404).json({ message: "Portal user not found" });
+      }
+
+      // Delete the MS user profile
+      await storage.deleteMsUserProfile(userId);
+
+      res.json({
+        success: true,
+        message: `Successfully unlinked ${portalUser.email || portalUser.firstName} from Microsoft 365`,
+      });
+    } catch (error: any) {
+      console.error("Error unlinking M365 account:", error);
+      res.status(500).json({ message: error.message || "Failed to unlink Microsoft 365 account" });
+    }
+  });
+
+  // Admin: Get Microsoft 365 user details by ID (using User.Read.All permission)
+  app.get("/api/admin/m365-user/:msUserId", isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user is admin
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (currentUser?.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      if (!isDirectGraphConfigured()) {
+        return res.status(400).json({
+          message: "Microsoft Graph API not configured",
+          missing: getMissingCredentials(),
+        });
+      }
+
+      const { msUserId } = req.params;
+      const client = getDirectGraphClient();
+      
+      // Use User.Read.All permission to get user details
+      const userDetails = await client
+        .api(`/users/${msUserId}`)
+        .select("id,displayName,mail,userPrincipalName,jobTitle,department,officeLocation,mobilePhone,businessPhones")
+        .get();
+
+      res.json(userDetails);
+    } catch (error: any) {
+      console.error("Error fetching M365 user details:", error);
+      res.status(500).json({ message: error.message || "Failed to fetch Microsoft 365 user details" });
+    }
+  });
+
   // Dashboard stats
   app.get(
     "/api/dashboard/stats",
