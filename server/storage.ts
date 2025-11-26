@@ -24,6 +24,10 @@ import {
   aiReminders,
   aiNotifications,
   aiInsights,
+  permissionCategories,
+  graphPermissions,
+  graphPermissionEndpoints,
+  graphPermissionExamples,
   type User,
   type UpsertUser,
   type Document,
@@ -74,6 +78,14 @@ import {
   type InsertAiNotification,
   type AiInsight,
   type InsertAiInsight,
+  type InsertPermissionCategory,
+  type PermissionCategory,
+  type InsertGraphPermission,
+  type GraphPermission,
+  type InsertGraphPermissionEndpoint,
+  type GraphPermissionEndpoint,
+  type InsertGraphPermissionExample,
+  type GraphPermissionExample,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql, or, ilike } from "drizzle-orm";
@@ -122,6 +134,23 @@ export interface IStorage {
   getTaskStats(timeRange: string): Promise<any>;
   getDepartmentStats(timeRange: string): Promise<any[]>;
   getUserPerformance(timeRange: string): Promise<any[]>;
+
+  // Permission catalog operations
+  upsertPermissionCategory(
+    category: InsertPermissionCategory,
+  ): Promise<PermissionCategory>;
+  listPermissionCategories(): Promise<PermissionCategory[]>;
+  upsertGraphPermission(permission: InsertGraphPermission): Promise<GraphPermission>;
+  getGraphPermissionByName(name: string): Promise<GraphPermission | undefined>;
+  listGraphPermissions(): Promise<GraphPermission[]>;
+  replaceGraphPermissionEndpoints(
+    permissionId: string,
+    endpoints: InsertGraphPermissionEndpoint[],
+  ): Promise<GraphPermissionEndpoint[]>;
+  replaceGraphPermissionExamples(
+    permissionId: string,
+    examples: InsertGraphPermissionExample[],
+  ): Promise<GraphPermissionExample[]>;
 
   // MS User Profiles
   getMsUserProfile(userId: string): Promise<MsUserProfile | undefined>;
@@ -543,6 +572,90 @@ export class DatabaseStorage implements IStorage {
       userId,
       ...stats,
     }));
+  }
+
+  // Permission catalog operations
+  async upsertPermissionCategory(
+    category: InsertPermissionCategory,
+  ): Promise<PermissionCategory> {
+    const [result] = await db
+      .insert(permissionCategories)
+      .values(category)
+      .onConflictDoUpdate({
+        target: permissionCategories.name,
+        set: { ...category, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async listPermissionCategories(): Promise<PermissionCategory[]> {
+    return await db
+      .select()
+      .from(permissionCategories)
+      .orderBy(permissionCategories.name);
+  }
+
+  async upsertGraphPermission(
+    permission: InsertGraphPermission,
+  ): Promise<GraphPermission> {
+    const [result] = await db
+      .insert(graphPermissions)
+      .values(permission)
+      .onConflictDoUpdate({
+        target: graphPermissions.name,
+        set: { ...permission, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async getGraphPermissionByName(name: string): Promise<GraphPermission | undefined> {
+    const [permission] = await db
+      .select()
+      .from(graphPermissions)
+      .where(eq(graphPermissions.name, name));
+    return permission || undefined;
+  }
+
+  async listGraphPermissions(): Promise<GraphPermission[]> {
+    return await db.select().from(graphPermissions).orderBy(graphPermissions.name);
+  }
+
+  async replaceGraphPermissionEndpoints(
+    permissionId: string,
+    endpoints: InsertGraphPermissionEndpoint[],
+  ): Promise<GraphPermissionEndpoint[]> {
+    await db
+      .delete(graphPermissionEndpoints)
+      .where(eq(graphPermissionEndpoints.permissionId, permissionId));
+
+    if (endpoints.length === 0) {
+      return [];
+    }
+
+    return await db
+      .insert(graphPermissionEndpoints)
+      .values(endpoints.map((endpoint) => ({ ...endpoint, permissionId })))
+      .returning();
+  }
+
+  async replaceGraphPermissionExamples(
+    permissionId: string,
+    examples: InsertGraphPermissionExample[],
+  ): Promise<GraphPermissionExample[]> {
+    await db
+      .delete(graphPermissionExamples)
+      .where(eq(graphPermissionExamples.permissionId, permissionId));
+
+    if (examples.length === 0) {
+      return [];
+    }
+
+    return await db
+      .insert(graphPermissionExamples)
+      .values(examples.map((example) => ({ ...example, permissionId })))
+      .returning();
   }
 
   // MS User Profiles
