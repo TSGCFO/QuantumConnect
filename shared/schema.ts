@@ -269,6 +269,8 @@ export const graphPermissionsRelations = relations(
     }),
     endpoints: many(graphPermissionEndpoints),
     examples: many(graphPermissionExamples),
+    grants: many(graphPermissionGrants),
+    auditEvents: many(auditEvents),
   }),
 );
 
@@ -1309,55 +1311,6 @@ export const activities = pgTable(
   ],
 );
 
-// Catalog of Microsoft Graph permissions sourced from docs
-export const graphPermissions = pgTable(
-  "graph_permissions",
-  {
-    id: varchar("id")
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    name: varchar("name").notNull(), // e.g., Mail.Read
-    displayName: text("display_name"),
-    description: text("description"),
-    type: varchar("type").notNull(), // Delegated or Application
-    category: varchar("category"),
-    adminConsentRequired: boolean("admin_consent_required").default(false),
-    riskLevel: varchar("risk_level"),
-    sourceDocPath: text("source_doc_path"),
-    createdAt: timestamp("created_at").defaultNow(),
-    updatedAt: timestamp("updated_at").defaultNow(),
-  },
-  (table) => [
-    uniqueIndex("graph_permissions_name_unique").on(table.name),
-    index("graph_permissions_category_idx").on(table.category),
-  ],
-);
-
-// API endpoints associated with Microsoft Graph permissions
-export const graphPermissionEndpoints = pgTable(
-  "graph_permission_endpoints",
-  {
-    id: varchar("id")
-      .primaryKey()
-      .default(sql`gen_random_uuid()`),
-    permissionId: varchar("permission_id")
-      .references(() => graphPermissions.id)
-      .notNull(),
-    method: varchar("method").notNull(),
-    path: text("path").notNull(),
-    resourceType: varchar("resource_type"),
-    description: text("description"),
-    exampleUrl: text("example_url"),
-  },
-  (table) => [
-    index("graph_permission_endpoints_permission_idx").on(table.permissionId),
-    uniqueIndex("graph_permission_endpoint_unique").on(
-      table.permissionId,
-      table.method,
-      table.path,
-    ),
-  ],
-);
 
 // Granted permissions tied to users, groups, or resources
 export const graphPermissionGrants = pgTable(
@@ -1496,25 +1449,6 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
   }),
 }));
 
-export const graphPermissionsRelations = relations(
-  graphPermissions,
-  ({ many }) => ({
-    endpoints: many(graphPermissionEndpoints),
-    grants: many(graphPermissionGrants),
-    auditEvents: many(auditEvents),
-  }),
-);
-
-export const graphPermissionEndpointsRelations = relations(
-  graphPermissionEndpoints,
-  ({ one }) => ({
-    permission: one(graphPermissions, {
-      fields: [graphPermissionEndpoints.permissionId],
-      references: [graphPermissions.id],
-    }),
-  }),
-);
-
 export const graphPermissionGrantsRelations = relations(
   graphPermissionGrants,
   ({ one }) => ({
@@ -1594,25 +1528,6 @@ export const insertActivitySchema = createInsertSchema(activities).omit({
 });
 export type InsertActivity = z.infer<typeof insertActivitySchema>;
 export type Activity = typeof activities.$inferSelect;
-
-export const insertGraphPermissionSchema = createInsertSchema(graphPermissions).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertGraphPermission = z.infer<typeof insertGraphPermissionSchema>;
-export type GraphPermission = typeof graphPermissions.$inferSelect;
-
-export const insertGraphPermissionEndpointSchema = createInsertSchema(
-  graphPermissionEndpoints,
-).omit({
-  id: true,
-});
-export type InsertGraphPermissionEndpoint = z.infer<
-  typeof insertGraphPermissionEndpointSchema
->;
-export type GraphPermissionEndpoint =
-  typeof graphPermissionEndpoints.$inferSelect;
 
 export const insertGraphPermissionGrantSchema = createInsertSchema(
   graphPermissionGrants,
