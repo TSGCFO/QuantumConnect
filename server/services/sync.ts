@@ -10,6 +10,7 @@ export interface SyncResult {
   itemsUpdated: number;
   errors: string[];
   deltaToken?: string;
+  permissionError?: boolean;
 }
 
 export interface AiExtractionResult {
@@ -17,6 +18,35 @@ export interface AiExtractionResult {
   itemsCreated: number;
   summary: string;
   errors: string[];
+}
+
+// Permission requirements for each sync resource type
+const PERMISSION_REQUIREMENTS: Record<string, string[]> = {
+  calendar: ["Calendars.Read", "Calendars.ReadWrite"],
+  contacts: ["Contacts.Read", "Contacts.ReadWrite"],
+  drive: ["Files.Read", "Files.ReadWrite"],
+  todo: ["Tasks.Read", "Tasks.ReadWrite", "Tasks.ReadWrite.All"],
+  chat: ["Chat.Read", "Chat.ReadBasic", "Chat.ReadWrite"],
+  presence: ["Presence.Read", "Presence.ReadWrite.All"],
+};
+
+// Helper function to check if an error is a permission (403) error
+function isPermissionError(error: any): boolean {
+  return error?.statusCode === 403 || error?.code === "Forbidden";
+}
+
+// Helper function to format permission error messages
+function formatPermissionError(resourceType: string, error: any): string {
+  const requiredPerms = PERMISSION_REQUIREMENTS[resourceType] || [];
+  const errorBody = error?.body || "";
+  
+  // Try to extract required scopes from the error message
+  const match = errorBody.match(/API requires one of '([^']+)'/);
+  const actualRequired = match ? match[1] : requiredPerms.join(" or ");
+  
+  return `Missing permission for ${resourceType} sync. Required: ${actualRequired}. ` +
+    `The Microsoft 365 connector needs additional permissions. ` +
+    `Please contact your administrator to add the required scopes.`;
 }
 
 function getOpenAI(): OpenAI | null {
@@ -75,16 +105,17 @@ export async function syncCalendarEvents(
           response = await client.api(deltaToken).get();
         } else if (useDelta) {
           // First time delta sync - start with the delta endpoint
+          // Note: CalendarView delta does not support $top, use Prefer header for page size
           response = await client
             .api("/me/calendarView/delta")
             .query({
               startDateTime: startDate.toISOString(),
               endDateTime: endDate.toISOString(),
             })
+            .header("Prefer", "odata.maxpagesize=50")
             .select(
               "id,subject,body,bodyPreview,start,end,location,isAllDay,isCancelled,organizer,attendees,recurrence,categories,importance,sensitivity,showAs,webLink,onlineMeeting,onlineMeetingUrl"
             )
-            .top(50)
             .get();
         } else {
           // Full sync - use calendarView with date range (no delta)
@@ -939,12 +970,23 @@ export async function syncPresence(userId: string): Promise<SyncResult> {
       throw error;
     }
   } catch (error: any) {
+    // Check if this is a permission error
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("presence", error)],
+        permissionError: true,
+      };
+    }
     return {
       success: false,
       itemsProcessed: 0,
       itemsCreated: 0,
       itemsUpdated: 0,
-      errors: [error.message],
+      errors: [error.message || "Unknown error during presence sync"],
     };
   }
 }
