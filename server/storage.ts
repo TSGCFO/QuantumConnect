@@ -24,6 +24,22 @@ import {
   aiReminders,
   aiNotifications,
   aiInsights,
+  // New hierarchical tables
+  departments,
+  teams,
+  teamMembers,
+  performanceMetrics,
+  employeeMetricValues,
+  performancePeriods,
+  followUps,
+  followUpCompletions,
+  alertRules,
+  alertInstances,
+  callRecords,
+  interactionScores,
+  managerReports,
+  reportSubscriptions,
+  userExtendedProfiles,
   type User,
   type UpsertUser,
   type Document,
@@ -74,6 +90,37 @@ import {
   type InsertAiNotification,
   type AiInsight,
   type InsertAiInsight,
+  // New hierarchical types
+  type Department,
+  type InsertDepartment,
+  type Team,
+  type InsertTeam,
+  type TeamMember,
+  type InsertTeamMember,
+  type PerformanceMetric,
+  type InsertPerformanceMetric,
+  type EmployeeMetricValue,
+  type InsertEmployeeMetricValue,
+  type PerformancePeriod,
+  type InsertPerformancePeriod,
+  type FollowUp,
+  type InsertFollowUp,
+  type FollowUpCompletion,
+  type InsertFollowUpCompletion,
+  type AlertRule,
+  type InsertAlertRule,
+  type AlertInstance,
+  type InsertAlertInstance,
+  type CallRecord,
+  type InsertCallRecord,
+  type InteractionScore,
+  type InsertInteractionScore,
+  type ManagerReport,
+  type InsertManagerReport,
+  type ReportSubscription,
+  type InsertReportSubscription,
+  type UserExtendedProfile,
+  type InsertUserExtendedProfile,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql, or, ilike } from "drizzle-orm";
@@ -1134,6 +1181,641 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(aiInsights.generatedAt))
       .limit(1);
     return insight || undefined;
+  }
+
+  // ============================================================================
+  // DEPARTMENTS
+  // ============================================================================
+
+  async createDepartment(dept: InsertDepartment): Promise<Department> {
+    const [result] = await db.insert(departments).values(dept).returning();
+    return result;
+  }
+
+  async getDepartments(): Promise<Department[]> {
+    return await db.select().from(departments).where(eq(departments.isActive, true));
+  }
+
+  async getDepartment(id: string): Promise<Department | undefined> {
+    const [result] = await db.select().from(departments).where(eq(departments.id, id));
+    return result || undefined;
+  }
+
+  async updateDepartment(id: string, data: Partial<InsertDepartment>): Promise<Department> {
+    const [result] = await db
+      .update(departments)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(departments.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteDepartment(id: string): Promise<void> {
+    await db.update(departments).set({ isActive: false, updatedAt: new Date() }).where(eq(departments.id, id));
+  }
+
+  // ============================================================================
+  // TEAMS
+  // ============================================================================
+
+  async createTeam(team: InsertTeam): Promise<Team> {
+    const [result] = await db.insert(teams).values(team).returning();
+    return result;
+  }
+
+  async getTeams(departmentId?: string): Promise<Team[]> {
+    if (departmentId) {
+      return await db
+        .select()
+        .from(teams)
+        .where(and(eq(teams.departmentId, departmentId), eq(teams.isActive, true)));
+    }
+    return await db.select().from(teams).where(eq(teams.isActive, true));
+  }
+
+  async getTeam(id: string): Promise<Team | undefined> {
+    const [result] = await db.select().from(teams).where(eq(teams.id, id));
+    return result || undefined;
+  }
+
+  async updateTeam(id: string, data: Partial<InsertTeam>): Promise<Team> {
+    const [result] = await db
+      .update(teams)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(teams.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteTeam(id: string): Promise<void> {
+    await db.update(teams).set({ isActive: false, updatedAt: new Date() }).where(eq(teams.id, id));
+  }
+
+  // ============================================================================
+  // TEAM MEMBERS
+  // ============================================================================
+
+  async addTeamMember(member: InsertTeamMember): Promise<TeamMember> {
+    const [result] = await db.insert(teamMembers).values(member).returning();
+    return result;
+  }
+
+  async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+    return await db
+      .select()
+      .from(teamMembers)
+      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.isActive, true)));
+  }
+
+  async getUserTeams(userId: string): Promise<TeamMember[]> {
+    return await db
+      .select()
+      .from(teamMembers)
+      .where(and(eq(teamMembers.userId, userId), eq(teamMembers.isActive, true)));
+  }
+
+  async removeTeamMember(teamId: string, userId: string): Promise<void> {
+    await db
+      .update(teamMembers)
+      .set({ isActive: false, leftAt: new Date() })
+      .where(and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)));
+  }
+
+  // ============================================================================
+  // PERFORMANCE METRICS
+  // ============================================================================
+
+  async createPerformanceMetric(metric: InsertPerformanceMetric): Promise<PerformanceMetric> {
+    const [result] = await db.insert(performanceMetrics).values(metric).returning();
+    return result;
+  }
+
+  async getPerformanceMetrics(departmentId?: string): Promise<PerformanceMetric[]> {
+    if (departmentId) {
+      return await db
+        .select()
+        .from(performanceMetrics)
+        .where(and(eq(performanceMetrics.departmentId, departmentId), eq(performanceMetrics.isActive, true)))
+        .orderBy(performanceMetrics.displayOrder);
+    }
+    return await db
+      .select()
+      .from(performanceMetrics)
+      .where(eq(performanceMetrics.isActive, true))
+      .orderBy(performanceMetrics.displayOrder);
+  }
+
+  async getPerformanceMetric(id: string): Promise<PerformanceMetric | undefined> {
+    const [result] = await db.select().from(performanceMetrics).where(eq(performanceMetrics.id, id));
+    return result || undefined;
+  }
+
+  async updatePerformanceMetric(id: string, data: Partial<InsertPerformanceMetric>): Promise<PerformanceMetric> {
+    const [result] = await db
+      .update(performanceMetrics)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(performanceMetrics.id, id))
+      .returning();
+    return result;
+  }
+
+  // ============================================================================
+  // EMPLOYEE METRIC VALUES
+  // ============================================================================
+
+  async createEmployeeMetricValue(value: InsertEmployeeMetricValue): Promise<EmployeeMetricValue> {
+    const [result] = await db.insert(employeeMetricValues).values(value).returning();
+    return result;
+  }
+
+  async getEmployeeMetricValues(
+    userId: string,
+    metricId?: string,
+    periodType?: string
+  ): Promise<EmployeeMetricValue[]> {
+    const conditions = [eq(employeeMetricValues.userId, userId)];
+    if (metricId) conditions.push(eq(employeeMetricValues.metricId, metricId));
+    if (periodType) conditions.push(eq(employeeMetricValues.periodType, periodType));
+
+    return await db
+      .select()
+      .from(employeeMetricValues)
+      .where(and(...conditions))
+      .orderBy(desc(employeeMetricValues.periodStart));
+  }
+
+  async upsertEmployeeMetricValue(value: InsertEmployeeMetricValue): Promise<EmployeeMetricValue> {
+    const [result] = await db
+      .insert(employeeMetricValues)
+      .values(value)
+      .onConflictDoUpdate({
+        target: [
+          employeeMetricValues.userId,
+          employeeMetricValues.metricId,
+          employeeMetricValues.periodType,
+          employeeMetricValues.periodStart,
+        ],
+        set: {
+          actualValue: value.actualValue,
+          targetValue: value.targetValue,
+          achievementPercentage: value.achievementPercentage,
+          trend: value.trend,
+          previousValue: value.previousValue,
+          calculatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  // ============================================================================
+  // PERFORMANCE PERIODS
+  // ============================================================================
+
+  async createPerformancePeriod(period: InsertPerformancePeriod): Promise<PerformancePeriod> {
+    const [result] = await db.insert(performancePeriods).values(period).returning();
+    return result;
+  }
+
+  async getPerformancePeriods(status?: string): Promise<PerformancePeriod[]> {
+    if (status) {
+      return await db
+        .select()
+        .from(performancePeriods)
+        .where(eq(performancePeriods.status, status))
+        .orderBy(desc(performancePeriods.startDate));
+    }
+    return await db.select().from(performancePeriods).orderBy(desc(performancePeriods.startDate));
+  }
+
+  async getActivePerformancePeriod(periodType: string): Promise<PerformancePeriod | undefined> {
+    const [result] = await db
+      .select()
+      .from(performancePeriods)
+      .where(and(eq(performancePeriods.periodType, periodType), eq(performancePeriods.status, "active")))
+      .limit(1);
+    return result || undefined;
+  }
+
+  // ============================================================================
+  // FOLLOW-UPS
+  // ============================================================================
+
+  async createFollowUp(followUp: InsertFollowUp): Promise<FollowUp> {
+    const [result] = await db.insert(followUps).values(followUp).returning();
+    return result;
+  }
+
+  async getFollowUps(userId: string, status?: string): Promise<FollowUp[]> {
+    const conditions = [eq(followUps.assignedToId, userId)];
+    if (status) conditions.push(eq(followUps.status, status));
+
+    return await db
+      .select()
+      .from(followUps)
+      .where(and(...conditions))
+      .orderBy(followUps.dueDate);
+  }
+
+  async getOverdueFollowUps(userId?: string): Promise<FollowUp[]> {
+    const now = new Date();
+    const conditions = [eq(followUps.status, "pending"), lte(followUps.dueDate, now)];
+    if (userId) conditions.push(eq(followUps.assignedToId, userId));
+
+    return await db
+      .select()
+      .from(followUps)
+      .where(and(...conditions))
+      .orderBy(followUps.dueDate);
+  }
+
+  async getFollowUp(id: string): Promise<FollowUp | undefined> {
+    const [result] = await db.select().from(followUps).where(eq(followUps.id, id));
+    return result || undefined;
+  }
+
+  async updateFollowUp(id: string, data: Partial<InsertFollowUp>): Promise<FollowUp> {
+    const [result] = await db
+      .update(followUps)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(followUps.id, id))
+      .returning();
+    return result;
+  }
+
+  async completeFollowUp(id: string, notes?: string): Promise<FollowUp> {
+    const [result] = await db
+      .update(followUps)
+      .set({
+        status: "completed",
+        completedAt: new Date(),
+        completionNotes: notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(followUps.id, id))
+      .returning();
+    return result;
+  }
+
+  // ============================================================================
+  // FOLLOW-UP COMPLETIONS
+  // ============================================================================
+
+  async createFollowUpCompletion(completion: InsertFollowUpCompletion): Promise<FollowUpCompletion> {
+    const [result] = await db.insert(followUpCompletions).values(completion).returning();
+    return result;
+  }
+
+  async getFollowUpCompletions(followUpId: string): Promise<FollowUpCompletion[]> {
+    return await db
+      .select()
+      .from(followUpCompletions)
+      .where(eq(followUpCompletions.followUpId, followUpId));
+  }
+
+  // ============================================================================
+  // ALERT RULES
+  // ============================================================================
+
+  async createAlertRule(rule: InsertAlertRule): Promise<AlertRule> {
+    const [result] = await db.insert(alertRules).values(rule).returning();
+    return result;
+  }
+
+  async getAlertRules(active?: boolean): Promise<AlertRule[]> {
+    if (active !== undefined) {
+      return await db.select().from(alertRules).where(eq(alertRules.isActive, active));
+    }
+    return await db.select().from(alertRules);
+  }
+
+  async getAlertRule(id: string): Promise<AlertRule | undefined> {
+    const [result] = await db.select().from(alertRules).where(eq(alertRules.id, id));
+    return result || undefined;
+  }
+
+  async updateAlertRule(id: string, data: Partial<InsertAlertRule>): Promise<AlertRule> {
+    const [result] = await db
+      .update(alertRules)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(alertRules.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteAlertRule(id: string): Promise<void> {
+    await db.update(alertRules).set({ isActive: false, updatedAt: new Date() }).where(eq(alertRules.id, id));
+  }
+
+  // ============================================================================
+  // ALERT INSTANCES
+  // ============================================================================
+
+  async createAlertInstance(alert: InsertAlertInstance): Promise<AlertInstance> {
+    const [result] = await db.insert(alertInstances).values(alert).returning();
+    return result;
+  }
+
+  async getAlertInstances(userId: string, status?: string): Promise<AlertInstance[]> {
+    const conditions = [eq(alertInstances.triggeredForUserId, userId)];
+    if (status) conditions.push(eq(alertInstances.status, status));
+
+    return await db
+      .select()
+      .from(alertInstances)
+      .where(and(...conditions))
+      .orderBy(desc(alertInstances.createdAt));
+  }
+
+  async getPendingAlerts(userId: string): Promise<AlertInstance[]> {
+    return await db
+      .select()
+      .from(alertInstances)
+      .where(and(eq(alertInstances.triggeredForUserId, userId), eq(alertInstances.status, "pending")))
+      .orderBy(desc(alertInstances.createdAt));
+  }
+
+  async acknowledgeAlert(id: string, userId: string): Promise<AlertInstance> {
+    const [result] = await db
+      .update(alertInstances)
+      .set({
+        status: "acknowledged",
+        acknowledgedById: userId,
+        acknowledgedAt: new Date(),
+      })
+      .where(eq(alertInstances.id, id))
+      .returning();
+    return result;
+  }
+
+  async resolveAlert(id: string, userId: string, notes?: string): Promise<AlertInstance> {
+    const [result] = await db
+      .update(alertInstances)
+      .set({
+        status: "resolved",
+        resolvedById: userId,
+        resolvedAt: new Date(),
+        resolutionNotes: notes,
+      })
+      .where(eq(alertInstances.id, id))
+      .returning();
+    return result;
+  }
+
+  async dismissAlert(id: string): Promise<AlertInstance> {
+    const [result] = await db
+      .update(alertInstances)
+      .set({ status: "dismissed" })
+      .where(eq(alertInstances.id, id))
+      .returning();
+    return result;
+  }
+
+  // ============================================================================
+  // CALL RECORDS
+  // ============================================================================
+
+  async createCallRecord(call: InsertCallRecord): Promise<CallRecord> {
+    const [result] = await db.insert(callRecords).values(call).returning();
+    return result;
+  }
+
+  async getCallRecords(userId: string, startDate?: Date, endDate?: Date): Promise<CallRecord[]> {
+    const conditions = [eq(callRecords.userId, userId)];
+    if (startDate) conditions.push(gte(callRecords.startedAt, startDate));
+    if (endDate) conditions.push(lte(callRecords.startedAt, endDate));
+
+    return await db
+      .select()
+      .from(callRecords)
+      .where(and(...conditions))
+      .orderBy(desc(callRecords.startedAt));
+  }
+
+  async getCallRecord(id: string): Promise<CallRecord | undefined> {
+    const [result] = await db.select().from(callRecords).where(eq(callRecords.id, id));
+    return result || undefined;
+  }
+
+  async updateCallRecord(id: string, data: Partial<InsertCallRecord>): Promise<CallRecord> {
+    const [result] = await db
+      .update(callRecords)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(callRecords.id, id))
+      .returning();
+    return result;
+  }
+
+  async upsertCallRecord(call: InsertCallRecord): Promise<CallRecord> {
+    if (call.msCallId) {
+      const [result] = await db
+        .insert(callRecords)
+        .values(call)
+        .onConflictDoUpdate({
+          target: callRecords.msCallId,
+          set: { ...call, updatedAt: new Date() },
+        })
+        .returning();
+      return result;
+    }
+    return this.createCallRecord(call);
+  }
+
+  // ============================================================================
+  // INTERACTION SCORES
+  // ============================================================================
+
+  async createInteractionScore(score: InsertInteractionScore): Promise<InteractionScore> {
+    const [result] = await db.insert(interactionScores).values(score).returning();
+    return result;
+  }
+
+  async getInteractionScores(userId: string, interactionType?: string): Promise<InteractionScore[]> {
+    const conditions = [eq(interactionScores.userId, userId)];
+    if (interactionType) conditions.push(eq(interactionScores.interactionType, interactionType));
+
+    return await db
+      .select()
+      .from(interactionScores)
+      .where(and(...conditions))
+      .orderBy(desc(interactionScores.scoredAt));
+  }
+
+  async getInteractionScore(interactionType: string, sourceId: string): Promise<InteractionScore | undefined> {
+    const [result] = await db
+      .select()
+      .from(interactionScores)
+      .where(and(eq(interactionScores.interactionType, interactionType), eq(interactionScores.sourceId, sourceId)));
+    return result || undefined;
+  }
+
+  async getAverageScores(
+    userId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<{ avgOverall: number; avgEngagement: number; avgCommunication: number }> {
+    const result = await db
+      .select({
+        avgOverall: sql<number>`AVG(${interactionScores.overallScore})`,
+        avgEngagement: sql<number>`AVG(${interactionScores.engagementScore})`,
+        avgCommunication: sql<number>`AVG(${interactionScores.communicationScore})`,
+      })
+      .from(interactionScores)
+      .where(
+        and(
+          eq(interactionScores.userId, userId),
+          gte(interactionScores.scoredAt, startDate),
+          lte(interactionScores.scoredAt, endDate)
+        )
+      );
+    return result[0] || { avgOverall: 0, avgEngagement: 0, avgCommunication: 0 };
+  }
+
+  // ============================================================================
+  // MANAGER REPORTS
+  // ============================================================================
+
+  async createManagerReport(report: InsertManagerReport): Promise<ManagerReport> {
+    const [result] = await db.insert(managerReports).values(report).returning();
+    return result;
+  }
+
+  async getManagerReports(userId: string, reportType?: string): Promise<ManagerReport[]> {
+    const conditions = [eq(managerReports.generatedForId, userId)];
+    if (reportType) conditions.push(eq(managerReports.reportType, reportType));
+
+    return await db
+      .select()
+      .from(managerReports)
+      .where(and(...conditions))
+      .orderBy(desc(managerReports.generatedAt));
+  }
+
+  async getManagerReport(id: string): Promise<ManagerReport | undefined> {
+    const [result] = await db.select().from(managerReports).where(eq(managerReports.id, id));
+    return result || undefined;
+  }
+
+  async markReportViewed(id: string): Promise<ManagerReport> {
+    const [result] = await db
+      .update(managerReports)
+      .set({ viewedAt: new Date() })
+      .where(eq(managerReports.id, id))
+      .returning();
+    return result;
+  }
+
+  // ============================================================================
+  // REPORT SUBSCRIPTIONS
+  // ============================================================================
+
+  async createReportSubscription(subscription: InsertReportSubscription): Promise<ReportSubscription> {
+    const [result] = await db.insert(reportSubscriptions).values(subscription).returning();
+    return result;
+  }
+
+  async getReportSubscriptions(userId: string): Promise<ReportSubscription[]> {
+    return await db
+      .select()
+      .from(reportSubscriptions)
+      .where(eq(reportSubscriptions.userId, userId));
+  }
+
+  async getActiveReportSubscriptions(): Promise<ReportSubscription[]> {
+    return await db
+      .select()
+      .from(reportSubscriptions)
+      .where(eq(reportSubscriptions.isActive, true));
+  }
+
+  async getDueReportSubscriptions(before: Date): Promise<ReportSubscription[]> {
+    return await db
+      .select()
+      .from(reportSubscriptions)
+      .where(and(eq(reportSubscriptions.isActive, true), lte(reportSubscriptions.nextDeliveryAt, before)));
+  }
+
+  async updateReportSubscription(id: string, data: Partial<InsertReportSubscription>): Promise<ReportSubscription> {
+    const [result] = await db
+      .update(reportSubscriptions)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(reportSubscriptions.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteReportSubscription(id: string): Promise<void> {
+    await db.delete(reportSubscriptions).where(eq(reportSubscriptions.id, id));
+  }
+
+  // ============================================================================
+  // USER EXTENDED PROFILES
+  // ============================================================================
+
+  async createUserExtendedProfile(profile: InsertUserExtendedProfile): Promise<UserExtendedProfile> {
+    const [result] = await db.insert(userExtendedProfiles).values(profile).returning();
+    return result;
+  }
+
+  async getUserExtendedProfile(userId: string): Promise<UserExtendedProfile | undefined> {
+    const [result] = await db
+      .select()
+      .from(userExtendedProfiles)
+      .where(eq(userExtendedProfiles.userId, userId));
+    return result || undefined;
+  }
+
+  async upsertUserExtendedProfile(profile: InsertUserExtendedProfile): Promise<UserExtendedProfile> {
+    const [result] = await db
+      .insert(userExtendedProfiles)
+      .values(profile)
+      .onConflictDoUpdate({
+        target: userExtendedProfiles.userId,
+        set: { ...profile, updatedAt: new Date() },
+      })
+      .returning();
+    return result;
+  }
+
+  async getDirectReports(managerId: string): Promise<UserExtendedProfile[]> {
+    return await db
+      .select()
+      .from(userExtendedProfiles)
+      .where(eq(userExtendedProfiles.directManagerId, managerId));
+  }
+
+  // ============================================================================
+  // HIERARCHY QUERIES
+  // ============================================================================
+
+  async getTeamWithMembers(teamId: string): Promise<{ team: Team; members: TeamMember[] } | undefined> {
+    const team = await this.getTeam(teamId);
+    if (!team) return undefined;
+    const members = await this.getTeamMembers(teamId);
+    return { team, members };
+  }
+
+  async getDepartmentWithTeams(departmentId: string): Promise<{ department: Department; teams: Team[] } | undefined> {
+    const department = await this.getDepartment(departmentId);
+    if (!department) return undefined;
+    const teamsList = await this.getTeams(departmentId);
+    return { department, teams: teamsList };
+  }
+
+  async getUserHierarchy(userId: string): Promise<{
+    user: User;
+    extendedProfile?: UserExtendedProfile;
+    teams: TeamMember[];
+    directReports: UserExtendedProfile[];
+  } | undefined> {
+    const user = await this.getUser(userId);
+    if (!user) return undefined;
+
+    const extendedProfile = await this.getUserExtendedProfile(userId);
+    const userTeams = await this.getUserTeams(userId);
+    const directReports = await this.getDirectReports(userId);
+
+    return { user, extendedProfile, teams: userTeams, directReports };
   }
 }
 

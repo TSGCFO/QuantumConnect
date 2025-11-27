@@ -1978,6 +1978,822 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // ============================================================================
+  // ORGANIZATIONAL HIERARCHY ROUTES
+  // ============================================================================
+
+  // Departments
+  app.get("/api/departments", isAuthenticated, async (req: any, res) => {
+    try {
+      const depts = await storage.getDepartments();
+      res.json(depts);
+    } catch (error) {
+      console.error("Error fetching departments:", error);
+      res.status(500).json({ message: "Failed to fetch departments" });
+    }
+  });
+
+  app.get("/api/departments/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const dept = await storage.getDepartment(req.params.id);
+      if (!dept) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+      res.json(dept);
+    } catch (error) {
+      console.error("Error fetching department:", error);
+      res.status(500).json({ message: "Failed to fetch department" });
+    }
+  });
+
+  app.get("/api/departments/:id/teams", isAuthenticated, async (req: any, res) => {
+    try {
+      const result = await storage.getDepartmentWithTeams(req.params.id);
+      if (!result) {
+        return res.status(404).json({ message: "Department not found" });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching department with teams:", error);
+      res.status(500).json({ message: "Failed to fetch department" });
+    }
+  });
+
+  app.post("/api/departments", isAuthenticated, logActivity("create_department"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const dept = await storage.createDepartment(req.body);
+      res.status(201).json(dept);
+    } catch (error) {
+      console.error("Error creating department:", error);
+      res.status(500).json({ message: "Failed to create department" });
+    }
+  });
+
+  app.patch("/api/departments/:id", isAuthenticated, logActivity("update_department"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const dept = await storage.updateDepartment(req.params.id, req.body);
+      res.json(dept);
+    } catch (error) {
+      console.error("Error updating department:", error);
+      res.status(500).json({ message: "Failed to update department" });
+    }
+  });
+
+  app.delete("/api/departments/:id", isAuthenticated, logActivity("delete_department"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      await storage.deleteDepartment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting department:", error);
+      res.status(500).json({ message: "Failed to delete department" });
+    }
+  });
+
+  // Teams
+  app.get("/api/teams", isAuthenticated, async (req: any, res) => {
+    try {
+      const departmentId = req.query.departmentId as string | undefined;
+      const teamsList = await storage.getTeams(departmentId);
+      res.json(teamsList);
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      res.status(500).json({ message: "Failed to fetch teams" });
+    }
+  });
+
+  app.get("/api/teams/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const result = await storage.getTeamWithMembers(req.params.id);
+      if (!result) {
+        return res.status(404).json({ message: "Team not found" });
+      }
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching team:", error);
+      res.status(500).json({ message: "Failed to fetch team" });
+    }
+  });
+
+  app.post("/api/teams", isAuthenticated, logActivity("create_team"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const team = await storage.createTeam(req.body);
+      res.status(201).json(team);
+    } catch (error) {
+      console.error("Error creating team:", error);
+      res.status(500).json({ message: "Failed to create team" });
+    }
+  });
+
+  app.patch("/api/teams/:id", isAuthenticated, logActivity("update_team"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const team = await storage.updateTeam(req.params.id, req.body);
+      res.json(team);
+    } catch (error) {
+      console.error("Error updating team:", error);
+      res.status(500).json({ message: "Failed to update team" });
+    }
+  });
+
+  app.delete("/api/teams/:id", isAuthenticated, logActivity("delete_team"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      await storage.deleteTeam(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting team:", error);
+      res.status(500).json({ message: "Failed to delete team" });
+    }
+  });
+
+  // Team Members
+  app.post("/api/teams/:teamId/members", isAuthenticated, logActivity("add_team_member"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const member = await storage.addTeamMember({
+        teamId: req.params.teamId,
+        ...req.body,
+      });
+      res.status(201).json(member);
+    } catch (error) {
+      console.error("Error adding team member:", error);
+      res.status(500).json({ message: "Failed to add team member" });
+    }
+  });
+
+  app.delete("/api/teams/:teamId/members/:userId", isAuthenticated, logActivity("remove_team_member"), async (req: any, res) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const user = await storage.getUser(currentUserId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      await storage.removeTeamMember(req.params.teamId, req.params.userId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing team member:", error);
+      res.status(500).json({ message: "Failed to remove team member" });
+    }
+  });
+
+  // User Teams
+  app.get("/api/users/:userId/teams", isAuthenticated, async (req: any, res) => {
+    try {
+      const userTeams = await storage.getUserTeams(req.params.userId);
+      res.json(userTeams);
+    } catch (error) {
+      console.error("Error fetching user teams:", error);
+      res.status(500).json({ message: "Failed to fetch user teams" });
+    }
+  });
+
+  // User Hierarchy
+  app.get("/api/users/:userId/hierarchy", isAuthenticated, async (req: any, res) => {
+    try {
+      const hierarchy = await storage.getUserHierarchy(req.params.userId);
+      if (!hierarchy) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(hierarchy);
+    } catch (error) {
+      console.error("Error fetching user hierarchy:", error);
+      res.status(500).json({ message: "Failed to fetch user hierarchy" });
+    }
+  });
+
+  // ============================================================================
+  // PERFORMANCE METRICS ROUTES
+  // ============================================================================
+
+  app.get("/api/performance/metrics", isAuthenticated, async (req: any, res) => {
+    try {
+      const departmentId = req.query.departmentId as string | undefined;
+      const metrics = await storage.getPerformanceMetrics(departmentId);
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching metrics:", error);
+      res.status(500).json({ message: "Failed to fetch metrics" });
+    }
+  });
+
+  app.get("/api/performance/metrics/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const metric = await storage.getPerformanceMetric(req.params.id);
+      if (!metric) {
+        return res.status(404).json({ message: "Metric not found" });
+      }
+      res.json(metric);
+    } catch (error) {
+      console.error("Error fetching metric:", error);
+      res.status(500).json({ message: "Failed to fetch metric" });
+    }
+  });
+
+  app.post("/api/performance/metrics", isAuthenticated, logActivity("create_metric"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const metric = await storage.createPerformanceMetric({
+        ...req.body,
+        createdById: userId,
+      });
+      res.status(201).json(metric);
+    } catch (error) {
+      console.error("Error creating metric:", error);
+      res.status(500).json({ message: "Failed to create metric" });
+    }
+  });
+
+  app.patch("/api/performance/metrics/:id", isAuthenticated, logActivity("update_metric"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const metric = await storage.updatePerformanceMetric(req.params.id, req.body);
+      res.json(metric);
+    } catch (error) {
+      console.error("Error updating metric:", error);
+      res.status(500).json({ message: "Failed to update metric" });
+    }
+  });
+
+  // Employee Metric Values
+  app.get("/api/performance/values", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string || req.user.claims.sub;
+      const metricId = req.query.metricId as string | undefined;
+      const periodType = req.query.periodType as string | undefined;
+      const values = await storage.getEmployeeMetricValues(userId, metricId, periodType);
+      res.json(values);
+    } catch (error) {
+      console.error("Error fetching metric values:", error);
+      res.status(500).json({ message: "Failed to fetch metric values" });
+    }
+  });
+
+  app.post("/api/performance/values", isAuthenticated, logActivity("record_metric_value"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const value = await storage.upsertEmployeeMetricValue(req.body);
+      res.status(201).json(value);
+    } catch (error) {
+      console.error("Error recording metric value:", error);
+      res.status(500).json({ message: "Failed to record metric value" });
+    }
+  });
+
+  // Performance Periods
+  app.get("/api/performance/periods", isAuthenticated, async (req: any, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const periods = await storage.getPerformancePeriods(status);
+      res.json(periods);
+    } catch (error) {
+      console.error("Error fetching periods:", error);
+      res.status(500).json({ message: "Failed to fetch periods" });
+    }
+  });
+
+  app.post("/api/performance/periods", isAuthenticated, logActivity("create_period"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      const period = await storage.createPerformancePeriod({
+        ...req.body,
+        createdById: userId,
+      });
+      res.status(201).json(period);
+    } catch (error) {
+      console.error("Error creating period:", error);
+      res.status(500).json({ message: "Failed to create period" });
+    }
+  });
+
+  // ============================================================================
+  // FOLLOW-UP TRACKING ROUTES
+  // ============================================================================
+
+  app.get("/api/follow-ups", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string || req.user.claims.sub;
+      const status = req.query.status as string | undefined;
+      const followUpsList = await storage.getFollowUps(userId, status);
+      res.json(followUpsList);
+    } catch (error) {
+      console.error("Error fetching follow-ups:", error);
+      res.status(500).json({ message: "Failed to fetch follow-ups" });
+    }
+  });
+
+  app.get("/api/follow-ups/overdue", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string | undefined;
+      const currentUserId = req.user.claims.sub;
+      const user = await storage.getUser(currentUserId);
+
+      // Non-managers can only see their own overdue follow-ups
+      const targetUserId = user?.role === "employee" ? currentUserId : userId;
+      const overdueList = await storage.getOverdueFollowUps(targetUserId);
+      res.json(overdueList);
+    } catch (error) {
+      console.error("Error fetching overdue follow-ups:", error);
+      res.status(500).json({ message: "Failed to fetch overdue follow-ups" });
+    }
+  });
+
+  app.get("/api/follow-ups/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const followUp = await storage.getFollowUp(req.params.id);
+      if (!followUp) {
+        return res.status(404).json({ message: "Follow-up not found" });
+      }
+      res.json(followUp);
+    } catch (error) {
+      console.error("Error fetching follow-up:", error);
+      res.status(500).json({ message: "Failed to fetch follow-up" });
+    }
+  });
+
+  app.post("/api/follow-ups", isAuthenticated, logActivity("create_follow_up"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const followUp = await storage.createFollowUp({
+        ...req.body,
+        assignedById: userId,
+      });
+      res.status(201).json(followUp);
+    } catch (error) {
+      console.error("Error creating follow-up:", error);
+      res.status(500).json({ message: "Failed to create follow-up" });
+    }
+  });
+
+  app.patch("/api/follow-ups/:id", isAuthenticated, logActivity("update_follow_up"), async (req: any, res) => {
+    try {
+      const followUp = await storage.updateFollowUp(req.params.id, req.body);
+      res.json(followUp);
+    } catch (error) {
+      console.error("Error updating follow-up:", error);
+      res.status(500).json({ message: "Failed to update follow-up" });
+    }
+  });
+
+  app.post("/api/follow-ups/:id/complete", isAuthenticated, logActivity("complete_follow_up"), async (req: any, res) => {
+    try {
+      const { notes } = req.body;
+      const followUp = await storage.completeFollowUp(req.params.id, notes);
+      res.json(followUp);
+    } catch (error) {
+      console.error("Error completing follow-up:", error);
+      res.status(500).json({ message: "Failed to complete follow-up" });
+    }
+  });
+
+  // Follow-up Completions
+  app.get("/api/follow-ups/:id/completions", isAuthenticated, async (req: any, res) => {
+    try {
+      const completions = await storage.getFollowUpCompletions(req.params.id);
+      res.json(completions);
+    } catch (error) {
+      console.error("Error fetching completions:", error);
+      res.status(500).json({ message: "Failed to fetch completions" });
+    }
+  });
+
+  app.post("/api/follow-ups/:id/completions", isAuthenticated, logActivity("add_completion_evidence"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const completion = await storage.createFollowUpCompletion({
+        followUpId: req.params.id,
+        completedById: userId,
+        ...req.body,
+      });
+      res.status(201).json(completion);
+    } catch (error) {
+      console.error("Error adding completion:", error);
+      res.status(500).json({ message: "Failed to add completion" });
+    }
+  });
+
+  // ============================================================================
+  // ALERT RULES ENGINE ROUTES
+  // ============================================================================
+
+  app.get("/api/alerts/rules", isAuthenticated, async (req: any, res) => {
+    try {
+      const active = req.query.active === "true" ? true : req.query.active === "false" ? false : undefined;
+      const rules = await storage.getAlertRules(active);
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching alert rules:", error);
+      res.status(500).json({ message: "Failed to fetch alert rules" });
+    }
+  });
+
+  app.get("/api/alerts/rules/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const rule = await storage.getAlertRule(req.params.id);
+      if (!rule) {
+        return res.status(404).json({ message: "Alert rule not found" });
+      }
+      res.json(rule);
+    } catch (error) {
+      console.error("Error fetching alert rule:", error);
+      res.status(500).json({ message: "Failed to fetch alert rule" });
+    }
+  });
+
+  app.post("/api/alerts/rules", isAuthenticated, logActivity("create_alert_rule"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const rule = await storage.createAlertRule({
+        ...req.body,
+        createdById: userId,
+      });
+      res.status(201).json(rule);
+    } catch (error) {
+      console.error("Error creating alert rule:", error);
+      res.status(500).json({ message: "Failed to create alert rule" });
+    }
+  });
+
+  app.patch("/api/alerts/rules/:id", isAuthenticated, logActivity("update_alert_rule"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const rule = await storage.updateAlertRule(req.params.id, req.body);
+      res.json(rule);
+    } catch (error) {
+      console.error("Error updating alert rule:", error);
+      res.status(500).json({ message: "Failed to update alert rule" });
+    }
+  });
+
+  app.delete("/api/alerts/rules/:id", isAuthenticated, logActivity("delete_alert_rule"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || user.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      await storage.deleteAlertRule(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting alert rule:", error);
+      res.status(500).json({ message: "Failed to delete alert rule" });
+    }
+  });
+
+  // Alert Instances
+  app.get("/api/alerts", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string || req.user.claims.sub;
+      const status = req.query.status as string | undefined;
+      const alerts = await storage.getAlertInstances(userId, status);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Error fetching alerts:", error);
+      res.status(500).json({ message: "Failed to fetch alerts" });
+    }
+  });
+
+  app.get("/api/alerts/pending", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const alerts = await storage.getPendingAlerts(userId);
+      res.json(alerts);
+    } catch (error) {
+      console.error("Error fetching pending alerts:", error);
+      res.status(500).json({ message: "Failed to fetch pending alerts" });
+    }
+  });
+
+  app.post("/api/alerts/:id/acknowledge", isAuthenticated, logActivity("acknowledge_alert"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const alert = await storage.acknowledgeAlert(req.params.id, userId);
+      res.json(alert);
+    } catch (error) {
+      console.error("Error acknowledging alert:", error);
+      res.status(500).json({ message: "Failed to acknowledge alert" });
+    }
+  });
+
+  app.post("/api/alerts/:id/resolve", isAuthenticated, logActivity("resolve_alert"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { notes } = req.body;
+      const alert = await storage.resolveAlert(req.params.id, userId, notes);
+      res.json(alert);
+    } catch (error) {
+      console.error("Error resolving alert:", error);
+      res.status(500).json({ message: "Failed to resolve alert" });
+    }
+  });
+
+  app.post("/api/alerts/:id/dismiss", isAuthenticated, logActivity("dismiss_alert"), async (req: any, res) => {
+    try {
+      const alert = await storage.dismissAlert(req.params.id);
+      res.json(alert);
+    } catch (error) {
+      console.error("Error dismissing alert:", error);
+      res.status(500).json({ message: "Failed to dismiss alert" });
+    }
+  });
+
+  // ============================================================================
+  // CALL RECORDS ROUTES
+  // ============================================================================
+
+  app.get("/api/calls", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string || req.user.claims.sub;
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      const calls = await storage.getCallRecords(userId, startDate, endDate);
+      res.json(calls);
+    } catch (error) {
+      console.error("Error fetching calls:", error);
+      res.status(500).json({ message: "Failed to fetch calls" });
+    }
+  });
+
+  app.get("/api/calls/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const call = await storage.getCallRecord(req.params.id);
+      if (!call) {
+        return res.status(404).json({ message: "Call record not found" });
+      }
+      res.json(call);
+    } catch (error) {
+      console.error("Error fetching call:", error);
+      res.status(500).json({ message: "Failed to fetch call" });
+    }
+  });
+
+  app.post("/api/calls", isAuthenticated, logActivity("create_call_record"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const call = await storage.createCallRecord({
+        ...req.body,
+        userId: req.body.userId || userId,
+      });
+      res.status(201).json(call);
+    } catch (error) {
+      console.error("Error creating call record:", error);
+      res.status(500).json({ message: "Failed to create call record" });
+    }
+  });
+
+  app.patch("/api/calls/:id", isAuthenticated, logActivity("update_call_record"), async (req: any, res) => {
+    try {
+      const call = await storage.updateCallRecord(req.params.id, req.body);
+      res.json(call);
+    } catch (error) {
+      console.error("Error updating call:", error);
+      res.status(500).json({ message: "Failed to update call" });
+    }
+  });
+
+  // ============================================================================
+  // INTERACTION SCORES ROUTES
+  // ============================================================================
+
+  app.get("/api/scores", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string || req.user.claims.sub;
+      const interactionType = req.query.type as string | undefined;
+      const scores = await storage.getInteractionScores(userId, interactionType);
+      res.json(scores);
+    } catch (error) {
+      console.error("Error fetching scores:", error);
+      res.status(500).json({ message: "Failed to fetch scores" });
+    }
+  });
+
+  app.get("/api/scores/average", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.query.userId as string || req.user.claims.sub;
+      const startDate = new Date(req.query.startDate as string || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+      const endDate = new Date(req.query.endDate as string || new Date());
+      const averages = await storage.getAverageScores(userId, startDate, endDate);
+      res.json(averages);
+    } catch (error) {
+      console.error("Error fetching average scores:", error);
+      res.status(500).json({ message: "Failed to fetch average scores" });
+    }
+  });
+
+  app.post("/api/scores", isAuthenticated, logActivity("create_interaction_score"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const score = await storage.createInteractionScore(req.body);
+      res.status(201).json(score);
+    } catch (error) {
+      console.error("Error creating score:", error);
+      res.status(500).json({ message: "Failed to create score" });
+    }
+  });
+
+  // ============================================================================
+  // MANAGER REPORTS ROUTES
+  // ============================================================================
+
+  app.get("/api/reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const reportType = req.query.type as string | undefined;
+      const reports = await storage.getManagerReports(userId, reportType);
+      res.json(reports);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+      res.status(500).json({ message: "Failed to fetch reports" });
+    }
+  });
+
+  app.get("/api/reports/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const report = await storage.getManagerReport(req.params.id);
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+      // Mark as viewed
+      await storage.markReportViewed(req.params.id);
+      res.json(report);
+    } catch (error) {
+      console.error("Error fetching report:", error);
+      res.status(500).json({ message: "Failed to fetch report" });
+    }
+  });
+
+  app.post("/api/reports", isAuthenticated, logActivity("generate_report"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user || !["admin", "manager"].includes(user.role)) {
+        return res.status(403).json({ message: "Admin or manager access required" });
+      }
+      const report = await storage.createManagerReport({
+        ...req.body,
+        generatedForId: userId,
+        generatedAt: new Date(),
+      });
+      res.status(201).json(report);
+    } catch (error) {
+      console.error("Error creating report:", error);
+      res.status(500).json({ message: "Failed to create report" });
+    }
+  });
+
+  // ============================================================================
+  // REPORT SUBSCRIPTIONS ROUTES
+  // ============================================================================
+
+  app.get("/api/report-subscriptions", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscriptions = await storage.getReportSubscriptions(userId);
+      res.json(subscriptions);
+    } catch (error) {
+      console.error("Error fetching subscriptions:", error);
+      res.status(500).json({ message: "Failed to fetch subscriptions" });
+    }
+  });
+
+  app.post("/api/report-subscriptions", isAuthenticated, logActivity("create_subscription"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const subscription = await storage.createReportSubscription({
+        ...req.body,
+        userId,
+      });
+      res.status(201).json(subscription);
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      res.status(500).json({ message: "Failed to create subscription" });
+    }
+  });
+
+  app.patch("/api/report-subscriptions/:id", isAuthenticated, logActivity("update_subscription"), async (req: any, res) => {
+    try {
+      const subscription = await storage.updateReportSubscription(req.params.id, req.body);
+      res.json(subscription);
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      res.status(500).json({ message: "Failed to update subscription" });
+    }
+  });
+
+  app.delete("/api/report-subscriptions/:id", isAuthenticated, logActivity("delete_subscription"), async (req: any, res) => {
+    try {
+      await storage.deleteReportSubscription(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting subscription:", error);
+      res.status(500).json({ message: "Failed to delete subscription" });
+    }
+  });
+
+  // ============================================================================
+  // USER EXTENDED PROFILE ROUTES
+  // ============================================================================
+
+  app.get("/api/users/:userId/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const profile = await storage.getUserExtendedProfile(req.params.userId);
+      res.json(profile || null);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ message: "Failed to fetch profile" });
+    }
+  });
+
+  app.put("/api/users/:userId/profile", isAuthenticated, logActivity("update_user_profile"), async (req: any, res) => {
+    try {
+      const currentUserId = req.user.claims.sub;
+      const user = await storage.getUser(currentUserId);
+
+      // Users can update their own profile, admins/managers can update others
+      if (currentUserId !== req.params.userId && user?.role === "employee") {
+        return res.status(403).json({ message: "Cannot update other users' profiles" });
+      }
+
+      const profile = await storage.upsertUserExtendedProfile({
+        userId: req.params.userId,
+        ...req.body,
+      });
+      res.json(profile);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
+  app.get("/api/users/:userId/direct-reports", isAuthenticated, async (req: any, res) => {
+    try {
+      const directReports = await storage.getDirectReports(req.params.userId);
+      res.json(directReports);
+    } catch (error) {
+      console.error("Error fetching direct reports:", error);
+      res.status(500).json({ message: "Failed to fetch direct reports" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

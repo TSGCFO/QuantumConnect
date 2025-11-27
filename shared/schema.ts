@@ -1063,3 +1063,763 @@ export const insertAiInsightSchema = createInsertSchema(aiInsights).omit({
 });
 export type InsertAiInsight = z.infer<typeof insertAiInsightSchema>;
 export type AiInsight = typeof aiInsights.$inferSelect;
+
+// ============================================================================
+// ORGANIZATIONAL HIERARCHY
+// ============================================================================
+
+// Departments with department heads
+export const departments = pgTable("departments", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  description: text("description"),
+  headUserId: varchar("head_user_id").references(() => users.id),
+  parentDepartmentId: varchar("parent_department_id"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const departmentsRelations = relations(departments, ({ one, many }) => ({
+  head: one(users, {
+    fields: [departments.headUserId],
+    references: [users.id],
+  }),
+  teams: many(teams),
+}));
+
+export const insertDepartmentSchema = createInsertSchema(departments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
+export type Department = typeof departments.$inferSelect;
+
+// Teams within departments
+export const teams = pgTable("teams", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  departmentId: varchar("department_id")
+    .references(() => departments.id)
+    .notNull(),
+  managerId: varchar("manager_id").references(() => users.id),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const teamsRelations = relations(teams, ({ one, many }) => ({
+  department: one(departments, {
+    fields: [teams.departmentId],
+    references: [departments.id],
+  }),
+  manager: one(users, {
+    fields: [teams.managerId],
+    references: [users.id],
+  }),
+  members: many(teamMembers),
+}));
+
+export const insertTeamSchema = createInsertSchema(teams).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type Team = typeof teams.$inferSelect;
+
+// Team membership (many-to-many between users and teams)
+export const teamMembers = pgTable(
+  "team_members",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    teamId: varchar("team_id")
+      .references(() => teams.id)
+      .notNull(),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    role: varchar("role").notNull().default("member"), // member, lead, manager
+    joinedAt: timestamp("joined_at").defaultNow(),
+    leftAt: timestamp("left_at"),
+    isActive: boolean("is_active").default(true),
+  },
+  (table) => [
+    uniqueIndex("team_members_team_user_unique").on(table.teamId, table.userId),
+    index("team_members_user_idx").on(table.userId),
+  ],
+);
+
+export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
+  team: one(teams, {
+    fields: [teamMembers.teamId],
+    references: [teams.id],
+  }),
+  user: one(users, {
+    fields: [teamMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
+export type TeamMember = typeof teamMembers.$inferSelect;
+
+// ============================================================================
+// PERFORMANCE METRICS SYSTEM
+// ============================================================================
+
+// Configurable KPIs per role/department
+export const performanceMetrics = pgTable("performance_metrics", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  metricType: varchar("metric_type").notNull(), // count, percentage, score, duration, currency
+  targetValue: real("target_value"),
+  minValue: real("min_value"),
+  maxValue: real("max_value"),
+  unit: varchar("unit"), // calls, meetings, tasks, hours, dollars
+  appliesToRole: varchar("applies_to_role"), // employee, manager, all
+  departmentId: varchar("department_id").references(() => departments.id),
+  calculationMethod: varchar("calculation_method"), // manual, auto_tasks, auto_meetings, auto_calls, custom
+  calculationFormula: text("calculation_formula"), // JSON formula for custom calculations
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdById: varchar("created_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const performanceMetricsRelations = relations(performanceMetrics, ({ one, many }) => ({
+  department: one(departments, {
+    fields: [performanceMetrics.departmentId],
+    references: [departments.id],
+  }),
+  createdBy: one(users, {
+    fields: [performanceMetrics.createdById],
+    references: [users.id],
+  }),
+  values: many(employeeMetricValues),
+}));
+
+export const insertPerformanceMetricSchema = createInsertSchema(performanceMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPerformanceMetric = z.infer<typeof insertPerformanceMetricSchema>;
+export type PerformanceMetric = typeof performanceMetrics.$inferSelect;
+
+// Actual metric values per employee per period
+export const employeeMetricValues = pgTable(
+  "employee_metric_values",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    metricId: varchar("metric_id")
+      .references(() => performanceMetrics.id)
+      .notNull(),
+    periodType: varchar("period_type").notNull(), // daily, weekly, monthly, quarterly
+    periodStart: timestamp("period_start").notNull(),
+    periodEnd: timestamp("period_end").notNull(),
+    actualValue: real("actual_value").notNull(),
+    targetValue: real("target_value"), // Snapshot of target at time
+    achievementPercentage: real("achievement_percentage"),
+    trend: varchar("trend"), // up, down, stable
+    previousValue: real("previous_value"),
+    notes: text("notes"),
+    calculatedAt: timestamp("calculated_at").defaultNow(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("employee_metric_values_user_metric_idx").on(table.userId, table.metricId),
+    index("employee_metric_values_period_idx").on(table.periodStart, table.periodEnd),
+    uniqueIndex("employee_metric_values_unique").on(
+      table.userId,
+      table.metricId,
+      table.periodType,
+      table.periodStart,
+    ),
+  ],
+);
+
+export const employeeMetricValuesRelations = relations(employeeMetricValues, ({ one }) => ({
+  user: one(users, {
+    fields: [employeeMetricValues.userId],
+    references: [users.id],
+  }),
+  metric: one(performanceMetrics, {
+    fields: [employeeMetricValues.metricId],
+    references: [performanceMetrics.id],
+  }),
+}));
+
+export const insertEmployeeMetricValueSchema = createInsertSchema(employeeMetricValues).omit({
+  id: true,
+  calculatedAt: true,
+  createdAt: true,
+});
+export type InsertEmployeeMetricValue = z.infer<typeof insertEmployeeMetricValueSchema>;
+export type EmployeeMetricValue = typeof employeeMetricValues.$inferSelect;
+
+// Performance review periods
+export const performancePeriods = pgTable("performance_periods", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  periodType: varchar("period_type").notNull(), // weekly, monthly, quarterly, annual
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  status: varchar("status").notNull().default("active"), // active, closed, archived
+  departmentId: varchar("department_id").references(() => departments.id), // null for org-wide
+  createdById: varchar("created_by_id").references(() => users.id),
+  closedAt: timestamp("closed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const performancePeriodsRelations = relations(performancePeriods, ({ one }) => ({
+  department: one(departments, {
+    fields: [performancePeriods.departmentId],
+    references: [departments.id],
+  }),
+  createdBy: one(users, {
+    fields: [performancePeriods.createdById],
+    references: [users.id],
+  }),
+}));
+
+export const insertPerformancePeriodSchema = createInsertSchema(performancePeriods).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertPerformancePeriod = z.infer<typeof insertPerformancePeriodSchema>;
+export type PerformancePeriod = typeof performancePeriods.$inferSelect;
+
+// ============================================================================
+// FOLLOW-UP TRACKING & ACCOUNTABILITY
+// ============================================================================
+
+// Expected follow-up actions
+export const followUps = pgTable(
+  "follow_ups",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    sourceType: varchar("source_type").notNull(), // meeting, call, email, task, chat
+    sourceId: varchar("source_id"),
+    sourceTitle: text("source_title"),
+    assignedToId: varchar("assigned_to_id")
+      .references(() => users.id)
+      .notNull(),
+    assignedById: varchar("assigned_by_id").references(() => users.id),
+    title: text("title").notNull(),
+    description: text("description"),
+    expectedAction: varchar("expected_action").notNull(), // call_back, send_email, schedule_meeting, complete_task, review_document, other
+    dueDate: timestamp("due_date").notNull(),
+    priority: varchar("priority").notNull().default("medium"), // low, medium, high, urgent
+    status: varchar("status").notNull().default("pending"), // pending, in_progress, completed, overdue, dismissed
+    completedAt: timestamp("completed_at"),
+    completionNotes: text("completion_notes"),
+    reminderSent: boolean("reminder_sent").default(false),
+    overdueAlertSent: boolean("overdue_alert_sent").default(false),
+    aiExtracted: boolean("ai_extracted").default(false),
+    aiConfidence: real("ai_confidence"),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("follow_ups_assigned_to_idx").on(table.assignedToId),
+    index("follow_ups_status_idx").on(table.status),
+    index("follow_ups_due_date_idx").on(table.dueDate),
+    index("follow_ups_source_idx").on(table.sourceType, table.sourceId),
+  ],
+);
+
+export const followUpsRelations = relations(followUps, ({ one, many }) => ({
+  assignedTo: one(users, {
+    fields: [followUps.assignedToId],
+    references: [users.id],
+  }),
+  assignedBy: one(users, {
+    fields: [followUps.assignedById],
+    references: [users.id],
+  }),
+  completions: many(followUpCompletions),
+}));
+
+export const insertFollowUpSchema = createInsertSchema(followUps).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertFollowUp = z.infer<typeof insertFollowUpSchema>;
+export type FollowUp = typeof followUps.$inferSelect;
+
+// Follow-up completion evidence
+export const followUpCompletions = pgTable(
+  "follow_up_completions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    followUpId: varchar("follow_up_id")
+      .references(() => followUps.id)
+      .notNull(),
+    completedById: varchar("completed_by_id")
+      .references(() => users.id)
+      .notNull(),
+    evidenceType: varchar("evidence_type").notNull(), // email_sent, call_made, meeting_scheduled, task_completed, document_shared, other
+    evidenceId: varchar("evidence_id"), // Reference to the actual action (email id, meeting id, etc.)
+    evidenceUrl: text("evidence_url"),
+    notes: text("notes"),
+    verifiedById: varchar("verified_by_id").references(() => users.id),
+    verifiedAt: timestamp("verified_at"),
+    isAutoVerified: boolean("is_auto_verified").default(false),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("follow_up_completions_follow_up_idx").on(table.followUpId),
+  ],
+);
+
+export const followUpCompletionsRelations = relations(followUpCompletions, ({ one }) => ({
+  followUp: one(followUps, {
+    fields: [followUpCompletions.followUpId],
+    references: [followUps.id],
+  }),
+  completedBy: one(users, {
+    fields: [followUpCompletions.completedById],
+    references: [users.id],
+  }),
+  verifiedBy: one(users, {
+    fields: [followUpCompletions.verifiedById],
+    references: [users.id],
+  }),
+}));
+
+export const insertFollowUpCompletionSchema = createInsertSchema(followUpCompletions).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertFollowUpCompletion = z.infer<typeof insertFollowUpCompletionSchema>;
+export type FollowUpCompletion = typeof followUpCompletions.$inferSelect;
+
+// ============================================================================
+// ALERT RULES ENGINE
+// ============================================================================
+
+// Configurable alert triggers
+export const alertRules = pgTable(
+  "alert_rules",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    description: text("description"),
+    ruleType: varchar("rule_type").notNull(), // threshold, pattern, schedule, event
+    triggerCondition: jsonb("trigger_condition").notNull(), // {metric, operator, value, timeframe}
+    appliesToScope: varchar("applies_to_scope").notNull(), // user, team, department, organization
+    appliesToRole: varchar("applies_to_role"), // employee, manager, department_head, admin, all
+    departmentId: varchar("department_id").references(() => departments.id),
+    teamId: varchar("team_id").references(() => teams.id),
+    notificationChannels: text("notification_channels").array().notNull(), // ['in_app', 'email', 'teams']
+    notifyUserIds: text("notify_user_ids").array(), // Specific users to notify
+    notifyManagers: boolean("notify_managers").default(false),
+    notifyDepartmentHead: boolean("notify_department_head").default(false),
+    priority: varchar("priority").notNull().default("medium"), // low, medium, high, critical
+    cooldownMinutes: integer("cooldown_minutes").default(60), // Minimum time between alerts
+    isActive: boolean("is_active").default(true),
+    createdById: varchar("created_by_id").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("alert_rules_active_idx").on(table.isActive),
+    index("alert_rules_scope_idx").on(table.appliesToScope),
+  ],
+);
+
+export const alertRulesRelations = relations(alertRules, ({ one, many }) => ({
+  department: one(departments, {
+    fields: [alertRules.departmentId],
+    references: [departments.id],
+  }),
+  team: one(teams, {
+    fields: [alertRules.teamId],
+    references: [teams.id],
+  }),
+  createdBy: one(users, {
+    fields: [alertRules.createdById],
+    references: [users.id],
+  }),
+  instances: many(alertInstances),
+}));
+
+export const insertAlertRuleSchema = createInsertSchema(alertRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertAlertRule = z.infer<typeof insertAlertRuleSchema>;
+export type AlertRule = typeof alertRules.$inferSelect;
+
+// Generated alerts from rules
+export const alertInstances = pgTable(
+  "alert_instances",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    ruleId: varchar("rule_id")
+      .references(() => alertRules.id)
+      .notNull(),
+    triggeredForUserId: varchar("triggered_for_user_id")
+      .references(() => users.id)
+      .notNull(),
+    triggeredByUserId: varchar("triggered_by_user_id").references(() => users.id), // The employee who triggered it
+    alertType: varchar("alert_type").notNull(), // task_overdue, followup_missed, performance_drop, etc.
+    title: text("title").notNull(),
+    message: text("message").notNull(),
+    alertData: jsonb("alert_data"), // Context data for the alert
+    priority: varchar("priority").notNull(),
+    status: varchar("status").notNull().default("pending"), // pending, acknowledged, resolved, dismissed, escalated
+    acknowledgedById: varchar("acknowledged_by_id").references(() => users.id),
+    acknowledgedAt: timestamp("acknowledged_at"),
+    resolvedAt: timestamp("resolved_at"),
+    resolvedById: varchar("resolved_by_id").references(() => users.id),
+    resolutionNotes: text("resolution_notes"),
+    escalatedAt: timestamp("escalated_at"),
+    escalatedToId: varchar("escalated_to_id").references(() => users.id),
+    notificationsSent: jsonb("notifications_sent"), // Track which channels were notified
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("alert_instances_rule_idx").on(table.ruleId),
+    index("alert_instances_triggered_for_idx").on(table.triggeredForUserId),
+    index("alert_instances_status_idx").on(table.status),
+    index("alert_instances_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export const alertInstancesRelations = relations(alertInstances, ({ one }) => ({
+  rule: one(alertRules, {
+    fields: [alertInstances.ruleId],
+    references: [alertRules.id],
+  }),
+  triggeredFor: one(users, {
+    fields: [alertInstances.triggeredForUserId],
+    references: [users.id],
+  }),
+  triggeredBy: one(users, {
+    fields: [alertInstances.triggeredByUserId],
+    references: [users.id],
+  }),
+  acknowledgedBy: one(users, {
+    fields: [alertInstances.acknowledgedById],
+    references: [users.id],
+  }),
+  resolvedBy: one(users, {
+    fields: [alertInstances.resolvedById],
+    references: [users.id],
+  }),
+  escalatedTo: one(users, {
+    fields: [alertInstances.escalatedToId],
+    references: [users.id],
+  }),
+}));
+
+export const insertAlertInstanceSchema = createInsertSchema(alertInstances).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertAlertInstance = z.infer<typeof insertAlertInstanceSchema>;
+export type AlertInstance = typeof alertInstances.$inferSelect;
+
+// ============================================================================
+// CALL/MEETING SCORING
+// ============================================================================
+
+// Phone/video call records (separate from meetings)
+export const callRecords = pgTable(
+  "call_records",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    msCallId: varchar("ms_call_id").unique(),
+    callType: varchar("call_type").notNull(), // inbound, outbound, missed, voicemail
+    callDirection: varchar("call_direction").notNull(), // incoming, outgoing
+    participantType: varchar("participant_type"), // internal, external, prospect, client, vendor
+    participantName: text("participant_name"),
+    participantPhone: varchar("participant_phone"),
+    participantEmail: varchar("participant_email"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    durationSeconds: integer("duration_seconds"),
+    recordingUrl: text("recording_url"),
+    transcript: text("transcript"),
+    summary: text("summary"), // AI-generated
+    sentiment: varchar("sentiment"), // positive, neutral, negative, mixed
+    outcome: varchar("outcome"), // successful, callback_needed, no_answer, voicemail, wrong_number
+    followUpRequired: boolean("follow_up_required").default(false),
+    hubspotContactId: varchar("hubspot_contact_id"),
+    hubspotDealId: varchar("hubspot_deal_id"),
+    tags: text("tags").array(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("call_records_user_idx").on(table.userId),
+    index("call_records_started_at_idx").on(table.startedAt),
+    index("call_records_type_idx").on(table.callType),
+  ],
+);
+
+export const callRecordsRelations = relations(callRecords, ({ one, many }) => ({
+  user: one(users, {
+    fields: [callRecords.userId],
+    references: [users.id],
+  }),
+  scores: many(interactionScores),
+}));
+
+export const insertCallRecordSchema = createInsertSchema(callRecords).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertCallRecord = z.infer<typeof insertCallRecordSchema>;
+export type CallRecord = typeof callRecords.$inferSelect;
+
+// Meeting/call effectiveness scores
+export const interactionScores = pgTable(
+  "interaction_scores",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    interactionType: varchar("interaction_type").notNull(), // meeting, call, presentation
+    sourceId: varchar("source_id").notNull(), // meeting.id or callRecords.id
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+
+    // AI-generated scores (0-100)
+    engagementScore: integer("engagement_score"), // Participation level
+    preparationScore: integer("preparation_score"), // Was agenda followed, prep evident
+    outcomeScore: integer("outcome_score"), // Were objectives met
+    followThroughScore: integer("follow_through_score"), // Action items completed
+    communicationScore: integer("communication_score"), // Clarity, professionalism
+    overallScore: integer("overall_score").notNull(),
+
+    aiFeedback: text("ai_feedback"), // Detailed AI analysis
+    improvementSuggestions: jsonb("improvement_suggestions"), // Array of suggestions
+    strengths: jsonb("strengths"), // Array of strengths identified
+
+    reviewedById: varchar("reviewed_by_id").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at"),
+    managerNotes: text("manager_notes"),
+
+    scoredAt: timestamp("scored_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("interaction_scores_user_idx").on(table.userId),
+    index("interaction_scores_type_source_idx").on(table.interactionType, table.sourceId),
+    index("interaction_scores_scored_at_idx").on(table.scoredAt),
+  ],
+);
+
+export const interactionScoresRelations = relations(interactionScores, ({ one }) => ({
+  user: one(users, {
+    fields: [interactionScores.userId],
+    references: [users.id],
+  }),
+  reviewedBy: one(users, {
+    fields: [interactionScores.reviewedById],
+    references: [users.id],
+  }),
+}));
+
+export const insertInteractionScoreSchema = createInsertSchema(interactionScores).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertInteractionScore = z.infer<typeof insertInteractionScoreSchema>;
+export type InteractionScore = typeof interactionScores.$inferSelect;
+
+// ============================================================================
+// MANAGER REPORTS & SUBSCRIPTIONS
+// ============================================================================
+
+// Aggregated reports for managers
+export const managerReports = pgTable(
+  "manager_reports",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    reportType: varchar("report_type").notNull(), // daily_digest, weekly_summary, monthly_review, performance_report, team_health
+    scope: varchar("scope").notNull(), // user, team, department, organization
+    scopeId: varchar("scope_id"), // team.id or department.id
+    generatedForId: varchar("generated_for_id")
+      .references(() => users.id)
+      .notNull(),
+    periodStart: timestamp("period_start").notNull(),
+    periodEnd: timestamp("period_end").notNull(),
+
+    reportData: jsonb("report_data").notNull(), // Full structured report content
+    summary: text("summary").notNull(), // Executive summary text
+    keyMetrics: jsonb("key_metrics"), // Highlighted KPIs
+    alertsSummary: jsonb("alerts_summary"), // Alerts during period
+    topPerformers: jsonb("top_performers"), // Employee highlights
+    attentionNeeded: jsonb("attention_needed"), // Employees needing attention
+    trends: jsonb("trends"), // Trend analysis
+    recommendations: jsonb("recommendations"), // AI recommendations
+
+    generatedAt: timestamp("generated_at").notNull(),
+    viewedAt: timestamp("viewed_at"),
+    emailedAt: timestamp("emailed_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (table) => [
+    index("manager_reports_generated_for_idx").on(table.generatedForId),
+    index("manager_reports_type_idx").on(table.reportType),
+    index("manager_reports_period_idx").on(table.periodStart, table.periodEnd),
+    index("manager_reports_generated_at_idx").on(table.generatedAt),
+  ],
+);
+
+export const managerReportsRelations = relations(managerReports, ({ one }) => ({
+  generatedFor: one(users, {
+    fields: [managerReports.generatedForId],
+    references: [users.id],
+  }),
+}));
+
+export const insertManagerReportSchema = createInsertSchema(managerReports).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertManagerReport = z.infer<typeof insertManagerReportSchema>;
+export type ManagerReport = typeof managerReports.$inferSelect;
+
+// Report delivery subscriptions
+export const reportSubscriptions = pgTable(
+  "report_subscriptions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .references(() => users.id)
+      .notNull(),
+    reportType: varchar("report_type").notNull(),
+    frequency: varchar("frequency").notNull(), // daily, weekly, biweekly, monthly
+    deliveryDay: integer("delivery_day"), // 0-6 for weekly (0=Sunday), 1-31 for monthly
+    deliveryTime: varchar("delivery_time").notNull(), // HH:MM format
+    deliveryTimezone: varchar("delivery_timezone").notNull().default("UTC"),
+    deliveryChannels: text("delivery_channels").array().notNull(), // ['email', 'in_app', 'teams']
+    scope: varchar("scope").notNull(), // user, team, department
+    scopeId: varchar("scope_id"), // team.id or department.id if applicable
+    includeDetails: boolean("include_details").default(true),
+    includeCharts: boolean("include_charts").default(true),
+    isActive: boolean("is_active").default(true),
+    lastDeliveredAt: timestamp("last_delivered_at"),
+    nextDeliveryAt: timestamp("next_delivery_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("report_subscriptions_user_idx").on(table.userId),
+    index("report_subscriptions_active_idx").on(table.isActive),
+    index("report_subscriptions_next_delivery_idx").on(table.nextDeliveryAt),
+  ],
+);
+
+export const reportSubscriptionsRelations = relations(reportSubscriptions, ({ one }) => ({
+  user: one(users, {
+    fields: [reportSubscriptions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const insertReportSubscriptionSchema = createInsertSchema(reportSubscriptions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertReportSubscription = z.infer<typeof insertReportSubscriptionSchema>;
+export type ReportSubscription = typeof reportSubscriptions.$inferSelect;
+
+// ============================================================================
+// EXTENDED USER FIELDS (via separate table to avoid migration issues)
+// ============================================================================
+
+// Extended user profile for hierarchical features
+export const userExtendedProfiles = pgTable("user_extended_profiles", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .references(() => users.id)
+    .unique()
+    .notNull(),
+  directManagerId: varchar("direct_manager_id").references(() => users.id),
+  jobLevel: varchar("job_level"), // junior, mid, senior, lead, manager, director, vp, c_level
+  hireDate: date("hire_date"),
+  workLocation: varchar("work_location"), // office, remote, hybrid
+  timezone: varchar("timezone"),
+  workingHoursStart: varchar("working_hours_start"), // HH:MM
+  workingHoursEnd: varchar("working_hours_end"), // HH:MM
+  notificationPreferences: jsonb("notification_preferences"),
+  dashboardPreferences: jsonb("dashboard_preferences"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userExtendedProfilesRelations = relations(userExtendedProfiles, ({ one }) => ({
+  user: one(users, {
+    fields: [userExtendedProfiles.userId],
+    references: [users.id],
+  }),
+  directManager: one(users, {
+    fields: [userExtendedProfiles.directManagerId],
+    references: [users.id],
+  }),
+}));
+
+export const insertUserExtendedProfileSchema = createInsertSchema(userExtendedProfiles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertUserExtendedProfile = z.infer<typeof insertUserExtendedProfileSchema>;
+export type UserExtendedProfile = typeof userExtendedProfiles.$inferSelect;
