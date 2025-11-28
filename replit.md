@@ -106,29 +106,60 @@ Preferred communication style: Simple, everyday language.
 
 **Migration Strategy**: Drizzle Kit for schema migrations with `npm run db:push` for safe updates.
 
+### Microsoft 365 Data Pipeline (Unified App-Only Authentication)
+
+**Architecture**: All M365 data access flows through two unified integration files using Azure AD app-only authentication:
+- `server/integrations/microsoft-graph.ts` - User-scoped Graph API operations (email, calendar, contacts, etc.)
+- `server/integrations/teams-app.ts` - Organization-wide Teams meeting and transcript access
+
+**Key Features**:
+- Delta sync support using Microsoft Graph `@odata.deltaLink` for incremental updates
+- 60-90 day email lookback with full message body indexing
+- Org-wide Teams meeting sync with transcript ingestion
+- Multi-signal meeting email linking (Otter.ai, MS Recap detection)
+- Unified Activity Feed merging all M365 data sources
+
 ### Sync Services
 
 **Location**: `server/services/sync.ts`
 
 **Sync Functions** (with pagination and delta token support):
+- `syncEmails`: Outlook emails with 60-90 day lookback and delta sync
 - `syncCalendarEvents`: Calendar events with attendees and recurrence patterns
 - `syncContacts`: Outlook contacts with phone/email/address data
 - `syncDriveItems`: OneDrive/SharePoint files with recursive folder scanning
 - `syncTodoLists`: Microsoft To Do lists and tasks
 - `syncChatThreads`: Teams chats with participants and messages
 - `syncPresence`: Current user presence status
-- `syncAllResources`: Orchestrates parallel sync of all resources
+- `syncAllResources`: Orchestrates parallel sync of all resources (includes email)
+
+### Meeting Sync Services
+
+**Location**: `server/services/meetingSync.ts`
+
+**Org-Wide Meeting Sync**:
+- `syncOrgMeetings()`: Admin-only sync of all organization meetings
+- `syncMeetingTranscript()`: Fetch and store meeting transcripts
+- Auto-upserts to ms_calendar_events with Teams-specific metadata
+
+**Meeting Email Linking**: `server/services/meetingEmailLink.ts`
+- Links meeting summary emails (Otter.ai, MS Recap) to calendar events
+- Multi-signal matching: timing proximity + title correlation + attendee overlap
+- Requires minimum 2 signals with 0.25 threshold for linking
+
+### Unified Activity Feed
+
+**Location**: `server/services/activityFeed.ts`
+
+**Activity Types**: emails, chats, meetings, calendar, files
+- SQL-level user scoping for all data sources
+- Meeting attendee filtering via `EXISTS (SELECT 1 FROM unnest(attendees)...)`
+- Chat inclusion via `msChatParticipants` join
 
 **AI Helper Functions**:
 - `extractActionItemsFromCalendar`: GPT-4o extracts action items from meeting subjects/descriptions
 - `generateDailyDigest`: Creates AI-powered daily productivity insights
 - `scheduleUpcomingReminders`: Auto-schedules reminders for events and overdue tasks
-
-**Key Features**:
-- Delta sync support using Microsoft Graph `@odata.deltaLink` for incremental updates
-- Pre-loaded Maps for O(1) existing record lookups (no O(n²) database access)
-- Sync job tracking with start/end timestamps and item counts
-- Error accumulation with graceful degradation
 
 ### Sync Scheduler
 
@@ -136,7 +167,7 @@ Preferred communication style: Simple, everyday language.
 
 **Tiered Scheduling** (node-cron):
 - **Presence**: Every 5 minutes - Real-time availability status
-- **Calendar/Chat/ToDo**: Every 30 minutes - Core productivity data
+- **Calendar/Chat/ToDo/Email**: Every 30 minutes - Core productivity data
 - **Files/Contacts**: Every 2 hours - Less frequently changing data
 
 **Queue Management**:
