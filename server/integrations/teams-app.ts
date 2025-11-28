@@ -1,37 +1,77 @@
 import { Client } from "@microsoft/microsoft-graph-client";
-import { getDirectGraphClient, isDirectGraphConfigured, getMissingCredentials } from "./microsoft-graph";
 
 /**
- * Teams application-level integration module
- * Uses app-only authentication via ClientSecretCredential for broader access to organizational data
- * All Microsoft 365 access now runs through the unified microsoft-graph.ts client
+ * Teams application-level authentication module
+ * Uses application permissions instead of delegated user permissions
+ * for broader access to organizational data
  */
 
-function ensureGraphConfigured(): void {
-  if (!isDirectGraphConfigured()) {
-    const missing = getMissingCredentials();
-    throw new Error(
-      `Microsoft Graph API not configured. Missing: ${missing.join(", ")}. ` +
-      `Please add the Azure AD app credentials to enable Microsoft 365 sync.`
-    );
+let connectionSettings: any;
+let appClient: Client | null = null;
+
+// Get access token from the connector settings
+async function getAccessToken() {
+  if (
+    connectionSettings &&
+    connectionSettings.settings.expires_at &&
+    new Date(connectionSettings.settings.expires_at).getTime() > Date.now()
+  ) {
+    return connectionSettings.settings.access_token;
   }
+
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? "repl " + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+      ? "depl " + process.env.WEB_REPL_RENEWAL
+      : null;
+
+  if (!xReplitToken) {
+    throw new Error("X_REPLIT_TOKEN not found for repl/depl");
+  }
+
+  connectionSettings = await fetch(
+    "https://" +
+      hostname +
+      "/api/v2/connection?include_secrets=true&connector_names=outlook",
+    {
+      headers: {
+        Accept: "application/json",
+        X_REPLIT_TOKEN: xReplitToken,
+      },
+    },
+  )
+    .then((res) => res.json())
+    .then((data) => data.items?.[0]);
+
+  const accessToken =
+    connectionSettings?.settings?.access_token ||
+    connectionSettings.settings?.oauth?.credentials?.access_token;
+
+  if (!connectionSettings || !accessToken) {
+    throw new Error("Teams/Outlook not connected");
+  }
+  return accessToken;
 }
 
-export function getTeamsAppClient(): Client {
-  ensureGraphConfigured();
-  return getDirectGraphClient();
+// Get an uncachable Teams client for application-level access
+export async function getTeamsAppClient() {
+  const accessToken = await getAccessToken();
+
+  return Client.initWithMiddleware({
+    authProvider: {
+      getAccessToken: async () => accessToken,
+    },
+  });
 }
 
-export async function getUserPrincipalName(msUserId: string): Promise<string> {
-  if (!msUserId) {
-    throw new Error("msUserId is required for app-only authentication - /me endpoint is not supported");
-  }
-  
-  const client = getTeamsAppClient();
+// Get the current user's principal name (email)
+export async function getUserPrincipalName(): Promise<string> {
+  const client = await getTeamsAppClient();
   
   try {
     const response = await client
-      .api(`/users/${msUserId}`)
+      .api("/me")
       .select("userPrincipalName,mail")
       .get();
     
@@ -42,11 +82,14 @@ export async function getUserPrincipalName(msUserId: string): Promise<string> {
   }
 }
 
+// Helper function to convert calendar events to meeting format
 function convertCalendarEventToMeeting(event: any) {
+  // Only process if it's an online meeting
   if (!event.isOnlineMeeting || !event.onlineMeeting) {
     return null;
   }
   
+  // Extract attendee emails
   const participants = event.attendees?.map((attendee: any) => ({
     email: attendee.emailAddress?.address,
     name: attendee.emailAddress?.name,
@@ -54,16 +97,18 @@ function convertCalendarEventToMeeting(event: any) {
     type: attendee.type
   })) || [];
   
+  // Get the online meeting ID from the join URL if not directly available
   const joinUrl = event.onlineMeeting?.joinUrl || event.onlineMeetingUrl;
   let onlineMeetingId = event.onlineMeeting?.id || null;
   
+  // If no direct ID, try to extract from join URL
   if (!onlineMeetingId && joinUrl) {
     onlineMeetingId = extractOnlineMeetingIdFromUrl(joinUrl);
   }
   
   return {
-    id: event.id,
-    onlineMeetingId: onlineMeetingId,
+    id: event.id,                    // Calendar event ID
+    onlineMeetingId: onlineMeetingId, // Teams online meeting ID (for transcript retrieval)
     subject: event.subject || "Untitled Meeting",
     startDateTime: event.start?.dateTime,
     endDateTime: event.end?.dateTime,
@@ -74,6 +119,7 @@ function convertCalendarEventToMeeting(event: any) {
     bodyPreview: event.bodyPreview,
     location: event.location?.displayName,
     isOnlineMeeting: true,
+    // Additional fields from the calendar event
     meetingProvider: event.onlineMeetingProvider || "teamsForBusiness",
     webLink: event.webLink,
     categories: event.categories || [],
@@ -84,6 +130,7 @@ function convertCalendarEventToMeeting(event: any) {
   };
 }
 
+// Extract online meeting ID from join URL
 function extractOnlineMeetingIdFromUrl(joinUrl: string): string | null {
   if (!joinUrl) return null;
   
@@ -91,12 +138,15 @@ function extractOnlineMeetingIdFromUrl(joinUrl: string): string | null {
     const url = new URL(joinUrl);
     const pathParts = url.pathname.split('/');
     
+    // Look for the meeting identifier in the path
+    // Teams join URLs: https://teams.microsoft.com/l/meetup-join/19%3ameeting_...
     for (const part of pathParts) {
       if (part.includes('meeting_') || part.startsWith('19%3a') || part.startsWith('19:')) {
         return decodeURIComponent(part);
       }
     }
     
+    // Try thread ID from query string
     const threadId = url.searchParams.get('threadId');
     if (threadId) return threadId;
     
@@ -106,20 +156,21 @@ function extractOnlineMeetingIdFromUrl(joinUrl: string): string | null {
   }
 }
 
+// Get online meetings for a specific user by fetching calendar events
 export async function getUserOnlineMeetings(userPrincipalName?: string) {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for app-only authentication");
-    }
+    const calendarPath = userPrincipalName 
+      ? `/users/${userPrincipalName}/calendar/events`
+      : "/me/calendar/events";
     
-    const calendarPath = `/users/${userPrincipalName}/calendar/events`;
-    
+    // Fetch all events from the past 2 years to now
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
     const now = new Date();
     
+    // Use $filter for date range only (isOnlineMeeting filter not supported by Graph API)
     const filter = `start/dateTime ge '${twoYearsAgo.toISOString()}' and start/dateTime le '${now.toISOString()}'`;
     
     const response = await client
@@ -127,27 +178,28 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
       .filter(filter)
       .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
       .orderby("start/dateTime desc")
-      .top(999)
+      .top(999) // Maximum limit for comprehensive sync
       .get();
     
     const events = response.value || [];
     
+    // Filter client-side for online meetings only
     const onlineMeetings = events.filter((event: any) => event.isOnlineMeeting === true);
     
+    // Convert calendar events to meeting format
     const meetings = onlineMeetings
       .map(convertCalendarEventToMeeting)
-      .filter(Boolean);
+      .filter(Boolean); // Remove null values
     
     return meetings;
   } catch (error) {
     console.error("Error fetching online meetings from calendar:", error);
     
+    // Fallback to calendarView if calendar/events fails
     try {
-      if (!userPrincipalName) {
-        return [];
-      }
-      
-      const calendarViewPath = `/users/${userPrincipalName}/calendarView`;
+      const calendarViewPath = userPrincipalName
+        ? `/users/${userPrincipalName}/calendarView`
+        : "/me/calendarView";
       
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
@@ -158,6 +210,7 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
         .query({
           startDateTime: twoYearsAgo.toISOString(),
           endDateTime: now.toISOString()
+          // Removed $filter for isOnlineMeeting - not supported by Graph API
         })
         .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
         .orderby("start/dateTime desc")
@@ -166,8 +219,10 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
       
       const events = response.value || [];
       
+      // Filter client-side for online meetings only
       const onlineMeetings = events.filter((event: any) => event.isOnlineMeeting === true);
       
+      // Convert calendar events to meeting format
       const meetings = onlineMeetings
         .map(convertCalendarEventToMeeting)
         .filter(Boolean);
@@ -180,10 +235,12 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
   }
 }
 
+// Get ALL online meetings for the entire organization (requires admin permissions)
 export async function getAllOnlineMeetings() {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
+    // Get all users in the organization first
     const usersResponse = await client
       .api("/users")
       .select("userPrincipalName,mail,displayName,id")
@@ -192,23 +249,23 @@ export async function getAllOnlineMeetings() {
       .get();
     
     const users = usersResponse.value || [];
-    const allMeetings: any[] = [];
+    const allMeetings = [];
     
+    // Fetch meetings for each user using calendar API
     for (const user of users) {
       if (!user.userPrincipalName) continue;
       
       try {
         const meetings = await getUserOnlineMeetings(user.userPrincipalName);
         
+        // Add user info to each meeting if not already present
         const meetingsWithUser = meetings.map((meeting: any) => ({
           ...meeting,
-          // organizerEmail may be an SMTP alias, not suitable for Graph API calls
+          // Preserve organizer from calendar event if available, otherwise use user info
           organizerEmail: meeting.organizer?.address || user.userPrincipalName,
           organizerName: meeting.organizer?.name || user.displayName,
           organizerId: user.id,
-          // Canonical UPN for Graph API calls (transcript/attendance fetching)
-          // Always use this for /users/{upn}/... endpoints in app-only auth
-          organizerUpn: user.userPrincipalName,
+          // Add the user who owns this calendar entry (might be different from organizer)
           calendarOwnerEmail: user.userPrincipalName,
           calendarOwnerName: user.displayName
         }));
@@ -216,20 +273,24 @@ export async function getAllOnlineMeetings() {
         allMeetings.push(...meetingsWithUser);
       } catch (userError) {
         console.error(`Error fetching meetings for user ${user.userPrincipalName}:`, userError);
+        // Continue with other users even if one fails
       }
     }
     
+    // Remove duplicates (same meeting might appear in multiple calendars)
     const uniqueMeetings = new Map();
     allMeetings.forEach((meeting) => {
+      // Use meeting ID as unique identifier
       if (!uniqueMeetings.has(meeting.id)) {
         uniqueMeetings.set(meeting.id, meeting);
       }
     });
     
+    // Convert map to array and sort by date
     const sortedMeetings = Array.from(uniqueMeetings.values()).sort((a, b) => {
       const dateA = new Date(a.startDateTime).getTime();
       const dateB = new Date(b.startDateTime).getTime();
-      return dateB - dateA;
+      return dateB - dateA; // Descending order (newest first)
     });
     
     return sortedMeetings;
@@ -239,15 +300,14 @@ export async function getAllOnlineMeetings() {
   }
 }
 
-export async function listMeetingTranscripts(onlineMeetingId: string, userPrincipalName: string): Promise<any[]> {
-  const client = getTeamsAppClient();
+// List available transcripts for a meeting
+export async function listMeetingTranscripts(onlineMeetingId: string, userPrincipalName?: string): Promise<any[]> {
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for transcript access");
-    }
-    
-    const basePath = `/users/${userPrincipalName}/onlineMeetings/${onlineMeetingId}/transcripts`;
+    const basePath = userPrincipalName
+      ? `/users/${userPrincipalName}/onlineMeetings/${onlineMeetingId}/transcripts`
+      : `/me/onlineMeetings/${onlineMeetingId}/transcripts`;
     
     const response = await client
       .api(basePath)
@@ -256,6 +316,7 @@ export async function listMeetingTranscripts(onlineMeetingId: string, userPrinci
     
     return response.value || [];
   } catch (error: any) {
+    // Silently handle meetings without transcripts (common case)
     if (error?.statusCode === 404 || error?.code === "NotFound") {
       return [];
     }
@@ -264,18 +325,18 @@ export async function listMeetingTranscripts(onlineMeetingId: string, userPrinci
   }
 }
 
-export async function getMeetingTranscript(meetingId: string, transcriptId: string, userPrincipalName: string): Promise<string | null> {
-  const client = getTeamsAppClient();
+// Get meeting transcript content
+export async function getMeetingTranscript(meetingId: string, transcriptId: string, userPrincipalName?: string) {
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for transcript access");
-    }
-    
-    const basePath = `/users/${userPrincipalName}/onlineMeetings/${meetingId}/transcripts/${transcriptId}/content`;
+    // Build the appropriate API path
+    const basePath = userPrincipalName
+      ? `/users/${userPrincipalName}/onlineMeetings/${meetingId}`
+      : `/me/onlineMeetings/${meetingId}`;
     
     const response = await client
-      .api(basePath)
+      .api(`${basePath}/transcripts/${transcriptId}/content`)
       .get();
     
     return response;
@@ -285,12 +346,9 @@ export async function getMeetingTranscript(meetingId: string, transcriptId: stri
   }
 }
 
-export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrincipalName: string): Promise<string | null> {
+// Get all transcripts content for a meeting (concatenated)
+export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrincipalName?: string): Promise<string | null> {
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for transcript access");
-    }
-    
     const transcripts = await listMeetingTranscripts(onlineMeetingId, userPrincipalName);
     
     if (transcripts.length === 0) {
@@ -313,18 +371,17 @@ export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrin
   }
 }
 
-export async function getMeetingAttendanceReports(meetingId: string, userPrincipalName: string) {
-  const client = getTeamsAppClient();
+// Get meeting attendance reports
+export async function getMeetingAttendanceReports(meetingId: string, userPrincipalName?: string) {
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for attendance report access");
-    }
-    
-    const basePath = `/users/${userPrincipalName}/onlineMeetings/${meetingId}/attendanceReports`;
+    const basePath = userPrincipalName
+      ? `/users/${userPrincipalName}/onlineMeetings/${meetingId}`
+      : `/me/onlineMeetings/${meetingId}`;
     
     const response = await client
-      .api(basePath)
+      .api(`${basePath}/attendanceReports`)
       .get();
     
     return response.value || [];
@@ -334,16 +391,16 @@ export async function getMeetingAttendanceReports(meetingId: string, userPrincip
   }
 }
 
-export async function getUserCalendarEvents(userPrincipalName: string) {
-  const client = getTeamsAppClient();
+// Get user's calendar events (including Teams meetings)
+export async function getUserCalendarEvents(userPrincipalName?: string) {
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for calendar access");
-    }
+    const calendarPath = userPrincipalName
+      ? `/users/${userPrincipalName}/calendar/calendarView`
+      : "/me/calendar/calendarView";
     
-    const calendarPath = `/users/${userPrincipalName}/calendar/calendarView`;
-    
+    // Fetch all events from the past 2 years to future 30 days
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
     const startDateTime = twoYearsAgo.toISOString();
@@ -368,17 +425,20 @@ export async function getUserCalendarEvents(userPrincipalName: string) {
   }
 }
 
+// Check if user has admin role
 export async function isUserAdmin(userId: string): Promise<boolean> {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
+    // Check for Global Administrator or Teams Administrator roles
     const response = await client
       .api(`/users/${userId}/memberOf`)
-      .select("displayName,@odata.type")
+      .filter("startswith(displayName, 'Administrator') or startswith(displayName, 'Admin')")
       .get();
     
-    const memberships = response.value || [];
+    const roles = response.value || [];
     
+    // Check for specific admin roles
     const adminRoleNames = [
       'Global Administrator',
       'Teams Administrator',
@@ -386,9 +446,9 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
       'User Administrator'
     ];
     
-    return memberships.some((membership: any) => 
+    return roles.some((role: any) => 
       adminRoleNames.some(adminRole => 
-        membership.displayName && membership.displayName.includes(adminRole)
+        role.displayName && role.displayName.includes(adminRole)
       )
     );
   } catch (error) {
@@ -397,15 +457,14 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
   }
 }
 
-export async function getUserTeams(userPrincipalName: string) {
-  const client = getTeamsAppClient();
+// Get Teams for a user
+export async function getUserTeams(userPrincipalName?: string) {
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for Teams access");
-    }
-    
-    const teamsPath = `/users/${userPrincipalName}/joinedTeams`;
+    const teamsPath = userPrincipalName
+      ? `/users/${userPrincipalName}/joinedTeams`
+      : "/me/joinedTeams";
     
     const response = await client
       .api(teamsPath)
@@ -419,8 +478,9 @@ export async function getUserTeams(userPrincipalName: string) {
   }
 }
 
+// Get channels for a team
 export async function getTeamChannels(teamId: string) {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
     const response = await client
@@ -435,8 +495,9 @@ export async function getTeamChannels(teamId: string) {
   }
 }
 
+// Get messages from a channel
 export async function getChannelMessages(teamId: string, channelId: string, top: number = 50) {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
     const response = await client
@@ -452,15 +513,14 @@ export async function getChannelMessages(teamId: string, channelId: string, top:
   }
 }
 
+// Get user's chats
 export async function getUserChats(top: number = 50, userPrincipalName?: string) {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for chat access");
-    }
-    
-    const chatsPath = `/users/${userPrincipalName}/chats`;
+    const chatsPath = userPrincipalName
+      ? `/users/${userPrincipalName}/chats`
+      : "/me/chats";
     
     const response = await client
       .api(chatsPath)
@@ -477,8 +537,9 @@ export async function getUserChats(top: number = 50, userPrincipalName?: string)
   }
 }
 
+// Get messages from a chat
 export async function getChatMessages(chatId: string, top: number = 50) {
-  const client = getTeamsAppClient();
+  const client = await getTeamsAppClient();
   
   try {
     const response = await client
@@ -492,49 +553,5 @@ export async function getChatMessages(chatId: string, top: number = 50) {
   } catch (error) {
     console.error(`Error fetching messages for chat ${chatId}:`, error);
     return [];
-  }
-}
-
-export async function getOnlineMeetings(userPrincipalName: string, options: { top?: number; filter?: string } = {}) {
-  const client = getTeamsAppClient();
-  
-  try {
-    if (!userPrincipalName) {
-      throw new Error("User principal name (UPN) is required for online meetings access");
-    }
-    
-    let request = client.api(`/users/${userPrincipalName}/onlineMeetings`);
-    
-    if (options.top) {
-      request = request.top(options.top);
-    }
-    if (options.filter) {
-      request = request.filter(options.filter);
-    }
-    
-    return await request.get();
-  } catch (error) {
-    console.error("Error fetching online meetings:", error);
-    return { value: [] };
-  }
-}
-
-export async function getOrganizationUsers(options: { top?: number } = {}) {
-  const client = getTeamsAppClient();
-  
-  try {
-    let request = client
-      .api("/users")
-      .select("id,displayName,mail,userPrincipalName,jobTitle,department,accountEnabled")
-      .filter("accountEnabled eq true");
-    
-    if (options.top) {
-      request = request.top(options.top);
-    }
-    
-    return await request.get();
-  } catch (error) {
-    console.error("Error fetching organization users:", error);
-    return { value: [] };
   }
 }

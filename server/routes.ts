@@ -7,6 +7,7 @@ import { summarizeMeeting, answerDocumentQuestion } from "./openai";
 import { getUncachableHubSpotClient } from "./integrations/hubspot";
 // Import from the new teams-app module for application-level access
 import {
+  getUserPrincipalName,
   getUserOnlineMeetings,
   getAllOnlineMeetings,
   getMeetingTranscript,
@@ -17,8 +18,7 @@ import {
   getTeamChannels,
   getChannelMessages,
   getUserChats,
-  getChatMessages,
-  listMeetingTranscripts
+  getChatMessages
 } from "./integrations/teams-app";
 // Import sync services
 import {
@@ -38,22 +38,6 @@ import { startScheduler, stopScheduler, enqueueSync, enqueueSyncForAllUsers, get
 import { isDirectGraphConfigured, getMissingCredentials, getDirectGraphClient, getAllUsers } from "./integrations/microsoft-graph";
 
 const upload = multer({ storage: multer.memoryStorage() });
-
-// Helper function to resolve user's Microsoft 365 UPN from their linked profile
-async function resolveUserPrincipalName(userId: string): Promise<string | null> {
-  const profile = await storage.getMsUserProfile(userId);
-  if (profile?.userPrincipalName) {
-    return profile.userPrincipalName;
-  }
-  if (profile?.mail) {
-    return profile.mail;
-  }
-  const user = await storage.getUser(userId);
-  if (user?.email) {
-    return user.email;
-  }
-  return null;
-}
 
 // Activity logging middleware
 function logActivity(action: string, resourceType?: string) {
@@ -194,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { userId } = req.params;
-      const { msUserId, userPrincipalName, displayName, mail, jobTitle, department, officeLocation } = req.body;
+      const { msUserId, displayName, mail, jobTitle, department, officeLocation } = req.body;
 
       if (!msUserId) {
         return res.status(400).json({ message: "Microsoft 365 user ID is required" });
@@ -214,13 +198,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create or update the MS user profile with all fields including UPN for Graph API calls
+      // Create or update the MS user profile
       const profile = await storage.upsertMsUserProfile({
         userId,
         msUserId,
-        userPrincipalName: userPrincipalName || null, // Canonical UPN for Graph API calls
-        displayName: displayName || null,
-        mail: mail || null,
         jobTitle: jobTitle || null,
         department: department || null,
         officeLocation: officeLocation || null,
@@ -595,13 +576,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const userId = req.user.claims.sub;
         
-        // Resolve the user's UPN from their linked Microsoft profile
-        const userPrincipalName = await resolveUserPrincipalName(userId);
-        if (!userPrincipalName) {
-          return res.status(400).json({ 
-            message: "No Microsoft 365 account linked. Please link your account in Settings to sync Teams meetings." 
-          });
-        }
+        // Get the current user's email using new authentication
+        const userPrincipalName = await getUserPrincipalName();
         
         // Fetch all meetings for the user (past 2 years)
         const meetings = await getUserOnlineMeetings(userPrincipalName);
@@ -627,7 +603,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   try {
                     const transcriptContent = await getMeetingTranscript(meeting.id, trans.id, userPrincipalName);
                     if (transcriptContent) {
-                      transcript = transcriptContent;
+                      // Convert stream to text if needed
+                      transcript = typeof transcriptContent === 'string' 
+                        ? transcriptContent 
+                        : transcriptContent.toString();
                       break;
                     }
                   } catch (err) {
@@ -714,17 +693,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/teams/meetings",
     isAuthenticated,
     logActivity("view_teams_meetings"),
-    async (req: any, res) => {
+    async (req, res) => {
       try {
-        const userId = req.user.claims.sub;
-        
-        // Resolve the user's UPN from their linked Microsoft profile
-        const userPrincipalName = await resolveUserPrincipalName(userId);
-        if (!userPrincipalName) {
-          return res.status(400).json({ 
-            message: "No Microsoft 365 account linked. Please link your account in Settings." 
-          });
-        }
+        // Get the current user's email
+        const userPrincipalName = await getUserPrincipalName();
         
         // Fetch meetings for the current user
         const meetings = await getUserOnlineMeetings(userPrincipalName);
@@ -753,19 +725,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/teams/channels",
     isAuthenticated,
     logActivity("view_teams_channels"),
-    async (req: any, res) => {
+    async (req, res) => {
       try {
-        const userId = req.user.claims.sub;
-        
-        // Resolve the user's UPN from their linked Microsoft profile
-        const userPrincipalName = await resolveUserPrincipalName(userId);
-        if (!userPrincipalName) {
-          return res.status(400).json({ 
-            message: "No Microsoft 365 account linked. Please link your account in Settings." 
-          });
-        }
-        
-        const teams = await getUserTeams(userPrincipalName);
+        const teams = await getUserTeams();
         const channelsWithMessages = [];
         
         for (const team of teams) {
@@ -805,19 +767,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/teams/chats",
     isAuthenticated,
     logActivity("view_teams_chats"),
-    async (req: any, res) => {
+    async (req, res) => {
       try {
-        const userId = req.user.claims.sub;
-        
-        // Resolve the user's UPN from their linked Microsoft profile
-        const userPrincipalName = await resolveUserPrincipalName(userId);
-        if (!userPrincipalName) {
-          return res.status(400).json({ 
-            message: "No Microsoft 365 account linked. Please link your account in Settings." 
-          });
-        }
-        
-        const chats = await getUserChats(30, userPrincipalName);
+        const chats = await getUserChats(30);
         const chatsWithMessages = [];
         
         for (const chat of chats.slice(0, 10)) { // Limit to 10 most recent chats
@@ -862,13 +814,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Meeting ID is required" });
         }
         
-        // Resolve the user's UPN from their linked Microsoft profile
-        const userPrincipalName = await resolveUserPrincipalName(userId);
-        if (!userPrincipalName) {
-          return res.status(400).json({ 
-            message: "No Microsoft 365 account linked. Please link your account in Settings." 
-          });
-        }
+        // Get the current user's email
+        const userPrincipalName = await getUserPrincipalName();
         
         // Get meetings and find the specific one
         const meetings = await getUserOnlineMeetings(userPrincipalName);
@@ -896,7 +843,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const transcriptContent = await getMeetingTranscript(meeting.id, trans.id, userPrincipalName);
               if (transcriptContent) {
-                transcript = transcriptContent;
+                // Convert stream to text if needed
+                transcript = typeof transcriptContent === 'string' 
+                  ? transcriptContent 
+                  : transcriptContent.toString();
                 break;
               }
             } catch (err) {
@@ -1017,14 +967,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               if (meeting.transcripts && meeting.transcripts.length > 0) {
                 for (const trans of meeting.transcripts) {
                   try {
-                    // Use organizerUpn (canonical UPN) instead of organizerEmail (SMTP alias) for Graph API calls
                     const transcriptContent = await getMeetingTranscript(
                       meeting.id, 
                       trans.id, 
-                      meeting.organizerUpn || meeting.calendarOwnerEmail || meeting.organizerEmail
+                      meeting.organizerEmail
                     );
                     if (transcriptContent) {
-                      transcript = transcriptContent;
+                      // Convert stream to text if needed
+                      transcript = typeof transcriptContent === 'string' 
+                        ? transcriptContent 
+                        : transcriptContent.toString();
                       break;
                     }
                   } catch (err) {
@@ -1497,17 +1449,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/meetings/sync", isAuthenticated, logActivity("sync_meetings"), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
       
-      // Resolve the user's UPN from their linked Microsoft profile
-      const userPrincipalName = await resolveUserPrincipalName(userId);
-      if (!userPrincipalName) {
-        return res.status(400).json({ 
-          message: "No Microsoft 365 account linked. Please link your account in Settings." 
-        });
+      if (!user?.email) {
+        return res.status(400).json({ message: "User email not found" });
       }
       
       const { syncUserMeetingsWithTranscripts } = await import("./services/meetingSync");
-      const result = await syncUserMeetingsWithTranscripts(userId, userPrincipalName);
+      const result = await syncUserMeetingsWithTranscripts(userId, user.email);
       
       if (result.success) {
         res.json({

@@ -124,7 +124,6 @@ export default function Admin() {
     mutationFn: async ({ userId, m365User }: { userId: string; m365User: M365User }) => {
       await apiRequest("POST", `/api/admin/users/${userId}/link-m365`, {
         msUserId: m365User.id,
-        userPrincipalName: m365User.userPrincipalName, // Canonical UPN for Graph API calls
         displayName: m365User.displayName,
         mail: m365User.mail,
         jobTitle: m365User.jobTitle,

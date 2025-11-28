@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import {
+  getTeamsAppClient,
   getUserOnlineMeetings,
   getAllOnlineMeetings,
   getAllMeetingTranscripts,
@@ -82,8 +83,7 @@ export async function syncOrgMeetingsWithTranscripts(): Promise<MeetingSyncResul
     
     for (const meeting of allMeetings) {
       try {
-        // Use organizerUpn (canonical UPN) for Graph API calls instead of organizerEmail (may be SMTP alias)
-        const userPrincipalName = meeting.organizerUpn || meeting.calendarOwnerEmail || meeting.organizerEmail;
+        const userPrincipalName = meeting.organizerEmail || meeting.calendarOwnerEmail;
         
         if (!userPrincipalName) {
           continue;

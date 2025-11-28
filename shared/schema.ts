@@ -274,9 +274,6 @@ export const msUserProfiles = pgTable("ms_user_profiles", {
     .unique()
     .notNull(),
   msUserId: varchar("ms_user_id").unique().notNull(),
-  userPrincipalName: varchar("user_principal_name"), // Email/UPN for Graph API calls with app-only auth
-  displayName: text("display_name"),
-  mail: varchar("mail"), // Primary SMTP email address
   jobTitle: text("job_title"),
   department: text("department"),
   officeLocation: text("office_location"),

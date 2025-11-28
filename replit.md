@@ -213,34 +213,13 @@ Preferred communication style: Simple, everyday language.
 
 ### External Dependencies
 
-**Microsoft Graph API Integration** (App-Only Authentication):
+**Microsoft Graph API Integration**:
 
-All Microsoft 365 access runs through Azure AD app-only authentication using `ClientSecretCredential`:
-
-**Required Environment Variables**:
-- `AZURE_TENANT_ID` - Azure AD tenant ID
-- `AZURE_CLIENT_ID` - Azure AD app registration client ID  
-- `AZURE_CLIENT_SECRET` - Azure AD app client secret
-
-**Core Integration Files**:
-- `server/integrations/microsoft-graph.ts` - Unified Graph client with app-only auth
-- `server/integrations/teams-app.ts` - Teams/meeting specific operations
-
-**Deprecated Files** (no longer used):
-- `server/integrations/outlook.ts` - Legacy Replit Outlook connector
-- `server/integrations/teams.ts` - Legacy Replit Teams connector
-- `server/integrations/sharepoint.ts` - Legacy Replit SharePoint connector
-- `server/integrations/onedrive.ts` - Legacy Replit OneDrive connector
-
-**UPN Resolution Pattern**:
-All user-specific Graph API calls use `/users/{userPrincipalName}/...` endpoints via the `resolveUserPrincipalName()` helper in routes.ts, which resolves the UPN from the user's linked Microsoft 365 profile.
-
-**Capabilities**:
-- **Outlook**: Email synchronization with delta sync and 60-90 day lookback
-- **Calendar**: Event sync with attendees, recurrence, and online meeting detection
-- **OneDrive**: Document storage and recursive folder scanning
-- **SharePoint**: Enterprise content management
-- **Teams**: Chats, channels, meetings, and transcript ingestion
+- **Outlook**: Email synchronization with access to inbox, sent items, and metadata
+- **OneDrive**: Document storage and retrieval capabilities
+- **SharePoint**: Enterprise content management integration
+- OAuth token management with automatic refresh using Replit Connectors API
+- Uncacheable client pattern ensures fresh access tokens per request
 
 **HubSpot API Integration**:
 
