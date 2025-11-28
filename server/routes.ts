@@ -1475,6 +1475,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Meeting Sync Routes (Teams meetings with transcript support)
+  app.post("/api/meetings/sync", isAuthenticated, logActivity("sync_meetings"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.email) {
+        return res.status(400).json({ message: "User email not found" });
+      }
+      
+      const { syncUserMeetingsWithTranscripts } = await import("./services/meetingSync");
+      const result = await syncUserMeetingsWithTranscripts(userId, user.email);
+      
+      if (result.success) {
+        res.json({
+          message: `Synced ${result.meetingsProcessed} meetings (${result.meetingsWithTranscripts} with transcripts)`,
+          result
+        });
+      } else {
+        res.status(500).json({
+          message: "Failed to sync meetings",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing meetings:", error);
+      res.status(500).json({ message: "Failed to sync meetings" });
+    }
+  });
+
+  app.post("/api/admin/meetings/sync", isAuthenticated, logActivity("sync_org_meetings"), async (req: any, res) => {
+    try {
+      const { syncOrgMeetingsWithTranscripts } = await import("./services/meetingSync");
+      const result = await syncOrgMeetingsWithTranscripts();
+      
+      if (result.success) {
+        res.json({
+          message: `Org sync: ${result.meetingsProcessed} meetings (${result.meetingsWithTranscripts} with transcripts)`,
+          result
+        });
+      } else {
+        res.status(500).json({
+          message: "Failed to sync organization meetings",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing org meetings:", error);
+      res.status(500).json({ message: "Failed to sync organization meetings" });
+    }
+  });
+
+  app.get("/api/meetings", isAuthenticated, async (req: any, res) => {
+    try {
+      const source = req.query.source as string;
+      
+      if (source) {
+        const meetings = await storage.getMeetingsBySource(source);
+        return res.json(meetings);
+      }
+      
+      const meetings = await storage.getMeetings();
+      res.json(meetings);
+    } catch (error) {
+      console.error("Error fetching meetings:", error);
+      res.status(500).json({ message: "Failed to fetch meetings" });
+    }
+  });
+
   // ============================================
   // AI Features Routes
   // ============================================

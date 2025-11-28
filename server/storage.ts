@@ -95,6 +95,9 @@ export interface IStorage {
   createMeeting(meeting: InsertMeeting): Promise<Meeting>;
   getMeetings(): Promise<Meeting[]>;
   getMeeting(id: string): Promise<Meeting | undefined>;
+  getMeetingBySourceId(sourceId: string, source?: string): Promise<Meeting | undefined>;
+  upsertMeeting(meeting: InsertMeeting): Promise<Meeting>;
+  getMeetingsBySource(source: string): Promise<Meeting[]>;
 
   // Task operations
   createTask(task: InsertTask): Promise<Task>;
@@ -284,6 +287,50 @@ export class DatabaseStorage implements IStorage {
       .from(meetings)
       .where(eq(meetings.id, id));
     return meeting || undefined;
+  }
+
+  async getMeetingBySourceId(sourceId: string, source: string = "teams"): Promise<Meeting | undefined> {
+    const [meeting] = await db
+      .select()
+      .from(meetings)
+      .where(and(
+        eq(meetings.sourceId, sourceId),
+        eq(meetings.source, source)
+      ));
+    return meeting || undefined;
+  }
+
+  async upsertMeeting(meetingData: InsertMeeting): Promise<Meeting> {
+    if (!meetingData.sourceId) {
+      return this.createMeeting(meetingData);
+    }
+    
+    const existing = await this.getMeetingBySourceId(meetingData.sourceId, meetingData.source);
+    if (existing) {
+      const [updated] = await db
+        .update(meetings)
+        .set({
+          title: meetingData.title,
+          description: meetingData.description,
+          transcript: meetingData.transcript,
+          summary: meetingData.summary,
+          actionItems: meetingData.actionItems,
+          attendees: meetingData.attendees,
+          updatedAt: new Date(),
+        })
+        .where(eq(meetings.id, existing.id))
+        .returning();
+      return updated;
+    }
+    return this.createMeeting(meetingData);
+  }
+
+  async getMeetingsBySource(source: string): Promise<Meeting[]> {
+    return await db
+      .select()
+      .from(meetings)
+      .where(eq(meetings.source, source))
+      .orderBy(desc(meetings.meetingDate));
   }
 
   // Task operations

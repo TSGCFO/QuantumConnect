@@ -1263,7 +1263,7 @@ export async function syncEmails(
           let request = client
             .api(path)
             .select(
-              "id,subject,bodyPreview,from,toRecipients,ccRecipients,receivedDateTime,isRead,importance,hasAttachments,internetMessageId,conversationId,parentFolderId,isDraft,flag"
+              "id,subject,body,bodyPreview,from,toRecipients,ccRecipients,receivedDateTime,isRead,importance,hasAttachments,conversationId,isDraft"
             )
             .header("Prefer", `odata.maxpagesize=${pageSize}`);
 
@@ -1300,6 +1300,19 @@ export async function syncEmails(
               ? `${senderName} <${senderEmail}>`
               : senderEmail || "Unknown";
 
+            // Use full body content when available, fallback to bodyPreview
+            // For HTML content, extract text for searchability while keeping content
+            let bodyContent = message.bodyPreview || null;
+            if (message.body?.content) {
+              // Store text content (strip HTML if present for cleaner storage)
+              if (message.body.contentType === "html") {
+                // Keep HTML content - can be parsed for meeting links and rich content
+                bodyContent = message.body.content;
+              } else {
+                bodyContent = message.body.content;
+              }
+            }
+
             const dbEmail = await storage.upsertEmail({
               userId,
               outlookId: message.id,
@@ -1307,7 +1320,7 @@ export async function syncEmails(
               from: fromText,
               to: toEmails.length > 0 ? toEmails : null,
               cc: ccEmails.length > 0 ? ccEmails : null,
-              body: message.bodyPreview || null,
+              body: bodyContent,
               receivedAt: message.receivedDateTime
                 ? new Date(message.receivedDateTime)
                 : new Date(),

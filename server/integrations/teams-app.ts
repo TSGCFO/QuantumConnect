@@ -97,13 +97,23 @@ function convertCalendarEventToMeeting(event: any) {
     type: attendee.type
   })) || [];
   
+  // Get the online meeting ID from the join URL if not directly available
+  const joinUrl = event.onlineMeeting?.joinUrl || event.onlineMeetingUrl;
+  let onlineMeetingId = event.onlineMeeting?.id || null;
+  
+  // If no direct ID, try to extract from join URL
+  if (!onlineMeetingId && joinUrl) {
+    onlineMeetingId = extractOnlineMeetingIdFromUrl(joinUrl);
+  }
+  
   return {
-    id: event.id,
+    id: event.id,                    // Calendar event ID
+    onlineMeetingId: onlineMeetingId, // Teams online meeting ID (for transcript retrieval)
     subject: event.subject || "Untitled Meeting",
     startDateTime: event.start?.dateTime,
     endDateTime: event.end?.dateTime,
     createdDateTime: event.createdDateTime,
-    joinUrl: event.onlineMeeting?.joinUrl || event.onlineMeetingUrl,
+    joinUrl: joinUrl,
     participants: participants,
     organizer: event.organizer?.emailAddress,
     bodyPreview: event.bodyPreview,
@@ -118,6 +128,32 @@ function convertCalendarEventToMeeting(event: any) {
     isCancelled: event.isCancelled || false,
     responseStatus: event.responseStatus
   };
+}
+
+// Extract online meeting ID from join URL
+function extractOnlineMeetingIdFromUrl(joinUrl: string): string | null {
+  if (!joinUrl) return null;
+  
+  try {
+    const url = new URL(joinUrl);
+    const pathParts = url.pathname.split('/');
+    
+    // Look for the meeting identifier in the path
+    // Teams join URLs: https://teams.microsoft.com/l/meetup-join/19%3ameeting_...
+    for (const part of pathParts) {
+      if (part.includes('meeting_') || part.startsWith('19%3a') || part.startsWith('19:')) {
+        return decodeURIComponent(part);
+      }
+    }
+    
+    // Try thread ID from query string
+    const threadId = url.searchParams.get('threadId');
+    if (threadId) return threadId;
+    
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // Get online meetings for a specific user by fetching calendar events
@@ -264,6 +300,31 @@ export async function getAllOnlineMeetings() {
   }
 }
 
+// List available transcripts for a meeting
+export async function listMeetingTranscripts(onlineMeetingId: string, userPrincipalName?: string): Promise<any[]> {
+  const client = await getTeamsAppClient();
+  
+  try {
+    const basePath = userPrincipalName
+      ? `/users/${userPrincipalName}/onlineMeetings/${onlineMeetingId}/transcripts`
+      : `/me/onlineMeetings/${onlineMeetingId}/transcripts`;
+    
+    const response = await client
+      .api(basePath)
+      .select("id,createdDateTime,meetingId,meetingOrganizerId")
+      .get();
+    
+    return response.value || [];
+  } catch (error: any) {
+    // Silently handle meetings without transcripts (common case)
+    if (error?.statusCode === 404 || error?.code === "NotFound") {
+      return [];
+    }
+    console.error(`Error listing transcripts for meeting ${onlineMeetingId}:`, error?.message);
+    return [];
+  }
+}
+
 // Get meeting transcript content
 export async function getMeetingTranscript(meetingId: string, transcriptId: string, userPrincipalName?: string) {
   const client = await getTeamsAppClient();
@@ -281,6 +342,31 @@ export async function getMeetingTranscript(meetingId: string, transcriptId: stri
     return response;
   } catch (error) {
     console.error(`Error fetching transcript for meeting ${meetingId}:`, error);
+    return null;
+  }
+}
+
+// Get all transcripts content for a meeting (concatenated)
+export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrincipalName?: string): Promise<string | null> {
+  try {
+    const transcripts = await listMeetingTranscripts(onlineMeetingId, userPrincipalName);
+    
+    if (transcripts.length === 0) {
+      return null;
+    }
+    
+    const transcriptContents: string[] = [];
+    
+    for (const transcript of transcripts) {
+      const content = await getMeetingTranscript(onlineMeetingId, transcript.id, userPrincipalName);
+      if (content) {
+        transcriptContents.push(content);
+      }
+    }
+    
+    return transcriptContents.length > 0 ? transcriptContents.join("\n\n---\n\n") : null;
+  } catch (error) {
+    console.error(`Error fetching all transcripts for meeting ${onlineMeetingId}:`, error);
     return null;
   }
 }
