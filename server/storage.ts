@@ -108,7 +108,9 @@ export interface IStorage {
 
   // Email operations
   createEmail(email: InsertEmail): Promise<Email>;
+  upsertEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId?: string): Promise<Email[]>;
+  getEmailByOutlookId(outlookId: string): Promise<Email | undefined>;
   emailExists(outlookId: string): Promise<boolean>;
 
   // HubSpot communication operations
@@ -365,6 +367,38 @@ export class DatabaseStorage implements IStorage {
       .from(emails)
       .where(eq(emails.outlookId, outlookId));
     return !!email;
+  }
+
+  async getEmailByOutlookId(outlookId: string): Promise<Email | undefined> {
+    const [email] = await db
+      .select()
+      .from(emails)
+      .where(eq(emails.outlookId, outlookId));
+    return email || undefined;
+  }
+
+  async upsertEmail(emailData: InsertEmail): Promise<Email> {
+    const [email] = await db
+      .insert(emails)
+      .values(emailData)
+      .onConflictDoUpdate({
+        target: emails.outlookId,
+        set: {
+          subject: emailData.subject,
+          bodyPreview: emailData.bodyPreview,
+          sender: emailData.sender,
+          recipients: emailData.recipients,
+          receivedAt: emailData.receivedAt,
+          isRead: emailData.isRead,
+          importance: emailData.importance,
+          hasAttachments: emailData.hasAttachments,
+          internetMessageId: emailData.internetMessageId,
+          conversationId: emailData.conversationId,
+          parentFolderId: emailData.parentFolderId,
+        },
+      })
+      .returning();
+    return email;
   }
 
   // HubSpot communication operations

@@ -266,3 +266,94 @@ export async function getAllUsers(options: { top?: number } = {}): Promise<any> 
 
   return request.get();
 }
+
+export async function getMessagesDelta(
+  userId: string,
+  deltaLink?: string,
+  options: { 
+    folderId?: string;
+    pageSize?: number;
+    select?: string;
+    filter?: string;
+  } = {}
+): Promise<{ value: any[]; deltaLink?: string; nextLink?: string }> {
+  const client = getDirectGraphClient();
+  
+  if (deltaLink) {
+    return client.api(deltaLink).get();
+  }
+
+  const path = options.folderId
+    ? `/users/${userId}/mailFolders/${options.folderId}/messages/delta`
+    : `/users/${userId}/messages/delta`;
+
+  let request = client.api(path);
+
+  if (options.select) {
+    request = request.select(options.select);
+  }
+
+  if (options.filter) {
+    request = request.filter(options.filter);
+  }
+
+  if (options.pageSize) {
+    request = request.header("Prefer", `odata.maxpagesize=${options.pageSize}`);
+  }
+
+  return request.get();
+}
+
+export async function getOnlineMeetings(
+  userId: string,
+  options: { top?: number; filter?: string } = {}
+): Promise<any> {
+  const client = getDirectGraphClient();
+  let request = client.api(`/users/${userId}/onlineMeetings`);
+
+  if (options.top) {
+    request = request.top(options.top);
+  }
+  if (options.filter) {
+    request = request.filter(options.filter);
+  }
+
+  return request.get();
+}
+
+export async function getOnlineMeetingTranscripts(
+  userId: string,
+  meetingId: string
+): Promise<any> {
+  const client = getDirectGraphClient();
+  return client.api(`/users/${userId}/onlineMeetings/${meetingId}/transcripts`).get();
+}
+
+export async function getOnlineMeetingTranscriptContent(
+  userId: string,
+  meetingId: string,
+  transcriptId: string,
+  format: "vtt" | "docx" = "vtt"
+): Promise<any> {
+  const client = getDirectGraphClient();
+  return client
+    .api(`/users/${userId}/onlineMeetings/${meetingId}/transcripts/${transcriptId}/content`)
+    .query({ $format: format === "docx" ? "text/vtt" : "text/vtt" })
+    .get();
+}
+
+export async function getOnlineMeetingRecordings(
+  userId: string,
+  meetingId: string
+): Promise<any> {
+  const client = getDirectGraphClient();
+  return client.api(`/users/${userId}/onlineMeetings/${meetingId}/recordings`).get();
+}
+
+export async function getOnlineMeetingAttendanceReports(
+  userId: string,
+  meetingId: string
+): Promise<any> {
+  const client = getDirectGraphClient();
+  return client.api(`/users/${userId}/onlineMeetings/${meetingId}/attendanceReports`).get();
+}
