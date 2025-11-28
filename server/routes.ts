@@ -1545,6 +1545,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================
+  // Meeting-Email Linking Routes
+  // ============================================
+
+  app.post("/api/email/link", isAuthenticated, logActivity("link_email_meeting"), async (req: any, res) => {
+    try {
+      const { emailId, meetingId, linkType } = req.body;
+      
+      if (!emailId) {
+        return res.status(400).json({ message: "emailId is required" });
+      }
+      
+      if (meetingId) {
+        const email = await storage.linkEmailToMeeting(
+          emailId, 
+          meetingId, 
+          linkType || "manual", 
+          1.0
+        );
+        
+        return res.json({
+          emailId,
+          meetingId,
+          linkType: linkType || "manual",
+          confidence: 1.0,
+          reason: "Manual link by user"
+        });
+      }
+      
+      const { linkEmailToMeeting } = await import("./services/meetingEmailLink");
+      const result = await linkEmailToMeeting(emailId);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error linking email to meeting:", error);
+      res.status(500).json({ message: "Failed to link email to meeting" });
+    }
+  });
+
+  app.post("/api/admin/email/link-all", isAuthenticated, logActivity("batch_link_emails"), async (req: any, res) => {
+    try {
+      const { linkAllUnlinkedEmails } = await import("./services/meetingEmailLink");
+      const stats = await linkAllUnlinkedEmails();
+      
+      res.json({
+        message: `Processed ${stats.processed} emails: ${stats.linked} linked, ${stats.unlinked} unlinked, ${stats.errors} errors`,
+        stats
+      });
+    } catch (error) {
+      console.error("Error batch linking emails:", error);
+      res.status(500).json({ message: "Failed to batch link emails" });
+    }
+  });
+
+  app.get("/api/meetings/:meetingId/linked-emails", isAuthenticated, async (req: any, res) => {
+    try {
+      const { meetingId } = req.params;
+      const emails = await storage.getEmailsLinkedToMeeting(meetingId);
+      res.json(emails);
+    } catch (error) {
+      console.error("Error fetching linked emails:", error);
+      res.status(500).json({ message: "Failed to fetch linked emails" });
+    }
+  });
+
+  app.delete("/api/email/:emailId/link", isAuthenticated, logActivity("unlink_email_meeting"), async (req: any, res) => {
+    try {
+      const { emailId } = req.params;
+      await storage.unlinkEmailFromMeeting(emailId);
+      res.json({ success: true, message: "Email unlinked from meeting" });
+    } catch (error) {
+      console.error("Error unlinking email from meeting:", error);
+      res.status(500).json({ message: "Failed to unlink email" });
+    }
+  });
+
+  // ============================================
   // AI Features Routes
   // ============================================
 

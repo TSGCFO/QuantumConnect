@@ -114,7 +114,13 @@ export interface IStorage {
   upsertEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId?: string): Promise<Email[]>;
   getEmailByOutlookId(outlookId: string): Promise<Email | undefined>;
+  getEmailById(id: string): Promise<Email | undefined>;
   emailExists(outlookId: string): Promise<boolean>;
+  getUnlinkedMeetingSummaryEmails(): Promise<Email[]>;
+  linkEmailToMeeting(emailId: string, meetingId: string, linkType: string, confidence: number): Promise<Email>;
+  unlinkEmailFromMeeting(emailId: string): Promise<void>;
+  getMeetingsInDateRange(startDate: Date, endDate: Date): Promise<Meeting[]>;
+  getEmailsLinkedToMeeting(meetingId: string): Promise<Email[]>;
 
   // HubSpot communication operations
   createHubspotCommunication(
@@ -445,6 +451,87 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return email;
+  }
+
+  async getEmailById(id: string): Promise<Email | undefined> {
+    const [email] = await db
+      .select()
+      .from(emails)
+      .where(eq(emails.id, id));
+    return email || undefined;
+  }
+
+  async getUnlinkedMeetingSummaryEmails(): Promise<Email[]> {
+    return await db
+      .select()
+      .from(emails)
+      .where(
+        and(
+          sql`${emails.linkedMeetingId} IS NULL`,
+          or(
+            ilike(emails.subject, "%meeting notes%"),
+            ilike(emails.subject, "%meeting summary%"),
+            ilike(emails.subject, "%meeting recap%"),
+            ilike(emails.subject, "%otter%"),
+            ilike(emails.from, "%otter.ai%"),
+            ilike(emails.from, "%microsoft%recap%"),
+            ilike(emails.subject, "%action items from%"),
+            ilike(emails.subject, "%follow-up from%"),
+          )
+        )
+      )
+      .orderBy(desc(emails.receivedAt))
+      .limit(500);
+  }
+
+  async linkEmailToMeeting(
+    emailId: string,
+    meetingId: string,
+    linkType: string,
+    confidence: number
+  ): Promise<Email> {
+    const [email] = await db
+      .update(emails)
+      .set({
+        linkedMeetingId: meetingId,
+        linkType: linkType,
+        linkConfidence: confidence,
+      })
+      .where(eq(emails.id, emailId))
+      .returning();
+    return email;
+  }
+
+  async unlinkEmailFromMeeting(emailId: string): Promise<void> {
+    await db
+      .update(emails)
+      .set({
+        linkedMeetingId: null,
+        linkType: null,
+        linkConfidence: null,
+      })
+      .where(eq(emails.id, emailId));
+  }
+
+  async getMeetingsInDateRange(startDate: Date, endDate: Date): Promise<Meeting[]> {
+    return await db
+      .select()
+      .from(meetings)
+      .where(
+        and(
+          gte(meetings.meetingDate, startDate),
+          lte(meetings.meetingDate, endDate)
+        )
+      )
+      .orderBy(desc(meetings.meetingDate));
+  }
+
+  async getEmailsLinkedToMeeting(meetingId: string): Promise<Email[]> {
+    return await db
+      .select()
+      .from(emails)
+      .where(eq(emails.linkedMeetingId, meetingId))
+      .orderBy(desc(emails.receivedAt));
   }
 
   // HubSpot communication operations

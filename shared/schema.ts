@@ -101,11 +101,12 @@ export const meetings = pgTable("meetings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const meetingsRelations = relations(meetings, ({ one }) => ({
+export const meetingsRelations = relations(meetings, ({ one, many }) => ({
   uploadedBy: one(users, {
     fields: [meetings.uploadedById],
     references: [users.id],
   }),
+  linkedEmails: many(emails),
 }));
 
 export const insertMeetingSchema = createInsertSchema(meetings).omit({
@@ -200,6 +201,9 @@ export const emails = pgTable("emails", {
   hasAttachments: boolean("has_attachments").default(false),
   importance: varchar("importance"),
   conversationId: varchar("conversation_id"),
+  linkedMeetingId: varchar("linked_meeting_id").references(() => meetings.id),
+  linkType: varchar("link_type"), // otter_summary, ms_recap, meeting_notes, manual
+  linkConfidence: real("link_confidence"), // 0.0 to 1.0 confidence score
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -207,6 +211,10 @@ export const emailsRelations = relations(emails, ({ one }) => ({
   user: one(users, {
     fields: [emails.userId],
     references: [users.id],
+  }),
+  linkedMeeting: one(meetings, {
+    fields: [emails.linkedMeetingId],
+    references: [meetings.id],
   }),
 }));
 
