@@ -163,6 +163,74 @@ export async function getDriveItems(
   return request.get();
 }
 
+// SharePoint site-level access (using app-only permissions)
+export async function getSharePointSites(
+  options: { search?: string; top?: number } = {}
+): Promise<any> {
+  const client = getDirectGraphClient();
+  let request = options.search
+    ? client.api(`/sites?search=${encodeURIComponent(options.search)}`)
+    : client.api("/sites");
+  
+  if (options.top) {
+    request = request.top(options.top);
+  }
+  
+  return request.get();
+}
+
+export async function getSharePointSiteById(siteId: string): Promise<any> {
+  const client = getDirectGraphClient();
+  return client.api(`/sites/${siteId}`).get();
+}
+
+export async function getSharePointSiteDrives(siteId: string): Promise<any> {
+  const client = getDirectGraphClient();
+  return client.api(`/sites/${siteId}/drives`).get();
+}
+
+export async function getSharePointDriveItems(
+  siteId: string,
+  driveId: string,
+  folderId?: string,
+  options: { top?: number; select?: string } = {}
+): Promise<any> {
+  const client = getDirectGraphClient();
+  const path = folderId
+    ? `/sites/${siteId}/drives/${driveId}/items/${folderId}/children`
+    : `/sites/${siteId}/drives/${driveId}/root/children`;
+
+  let request = client.api(path);
+  if (options.top) {
+    request = request.top(options.top);
+  }
+  if (options.select) {
+    request = request.select(options.select);
+  }
+
+  return request.get();
+}
+
+export async function getSharePointDriveItem(
+  siteId: string,
+  driveId: string,
+  itemId: string
+): Promise<any> {
+  const client = getDirectGraphClient();
+  return client.api(`/sites/${siteId}/drives/${driveId}/items/${itemId}`).get();
+}
+
+export async function getSharePointDriveItemContent(
+  siteId: string,
+  driveId: string,
+  itemId: string
+): Promise<ArrayBuffer> {
+  const client = getDirectGraphClient();
+  return client
+    .api(`/sites/${siteId}/drives/${driveId}/items/${itemId}/content`)
+    .get();
+}
+
 export async function getTodoLists(userId: string): Promise<any> {
   const client = getDirectGraphClient();
   return client.api(`/users/${userId}/todo/lists`).get();
