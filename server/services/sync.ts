@@ -1220,7 +1220,6 @@ export async function syncEmails(
       status: "running",
     });
 
-    const client = getDirectGraphClient();
     let itemsProcessed = 0;
     let itemsCreated = 0;
     let itemsUpdated = 0;
@@ -1240,39 +1239,33 @@ export async function syncEmails(
         deltaToken = syncState?.deltaToken || null;
       }
 
-      let nextLink: string | undefined;
-      let response: any;
-
       // Calculate date filter for initial sync (lookback period)
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysBack);
       const dateFilter = `receivedDateTime ge ${cutoffDate.toISOString()}`;
 
+      // Email fields to retrieve from Graph API
+      const emailSelect = "id,subject,body,bodyPreview,from,toRecipients,ccRecipients,receivedDateTime,isRead,importance,hasAttachments,conversationId,isDraft";
+
+      let response: { value: any[]; deltaLink?: string; nextLink?: string };
+      let currentLink: string | undefined;
+
       do {
-        if (nextLink) {
-          response = await client.api(nextLink).get();
+        // Use getMessagesDelta() for all Graph API calls - centralizes delta/paging logic
+        if (currentLink) {
+          // Follow nextLink for paging
+          response = await getMessagesDelta(msUserId, currentLink);
         } else if (deltaToken && useDelta) {
-          // Delta sync: use the stored delta link URL directly
-          response = await client.api(deltaToken).get();
+          // Delta sync: use stored delta link
+          response = await getMessagesDelta(msUserId, deltaToken);
         } else {
-          // Initial sync or full sync: use messages/delta with date filter
-          const path = folderId
-            ? `/users/${msUserId}/mailFolders/${folderId}/messages/delta`
-            : `/users/${msUserId}/messages/delta`;
-
-          let request = client
-            .api(path)
-            .select(
-              "id,subject,body,bodyPreview,from,toRecipients,ccRecipients,receivedDateTime,isRead,importance,hasAttachments,conversationId,isDraft"
-            )
-            .header("Prefer", `odata.maxpagesize=${pageSize}`);
-
-          // Only apply date filter on initial sync (no delta token)
-          if (!deltaToken) {
-            request = request.filter(dateFilter);
-          }
-
-          response = await request.get();
+          // Initial sync or full sync: request with date filter
+          response = await getMessagesDelta(msUserId, undefined, {
+            folderId,
+            pageSize,
+            select: emailSelect,
+            filter: dateFilter,
+          });
         }
 
         for (const message of response.value || []) {
@@ -1344,11 +1337,12 @@ export async function syncEmails(
           }
         }
 
-        nextLink = response["@odata.nextLink"];
-        if (response["@odata.deltaLink"]) {
-          newDeltaToken = response["@odata.deltaLink"];
+        // Handle paging and delta tokens from unified getMessagesDelta() response
+        currentLink = response.nextLink;
+        if (response.deltaLink) {
+          newDeltaToken = response.deltaLink;
         }
-      } while (nextLink);
+      } while (currentLink);
 
       await storage.upsertUserSyncState({
         userId,

@@ -279,29 +279,38 @@ export async function getMessagesDelta(
 ): Promise<{ value: any[]; deltaLink?: string; nextLink?: string }> {
   const client = getDirectGraphClient();
   
+  let rawResponse: any;
+  
   if (deltaLink) {
-    return client.api(deltaLink).get();
+    rawResponse = await client.api(deltaLink).get();
+  } else {
+    const path = options.folderId
+      ? `/users/${userId}/mailFolders/${options.folderId}/messages/delta`
+      : `/users/${userId}/messages/delta`;
+
+    let request = client.api(path);
+
+    if (options.select) {
+      request = request.select(options.select);
+    }
+
+    if (options.filter) {
+      request = request.filter(options.filter);
+    }
+
+    if (options.pageSize) {
+      request = request.header("Prefer", `odata.maxpagesize=${options.pageSize}`);
+    }
+
+    rawResponse = await request.get();
   }
 
-  const path = options.folderId
-    ? `/users/${userId}/mailFolders/${options.folderId}/messages/delta`
-    : `/users/${userId}/messages/delta`;
-
-  let request = client.api(path);
-
-  if (options.select) {
-    request = request.select(options.select);
-  }
-
-  if (options.filter) {
-    request = request.filter(options.filter);
-  }
-
-  if (options.pageSize) {
-    request = request.header("Prefer", `odata.maxpagesize=${options.pageSize}`);
-  }
-
-  return request.get();
+  // Normalize @odata.nextLink and @odata.deltaLink to consistent property names
+  return {
+    value: rawResponse.value || [],
+    nextLink: rawResponse["@odata.nextLink"],
+    deltaLink: rawResponse["@odata.deltaLink"],
+  };
 }
 
 export async function getOnlineMeetings(
