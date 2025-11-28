@@ -1887,6 +1887,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================
+  // Activity Feed Routes
+  // ============================================
+
+  app.get("/api/activity", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { types, startDate, endDate, limit, offset, includeRawData } = req.query;
+      
+      const { getUnifiedActivityFeed } = await import("./services/activityFeed");
+      
+      const filters = {
+        userId,
+        types: types ? (types as string).split(",") as ("email" | "meeting" | "calendar" | "chat")[] : undefined,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+        includeRawData: includeRawData === "true",
+      };
+      
+      const result = await getUnifiedActivityFeed(filters);
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching activity feed:", error);
+      res.status(500).json({ message: "Failed to fetch activity feed" });
+    }
+  });
+
+  app.get("/api/activity/stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { getActivityStats } = await import("./services/activityFeed");
+      
+      const stats = await getActivityStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching activity stats:", error);
+      res.status(500).json({ message: "Failed to fetch activity stats" });
+    }
+  });
+
+  app.get("/api/activity/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { query, types, startDate, endDate, limit } = req.query;
+      
+      if (!query) {
+        return res.status(400).json({ message: "Search query is required" });
+      }
+      
+      const { searchActivities } = await import("./services/activityFeed");
+      
+      const filters = {
+        userId,
+        types: types ? (types as string).split(",") as ("email" | "meeting" | "calendar" | "chat")[] : undefined,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        limit: limit ? parseInt(limit as string) : 50,
+      };
+      
+      const results = await searchActivities(query as string, filters);
+      res.json({ activities: results, total: results.length });
+    } catch (error) {
+      console.error("Error searching activities:", error);
+      res.status(500).json({ message: "Failed to search activities" });
+    }
+  });
+
+  app.get("/api/activity/:type", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { type } = req.params;
+      const { startDate, endDate, limit, offset } = req.query;
+      
+      const validTypes = ["email", "meeting", "calendar", "chat"];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({ message: `Invalid activity type. Must be one of: ${validTypes.join(", ")}` });
+      }
+      
+      const { getActivityByType } = await import("./services/activityFeed");
+      
+      const filters = {
+        userId,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+        limit: limit ? parseInt(limit as string) : 50,
+        offset: offset ? parseInt(offset as string) : 0,
+      };
+      
+      const activities = await getActivityByType(type as "email" | "meeting" | "calendar" | "chat", filters);
+      res.json({ activities, total: activities.length });
+    } catch (error) {
+      console.error("Error fetching activities by type:", error);
+      res.status(500).json({ message: "Failed to fetch activities" });
+    }
+  });
+
+  // ============================================
   // AI Extraction and Processing Routes
   // ============================================
 
