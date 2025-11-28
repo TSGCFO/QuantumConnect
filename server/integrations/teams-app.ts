@@ -66,21 +66,9 @@ export async function getTeamsAppClient() {
 }
 
 // Get the current user's principal name (email)
-export async function getUserPrincipalName(): Promise<string> {
-  const client = await getTeamsAppClient();
-  
-  try {
-    const response = await client
-      .api("/me")
-      .select("userPrincipalName,mail")
-      .get();
-    
-    return response.userPrincipalName || response.mail || "";
-  } catch (error) {
-    console.error("Error fetching user principal name:", error);
-    throw error;
-  }
-}
+// Note: getUserPrincipalName() has been removed - app-only auth cannot use /me endpoint
+// The user's principal name should be retrieved from storage (user.email) instead
+// See getUserPrincipalNameFromStorage() in routes.ts for the replacement implementation
 
 // Helper function to convert calendar events to meeting format
 function convertCalendarEventToMeeting(event: any) {
@@ -156,21 +144,22 @@ function extractOnlineMeetingIdFromUrl(joinUrl: string): string | null {
   }
 }
 
-// Get online meetings for a specific user by fetching calendar events
-export async function getUserOnlineMeetings(userPrincipalName?: string) {
+// Get online meetings for a specific user by fetching calendar events (app-only access)
+export async function getUserOnlineMeetings(userPrincipalName: string) {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getUserOnlineMeetings requires userPrincipalName for app-only access");
+    return [];
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    const calendarPath = userPrincipalName 
-      ? `/users/${userPrincipalName}/calendar/events`
-      : "/me/calendar/events";
+    const calendarPath = `/users/${userPrincipalName}/calendar/events`;
     
-    // Fetch all events from the past 2 years to now
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
     const now = new Date();
     
-    // Use $filter for date range only (isOnlineMeeting filter not supported by Graph API)
     const filter = `start/dateTime ge '${twoYearsAgo.toISOString()}' and start/dateTime le '${now.toISOString()}'`;
     
     const response = await client
@@ -178,28 +167,21 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
       .filter(filter)
       .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
       .orderby("start/dateTime desc")
-      .top(999) // Maximum limit for comprehensive sync
+      .top(999)
       .get();
     
     const events = response.value || [];
-    
-    // Filter client-side for online meetings only
     const onlineMeetings = events.filter((event: any) => event.isOnlineMeeting === true);
-    
-    // Convert calendar events to meeting format
     const meetings = onlineMeetings
       .map(convertCalendarEventToMeeting)
-      .filter(Boolean); // Remove null values
+      .filter(Boolean);
     
     return meetings;
   } catch (error) {
     console.error("Error fetching online meetings from calendar:", error);
     
-    // Fallback to calendarView if calendar/events fails
     try {
-      const calendarViewPath = userPrincipalName
-        ? `/users/${userPrincipalName}/calendarView`
-        : "/me/calendarView";
+      const calendarViewPath = `/users/${userPrincipalName}/calendarView`;
       
       const twoYearsAgo = new Date();
       twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
@@ -210,7 +192,6 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
         .query({
           startDateTime: twoYearsAgo.toISOString(),
           endDateTime: now.toISOString()
-          // Removed $filter for isOnlineMeeting - not supported by Graph API
         })
         .select("id,subject,start,end,bodyPreview,onlineMeeting,onlineMeetingUrl,attendees,organizer,isOnlineMeeting,createdDateTime,location,webLink,categories,importance,isAllDay,isCancelled,responseStatus,onlineMeetingProvider")
         .orderby("start/dateTime desc")
@@ -218,11 +199,7 @@ export async function getUserOnlineMeetings(userPrincipalName?: string) {
         .get();
       
       const events = response.value || [];
-      
-      // Filter client-side for online meetings only
       const onlineMeetings = events.filter((event: any) => event.isOnlineMeeting === true);
-      
-      // Convert calendar events to meeting format
       const meetings = onlineMeetings
         .map(convertCalendarEventToMeeting)
         .filter(Boolean);
@@ -300,14 +277,17 @@ export async function getAllOnlineMeetings() {
   }
 }
 
-// List available transcripts for a meeting
-export async function listMeetingTranscripts(onlineMeetingId: string, userPrincipalName?: string): Promise<any[]> {
+// List available transcripts for a meeting (app-only access)
+export async function listMeetingTranscripts(onlineMeetingId: string, userPrincipalName: string): Promise<any[]> {
+  if (!userPrincipalName) {
+    console.warn("[Teams] listMeetingTranscripts requires userPrincipalName for app-only access");
+    return [];
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    const basePath = userPrincipalName
-      ? `/users/${userPrincipalName}/onlineMeetings/${onlineMeetingId}/transcripts`
-      : `/me/onlineMeetings/${onlineMeetingId}/transcripts`;
+    const basePath = `/users/${userPrincipalName}/onlineMeetings/${onlineMeetingId}/transcripts`;
     
     const response = await client
       .api(basePath)
@@ -316,7 +296,6 @@ export async function listMeetingTranscripts(onlineMeetingId: string, userPrinci
     
     return response.value || [];
   } catch (error: any) {
-    // Silently handle meetings without transcripts (common case)
     if (error?.statusCode === 404 || error?.code === "NotFound") {
       return [];
     }
@@ -325,15 +304,17 @@ export async function listMeetingTranscripts(onlineMeetingId: string, userPrinci
   }
 }
 
-// Get meeting transcript content
-export async function getMeetingTranscript(meetingId: string, transcriptId: string, userPrincipalName?: string) {
+// Get meeting transcript content (app-only access)
+export async function getMeetingTranscript(meetingId: string, transcriptId: string, userPrincipalName: string) {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getMeetingTranscript requires userPrincipalName for app-only access");
+    return null;
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    // Build the appropriate API path
-    const basePath = userPrincipalName
-      ? `/users/${userPrincipalName}/onlineMeetings/${meetingId}`
-      : `/me/onlineMeetings/${meetingId}`;
+    const basePath = `/users/${userPrincipalName}/onlineMeetings/${meetingId}`;
     
     const response = await client
       .api(`${basePath}/transcripts/${transcriptId}/content`)
@@ -346,8 +327,13 @@ export async function getMeetingTranscript(meetingId: string, transcriptId: stri
   }
 }
 
-// Get all transcripts content for a meeting (concatenated)
-export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrincipalName?: string): Promise<string | null> {
+// Get all transcripts content for a meeting (concatenated) - app-only access
+export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrincipalName: string): Promise<string | null> {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getAllMeetingTranscripts requires userPrincipalName for app-only access");
+    return null;
+  }
+  
   try {
     const transcripts = await listMeetingTranscripts(onlineMeetingId, userPrincipalName);
     
@@ -371,14 +357,17 @@ export async function getAllMeetingTranscripts(onlineMeetingId: string, userPrin
   }
 }
 
-// Get meeting attendance reports
-export async function getMeetingAttendanceReports(meetingId: string, userPrincipalName?: string) {
+// Get meeting attendance reports (app-only access)
+export async function getMeetingAttendanceReports(meetingId: string, userPrincipalName: string) {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getMeetingAttendanceReports requires userPrincipalName for app-only access");
+    return [];
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    const basePath = userPrincipalName
-      ? `/users/${userPrincipalName}/onlineMeetings/${meetingId}`
-      : `/me/onlineMeetings/${meetingId}`;
+    const basePath = `/users/${userPrincipalName}/onlineMeetings/${meetingId}`;
     
     const response = await client
       .api(`${basePath}/attendanceReports`)
@@ -391,16 +380,87 @@ export async function getMeetingAttendanceReports(meetingId: string, userPrincip
   }
 }
 
-// Get user's calendar events (including Teams meetings)
-export async function getUserCalendarEvents(userPrincipalName?: string) {
+// Get detailed attendance report with attendees
+export async function getMeetingAttendanceReportDetails(
+  meetingId: string,
+  reportId: string,
+  userPrincipalName: string
+): Promise<{
+  totalAttendeeCount: number;
+  attendees: Array<{
+    email: string;
+    totalAttendanceInSeconds: number;
+    role: string;
+  }>;
+} | null> {
+  if (!userPrincipalName) {
+    return null;
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    const calendarPath = userPrincipalName
-      ? `/users/${userPrincipalName}/calendar/calendarView`
-      : "/me/calendar/calendarView";
+    const basePath = `/users/${userPrincipalName}/onlineMeetings/${meetingId}`;
     
-    // Fetch all events from the past 2 years to future 30 days
+    const response = await client
+      .api(`${basePath}/attendanceReports/${reportId}?$expand=attendanceRecords`)
+      .get();
+    
+    const attendees = (response.attendanceRecords || []).map((record: any) => ({
+      email: record.emailAddress || record.identity?.email || "",
+      totalAttendanceInSeconds: record.totalAttendanceInSeconds || 0,
+      role: record.role || "attendee",
+    }));
+    
+    return {
+      totalAttendeeCount: response.totalParticipantCount || attendees.length,
+      attendees,
+    };
+  } catch (error) {
+    console.error(`Error fetching attendance report details for meeting ${meetingId}:`, error);
+    return null;
+  }
+}
+
+// Get meeting recordings
+export async function getMeetingRecordings(meetingId: string, userPrincipalName: string): Promise<string[]> {
+  if (!userPrincipalName) {
+    return [];
+  }
+  
+  const client = await getTeamsAppClient();
+  
+  try {
+    const basePath = `/users/${userPrincipalName}/onlineMeetings/${meetingId}`;
+    
+    const response = await client
+      .api(`${basePath}/recordings`)
+      .get();
+    
+    const recordings = response.value || [];
+    return recordings
+      .map((recording: any) => recording.recordingContentUrl || recording.contentUrl)
+      .filter(Boolean);
+  } catch (error: any) {
+    if (error.statusCode !== 404 && error.statusCode !== 403) {
+      console.error(`Error fetching recordings for meeting ${meetingId}:`, error);
+    }
+    return [];
+  }
+}
+
+// Get user's calendar events (including Teams meetings) - app-only access
+export async function getUserCalendarEvents(userPrincipalName: string) {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getUserCalendarEvents requires userPrincipalName for app-only access");
+    return [];
+  }
+  
+  const client = await getTeamsAppClient();
+  
+  try {
+    const calendarPath = `/users/${userPrincipalName}/calendar/calendarView`;
+    
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
     const startDateTime = twoYearsAgo.toISOString();
@@ -457,14 +517,17 @@ export async function isUserAdmin(userId: string): Promise<boolean> {
   }
 }
 
-// Get Teams for a user
-export async function getUserTeams(userPrincipalName?: string) {
+// Get Teams for a user (app-only access)
+export async function getUserTeams(userPrincipalName: string) {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getUserTeams requires userPrincipalName for app-only access");
+    return [];
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    const teamsPath = userPrincipalName
-      ? `/users/${userPrincipalName}/joinedTeams`
-      : "/me/joinedTeams";
+    const teamsPath = `/users/${userPrincipalName}/joinedTeams`;
     
     const response = await client
       .api(teamsPath)
@@ -513,14 +576,17 @@ export async function getChannelMessages(teamId: string, channelId: string, top:
   }
 }
 
-// Get user's chats
-export async function getUserChats(top: number = 50, userPrincipalName?: string) {
+// Get user's chats (app-only access)
+export async function getUserChats(top: number = 50, userPrincipalName: string) {
+  if (!userPrincipalName) {
+    console.warn("[Teams] getUserChats requires userPrincipalName for app-only access");
+    return [];
+  }
+  
   const client = await getTeamsAppClient();
   
   try {
-    const chatsPath = userPrincipalName
-      ? `/users/${userPrincipalName}/chats`
-      : "/me/chats";
+    const chatsPath = `/users/${userPrincipalName}/chats`;
     
     const response = await client
       .api(chatsPath)

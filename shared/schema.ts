@@ -97,6 +97,12 @@ export const meetings = pgTable("meetings", {
   source: varchar("source").notNull(), // manual, teams, hubspot
   sourceId: varchar("source_id"), // external meeting ID
   uploadedById: varchar("uploaded_by_id").references(() => users.id),
+  // Teams meeting metadata (recordings and attendance)
+  onlineMeetingId: varchar("online_meeting_id"), // Teams meeting ID for API calls
+  recordingUrls: text("recording_urls").array(), // URLs to meeting recordings
+  attendanceReport: jsonb("attendance_report"), // {totalAttendeeCount, attendees: [{email, totalAttendanceInSeconds, role}]}
+  hasRecording: boolean("has_recording").default(false),
+  hasAttendanceReport: boolean("has_attendance_report").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -445,6 +451,12 @@ export const msCalendarEvents = pgTable("ms_calendar_events", {
   isCancelled: boolean("is_cancelled").default(false),
   categories: text("categories").array(),
   webLink: text("web_link"),
+  // Teams meeting metadata (recordings and attendance)
+  onlineMeetingId: varchar("online_meeting_id"), // Teams meeting ID for API calls
+  recordingUrls: text("recording_urls").array(), // URLs to meeting recordings
+  attendanceReport: jsonb("attendance_report"), // {totalAttendeeCount, attendees: [{email, totalAttendanceInSeconds, role}]}
+  hasRecording: boolean("has_recording").default(false),
+  hasAttendanceReport: boolean("has_attendance_report").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -7,7 +7,6 @@ import { summarizeMeeting, answerDocumentQuestion } from "./openai";
 import { getUncachableHubSpotClient } from "./integrations/hubspot";
 // Import from the new teams-app module for application-level access
 import {
-  getUserPrincipalName,
   getUserOnlineMeetings,
   getAllOnlineMeetings,
   getMeetingTranscript,
@@ -38,6 +37,16 @@ import { startScheduler, stopScheduler, enqueueSync, enqueueSyncForAllUsers, get
 import { isDirectGraphConfigured, getMissingCredentials, getDirectGraphClient, getAllUsers } from "./integrations/microsoft-graph";
 
 const upload = multer({ storage: multer.memoryStorage() });
+
+// Helper function to get user's Microsoft 365 principal name from storage
+// This replaces the /me Graph API call which is invalid for app-only auth
+async function getUserPrincipalNameFromStorage(userId: string): Promise<string> {
+  const user = await storage.getUser(userId);
+  if (!user?.email) {
+    throw new Error("User email not found - required for Microsoft 365 operations");
+  }
+  return user.email;
+}
 
 // Activity logging middleware
 function logActivity(action: string, resourceType?: string) {
@@ -576,8 +585,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const userId = req.user.claims.sub;
         
-        // Get the current user's email using new authentication
-        const userPrincipalName = await getUserPrincipalName();
+        // Get the current user's email from storage (app-only auth)
+        const userPrincipalName = await getUserPrincipalNameFromStorage(userId);
         
         // Fetch all meetings for the user (past 2 years)
         const meetings = await getUserOnlineMeetings(userPrincipalName);
@@ -693,10 +702,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/teams/meetings",
     isAuthenticated,
     logActivity("view_teams_meetings"),
-    async (req, res) => {
+    async (req: any, res) => {
       try {
-        // Get the current user's email
-        const userPrincipalName = await getUserPrincipalName();
+        const userId = req.user.claims.sub;
+        // Get the current user's email from storage (app-only auth)
+        const userPrincipalName = await getUserPrincipalNameFromStorage(userId);
         
         // Fetch meetings for the current user
         const meetings = await getUserOnlineMeetings(userPrincipalName);
@@ -725,9 +735,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/teams/channels",
     isAuthenticated,
     logActivity("view_teams_channels"),
-    async (req, res) => {
+    async (req: any, res) => {
       try {
-        const teams = await getUserTeams();
+        const userId = req.user.claims.sub;
+        const userPrincipalName = await getUserPrincipalNameFromStorage(userId);
+        const teams = await getUserTeams(userPrincipalName);
         const channelsWithMessages = [];
         
         for (const team of teams) {
@@ -767,9 +779,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/teams/chats",
     isAuthenticated,
     logActivity("view_teams_chats"),
-    async (req, res) => {
+    async (req: any, res) => {
       try {
-        const chats = await getUserChats(30);
+        const userId = req.user.claims.sub;
+        const userPrincipalName = await getUserPrincipalNameFromStorage(userId);
+        const chats = await getUserChats(30, userPrincipalName);
         const chatsWithMessages = [];
         
         for (const chat of chats.slice(0, 10)) { // Limit to 10 most recent chats
@@ -814,8 +828,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Meeting ID is required" });
         }
         
-        // Get the current user's email
-        const userPrincipalName = await getUserPrincipalName();
+        // Get the current user's email from storage (app-only auth)
+        const userPrincipalName = await getUserPrincipalNameFromStorage(userId);
         
         // Get meetings and find the specific one
         const meetings = await getUserOnlineMeetings(userPrincipalName);

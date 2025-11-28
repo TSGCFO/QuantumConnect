@@ -98,6 +98,13 @@ export interface IStorage {
   getMeetingBySourceId(sourceId: string, source?: string): Promise<Meeting | undefined>;
   upsertMeeting(meeting: InsertMeeting): Promise<Meeting>;
   getMeetingsBySource(source: string): Promise<Meeting[]>;
+  updateMeetingMetadata(sourceId: string, source: string, metadata: {
+    onlineMeetingId?: string;
+    recordingUrls?: string[];
+    attendanceReport?: any;
+    hasRecording?: boolean;
+    hasAttendanceReport?: boolean;
+  }): Promise<void>;
 
   // Task operations
   createTask(task: InsertTask): Promise<Task>;
@@ -337,6 +344,30 @@ export class DatabaseStorage implements IStorage {
       .from(meetings)
       .where(eq(meetings.source, source))
       .orderBy(desc(meetings.meetingDate));
+  }
+
+  async updateMeetingMetadata(sourceId: string, source: string, metadata: {
+    onlineMeetingId?: string;
+    recordingUrls?: string[];
+    attendanceReport?: any;
+    hasRecording?: boolean;
+    hasAttendanceReport?: boolean;
+  }): Promise<void> {
+    const meeting = await this.getMeetingBySourceId(sourceId, source);
+    
+    if (meeting) {
+      await db
+        .update(meetings)
+        .set({
+          onlineMeetingId: metadata.onlineMeetingId,
+          recordingUrls: metadata.recordingUrls,
+          attendanceReport: metadata.attendanceReport,
+          hasRecording: metadata.hasRecording ?? false,
+          hasAttendanceReport: metadata.hasAttendanceReport ?? false,
+          updatedAt: new Date(),
+        })
+        .where(eq(meetings.id, meeting.id));
+    }
   }
 
   // Task operations
