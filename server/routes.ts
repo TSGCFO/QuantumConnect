@@ -4,7 +4,6 @@ import multer from "multer";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { summarizeMeeting, answerDocumentQuestion } from "./openai";
-import { getUncachableOutlookClient } from "./integrations/outlook";
 import { getUncachableHubSpotClient } from "./integrations/hubspot";
 // Import from the new teams-app module for application-level access
 import {
@@ -550,44 +549,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const userId = req.user.claims.sub;
-        const client = await getUncachableOutlookClient();
-
-        const messages = await client
-          .api("/me/messages")
-          .top(50)
-          .select(
-            "id,subject,from,toRecipients,ccRecipients,body,receivedDateTime,isRead,hasAttachments,importance,conversationId",
-          )
-          .get();
-
-        let syncedCount = 0;
-        for (const msg of messages.value) {
-          const outlookId = msg.id;
-          const exists = await storage.emailExists(outlookId);
-          if (!exists) {
-            await storage.createEmail({
-              outlookId,
-              userId,
-              subject: msg.subject,
-              from: msg.from?.emailAddress?.address || "unknown",
-              to:
-                msg.toRecipients?.map((r: any) => r.emailAddress?.address) ||
-                [],
-              cc:
-                msg.ccRecipients?.map((r: any) => r.emailAddress?.address) ||
-                [],
-              body: msg.body?.content || "",
-              receivedAt: new Date(msg.receivedDateTime),
-              isRead: msg.isRead,
-              hasAttachments: msg.hasAttachments,
-              importance: msg.importance,
-              conversationId: msg.conversationId,
-            });
-            syncedCount++;
-          }
-        }
-
-        res.json({ message: `Synced ${syncedCount} new emails` });
+        const result = await syncEmails(userId);
+        res.json({ 
+          message: `Synced ${result.itemsCreated} new emails, updated ${result.itemsUpdated}`,
+          syncedCount: result.itemsCreated,
+          updatedCount: result.itemsUpdated,
+          totalProcessed: result.itemsProcessed,
+          success: result.success,
+          errors: result.errors.length > 0 ? result.errors : undefined
+        });
       } catch (error) {
         console.error("Error syncing emails:", error);
         res.status(500).json({ message: "Failed to sync emails" });

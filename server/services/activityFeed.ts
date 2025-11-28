@@ -89,41 +89,25 @@ async function getMeetingActivities(filters: ActivityFeedFilters): Promise<Activ
       const user = await db.select().from(users).where(eq(users.id, filters.userId)).limit(1);
       const userEmail = user[0]?.email?.toLowerCase() || "";
       
-      const uploadedConditions = [eq(meetings.uploadedById, filters.userId)];
-      if (filters.startDate) uploadedConditions.push(gte(meetings.meetingDate, filters.startDate));
-      if (filters.endDate) uploadedConditions.push(lte(meetings.meetingDate, filters.endDate));
+      const conditions = [];
+      if (filters.startDate) conditions.push(gte(meetings.meetingDate, filters.startDate));
+      if (filters.endDate) conditions.push(lte(meetings.meetingDate, filters.endDate));
       
-      const uploadedMeetings = await db.select().from(meetings)
-        .where(and(...uploadedConditions))
+      const userCondition = userEmail 
+        ? or(
+            eq(meetings.uploadedById, filters.userId),
+            sql`EXISTS (SELECT 1 FROM unnest(${meetings.attendees}) AS att WHERE lower(att) LIKE '%' || ${userEmail} || '%' OR ${userEmail} LIKE '%' || lower(att) || '%')`
+          )
+        : eq(meetings.uploadedById, filters.userId);
+      
+      conditions.push(userCondition);
+      
+      const results = await db.select().from(meetings)
+        .where(and(...conditions))
         .orderBy(desc(meetings.meetingDate))
         .limit(limit);
       
-      let attendeeMeetings: typeof uploadedMeetings = [];
-      if (userEmail) {
-        const attendeeConditions = [];
-        if (filters.startDate) attendeeConditions.push(gte(meetings.meetingDate, filters.startDate));
-        if (filters.endDate) attendeeConditions.push(lte(meetings.meetingDate, filters.endDate));
-        attendeeConditions.push(isNotNull(meetings.attendees));
-        
-        const potentialMeetings = await db.select().from(meetings)
-          .where(attendeeConditions.length > 0 ? and(...attendeeConditions) : undefined)
-          .orderBy(desc(meetings.meetingDate))
-          .limit(limit * 3);
-        
-        attendeeMeetings = potentialMeetings.filter(m => 
-          m.attendees?.some(a => 
-            a.toLowerCase().includes(userEmail) || userEmail.includes(a.toLowerCase())
-          )
-        );
-      }
-      
-      const allMeetings = [...uploadedMeetings, ...attendeeMeetings];
-      const uniqueById = new Map(allMeetings.map(m => [m.id, m]));
-      const dedupedMeetings = Array.from(uniqueById.values())
-        .sort((a, b) => new Date(b.meetingDate).getTime() - new Date(a.meetingDate).getTime())
-        .slice(0, limit);
-      
-      return dedupedMeetings.map(meeting => ({
+      return results.map(meeting => ({
         id: meeting.id,
         type: "meeting" as const,
         title: meeting.title,
@@ -339,9 +323,26 @@ export async function getActivityStats(userId?: string): Promise<{
   weekAgo.setDate(weekAgo.getDate() - 7);
   
   try {
+    let meetingCountQuery;
+    if (userId) {
+      const user = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const userEmail = user[0]?.email?.toLowerCase() || "";
+      
+      const userCondition = userEmail 
+        ? or(
+            eq(meetings.uploadedById, userId),
+            sql`EXISTS (SELECT 1 FROM unnest(${meetings.attendees}) AS att WHERE lower(att) LIKE '%' || ${userEmail} || '%' OR ${userEmail} LIKE '%' || lower(att) || '%')`
+          )
+        : eq(meetings.uploadedById, userId);
+      
+      meetingCountQuery = db.select({ count: sql<number>`count(*)` }).from(meetings).where(userCondition);
+    } else {
+      meetingCountQuery = db.select({ count: sql<number>`count(*)` }).from(meetings);
+    }
+    
     const [emailResult, meetingResult, calendarResult, chatResult] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(emails).where(userId ? eq(emails.userId, userId) : undefined),
-      db.select({ count: sql<number>`count(*)` }).from(meetings).where(userId ? eq(meetings.uploadedById, userId) : undefined),
+      meetingCountQuery,
       db.select({ count: sql<number>`count(*)` }).from(msCalendarEvents).where(userId ? eq(msCalendarEvents.userId, userId) : undefined),
       db.select({ count: sql<number>`count(*)` }).from(msChatMessages).where(
         and(eq(msChatMessages.isDeleted, false), userId ? eq(msChatMessages.senderId, userId) : undefined)
