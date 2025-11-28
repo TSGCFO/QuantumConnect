@@ -29,6 +29,7 @@ import {
   syncTodoLists,
   syncChatThreads,
   syncPresence,
+  syncEmails,
   syncAllResources,
   extractActionItemsFromCalendar,
   generateDailyDigest,
@@ -1435,6 +1436,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching list tasks:", error);
       res.status(500).json({ message: "Failed to fetch list tasks" });
+    }
+  });
+
+  // Email Sync Routes (using Microsoft Graph delta sync)
+  app.post("/api/email/sync", isAuthenticated, logActivity("sync_email"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { daysBack, useDelta, pageSize, folderId } = req.body || {};
+      
+      const result = await syncEmails(userId, { daysBack, useDelta, pageSize, folderId });
+      
+      if (result.success) {
+        res.json({ 
+          message: `Synced ${result.itemsProcessed} emails (${result.itemsCreated} created, ${result.itemsUpdated} updated)`,
+          result
+        });
+      } else {
+        res.status(500).json({ 
+          message: "Failed to sync emails",
+          errors: result.errors
+        });
+      }
+    } catch (error) {
+      console.error("Error syncing emails:", error);
+      res.status(500).json({ message: "Failed to sync emails" });
+    }
+  });
+
+  app.get("/api/email/messages", isAuthenticated, logActivity("view_emails"), async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const emails = await storage.getEmails(userId);
+      res.json(emails);
+    } catch (error) {
+      console.error("Error fetching emails:", error);
+      res.status(500).json({ message: "Failed to fetch emails" });
     }
   });
 
