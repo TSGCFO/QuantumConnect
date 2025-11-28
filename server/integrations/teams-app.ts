@@ -1,68 +1,24 @@
 import { Client } from "@microsoft/microsoft-graph-client";
+import { getDirectGraphClient, isDirectGraphConfigured, getMissingCredentials } from "./microsoft-graph";
 
 /**
  * Teams application-level authentication module
- * Uses application permissions instead of delegated user permissions
- * for broader access to organizational data
+ * Uses the same Azure AD app-only credentials as microsoft-graph.ts
+ * for consistent authentication across all M365 operations
  */
 
-let connectionSettings: any;
-let appClient: Client | null = null;
-
-// Get access token from the connector settings
-async function getAccessToken() {
-  if (
-    connectionSettings &&
-    connectionSettings.settings.expires_at &&
-    new Date(connectionSettings.settings.expires_at).getTime() > Date.now()
-  ) {
-    return connectionSettings.settings.access_token;
+// Get the Teams client using the shared Azure AD client credentials
+export async function getTeamsAppClient(): Promise<Client> {
+  if (!isDirectGraphConfigured()) {
+    const missing = getMissingCredentials();
+    throw new Error(
+      `Microsoft Graph API not configured for Teams. Missing: ${missing.join(", ")}. ` +
+      `Please add the Azure AD app credentials to enable Teams integration.`
+    );
   }
-
-  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY
-    ? "repl " + process.env.REPL_IDENTITY
-    : process.env.WEB_REPL_RENEWAL
-      ? "depl " + process.env.WEB_REPL_RENEWAL
-      : null;
-
-  if (!xReplitToken) {
-    throw new Error("X_REPLIT_TOKEN not found for repl/depl");
-  }
-
-  connectionSettings = await fetch(
-    "https://" +
-      hostname +
-      "/api/v2/connection?include_secrets=true&connector_names=outlook",
-    {
-      headers: {
-        Accept: "application/json",
-        X_REPLIT_TOKEN: xReplitToken,
-      },
-    },
-  )
-    .then((res) => res.json())
-    .then((data) => data.items?.[0]);
-
-  const accessToken =
-    connectionSettings?.settings?.access_token ||
-    connectionSettings.settings?.oauth?.credentials?.access_token;
-
-  if (!connectionSettings || !accessToken) {
-    throw new Error("Teams/Outlook not connected");
-  }
-  return accessToken;
-}
-
-// Get an uncachable Teams client for application-level access
-export async function getTeamsAppClient() {
-  const accessToken = await getAccessToken();
-
-  return Client.initWithMiddleware({
-    authProvider: {
-      getAccessToken: async () => accessToken,
-    },
-  });
+  
+  // Use the shared Graph client from microsoft-graph.ts
+  return getDirectGraphClient();
 }
 
 // Get the current user's principal name (email)

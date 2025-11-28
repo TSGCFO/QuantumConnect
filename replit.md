@@ -213,13 +213,22 @@ Preferred communication style: Simple, everyday language.
 
 ### External Dependencies
 
-**Microsoft Graph API Integration**:
+**Microsoft Graph API Integration** (Unified App-Only Architecture):
 
-- **Outlook**: Email synchronization with access to inbox, sent items, and metadata
-- **OneDrive**: Document storage and retrieval capabilities
-- **SharePoint**: Enterprise content management integration
-- OAuth token management with automatic refresh using Replit Connectors API
-- Uncacheable client pattern ensures fresh access tokens per request
+All Microsoft 365 data access is consolidated into two integration files:
+- `server/integrations/microsoft-graph.ts` - Direct Azure AD app-only authentication for user-scoped operations (email, calendar, contacts, files)
+- `server/integrations/teams-app.ts` - Teams meeting and transcript access using `/users/{userPrincipalName}/` paths
+
+**Key M365 Integration Features**:
+- **Outlook**: Email delta sync with 60-90 day lookback, full message body indexing
+- **Calendar**: Event sync with recurrence patterns and attendee tracking
+- **OneDrive/SharePoint**: Site-level content access via Graph API sites endpoint
+- **Teams**: Meeting sync with transcripts, attendance reports, and recording URLs
+- All Graph API calls use `/users/{userPrincipalName}/...` paths (no `/me` endpoints - app-only compatible)
+- User principal names resolved from storage (user.email) rather than delegated auth
+
+**Legacy Replit Connectors Removed**:
+- `outlook.ts`, `onedrive.ts`, `teams.ts` - Removed; functionality consolidated into microsoft-graph.ts and teams-app.ts
 
 **HubSpot API Integration**:
 
