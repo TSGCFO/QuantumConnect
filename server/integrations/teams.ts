@@ -1,3 +1,10 @@
+/**
+ * @deprecated This file uses the legacy Replit Outlook/Teams connector which is being phased out.
+ * Use teams-app.ts instead which uses app-only authentication via microsoft-graph.ts.
+ * 
+ * Migration: Import functions from './teams-app' for all Teams API calls.
+ */
+
 import { Client } from "@microsoft/microsoft-graph-client";
 
 let connectionSettings: any;

@@ -1,3 +1,10 @@
+/**
+ * @deprecated This file uses the legacy Replit OneDrive connector which is being phased out.
+ * Use microsoft-graph.ts instead which uses app-only authentication with ClientSecretCredential.
+ * 
+ * Migration: Import getDirectGraphClient from './microsoft-graph' for all OneDrive API calls.
+ */
+
 import { Client } from "@microsoft/microsoft-graph-client";
 
 let connectionSettings: any;
