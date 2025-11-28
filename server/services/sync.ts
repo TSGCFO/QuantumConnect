@@ -13,6 +13,7 @@ import {
   getChatMessagesDirectGraph,
   getUserPresence,
   getUserProfile,
+  getMessagesDelta,
 } from "../integrations/microsoft-graph";
 import OpenAI from "openai";
 
@@ -41,6 +42,7 @@ const PERMISSION_REQUIREMENTS: Record<string, string[]> = {
   todo: ["Tasks.Read.All", "Tasks.ReadWrite.All"],
   chat: ["Chat.Read.All", "Chat.ReadWrite.All"],
   presence: ["Presence.Read.All"],
+  email: ["Mail.Read", "Mail.ReadWrite"],
 };
 
 // Helper function to check if an error is a permission (403) error
@@ -1186,6 +1188,212 @@ export async function syncPresence(userId: string): Promise<SyncResult> {
   }
 }
 
+export async function syncEmails(
+  userId: string,
+  options: { 
+    daysBack?: number; 
+    useDelta?: boolean; 
+    pageSize?: number;
+    folderId?: string;
+  } = {}
+): Promise<SyncResult> {
+  const { daysBack = 90, useDelta = true, pageSize = 100, folderId } = options;
+
+  try {
+    checkGraphApiConfigured();
+
+    const msUserId = await getMicrosoftUserId(userId);
+    if (!msUserId) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [`No Microsoft 365 profile found for user ${userId}. User must be linked to a Microsoft account first.`],
+      };
+    }
+
+    const job = await storage.createSyncJob({
+      userId,
+      resourceType: "email",
+      syncType: useDelta ? "delta" : "full",
+      status: "running",
+    });
+
+    const client = getDirectGraphClient();
+    let itemsProcessed = 0;
+    let itemsCreated = 0;
+    let itemsUpdated = 0;
+    const errors: string[] = [];
+    let newDeltaToken: string | undefined;
+
+    try {
+      // Pre-load existing emails into a Map for O(1) lookups
+      const existingEmails = new Map(
+        (await storage.getEmails(userId)).map(e => [e.outlookId, e])
+      );
+
+      // Get delta token if using delta sync
+      let deltaToken: string | null = null;
+      if (useDelta) {
+        const syncState = await storage.getUserSyncState(userId, "email");
+        deltaToken = syncState?.deltaToken || null;
+      }
+
+      let nextLink: string | undefined;
+      let response: any;
+
+      // Calculate date filter for initial sync (lookback period)
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysBack);
+      const dateFilter = `receivedDateTime ge ${cutoffDate.toISOString()}`;
+
+      do {
+        if (nextLink) {
+          response = await client.api(nextLink).get();
+        } else if (deltaToken && useDelta) {
+          // Delta sync: use the stored delta link URL directly
+          response = await client.api(deltaToken).get();
+        } else {
+          // Initial sync or full sync: use messages/delta with date filter
+          const path = folderId
+            ? `/users/${msUserId}/mailFolders/${folderId}/messages/delta`
+            : `/users/${msUserId}/messages/delta`;
+
+          let request = client
+            .api(path)
+            .select(
+              "id,subject,bodyPreview,from,toRecipients,ccRecipients,receivedDateTime,isRead,importance,hasAttachments,internetMessageId,conversationId,parentFolderId,isDraft,flag"
+            )
+            .header("Prefer", `odata.maxpagesize=${pageSize}`);
+
+          // Only apply date filter on initial sync (no delta token)
+          if (!deltaToken) {
+            request = request.filter(dateFilter);
+          }
+
+          response = await request.get();
+        }
+
+        for (const message of response.value || []) {
+          try {
+            // Handle deleted messages in delta sync
+            if (message["@removed"]) {
+              continue;
+            }
+
+            // Use O(1) Map lookup instead of re-querying the database
+            const existing = existingEmails.get(message.id);
+
+            // Extract recipients
+            const recipients = [
+              ...(message.toRecipients || []).map((r: any) => ({
+                type: "to",
+                email: r.emailAddress?.address,
+                name: r.emailAddress?.name,
+              })),
+              ...(message.ccRecipients || []).map((r: any) => ({
+                type: "cc",
+                email: r.emailAddress?.address,
+                name: r.emailAddress?.name,
+              })),
+            ];
+
+            const dbEmail = await storage.upsertEmail({
+              userId,
+              outlookId: message.id,
+              subject: message.subject || "(No Subject)",
+              bodyPreview: message.bodyPreview || null,
+              sender: message.from?.emailAddress
+                ? {
+                    email: message.from.emailAddress.address,
+                    name: message.from.emailAddress.name,
+                  }
+                : null,
+              recipients: recipients.length > 0 ? recipients : null,
+              receivedAt: message.receivedDateTime
+                ? new Date(message.receivedDateTime)
+                : new Date(),
+              isRead: message.isRead || false,
+              importance: message.importance || "normal",
+              hasAttachments: message.hasAttachments || false,
+              internetMessageId: message.internetMessageId || null,
+              conversationId: message.conversationId || null,
+              parentFolderId: message.parentFolderId || null,
+            });
+
+            // Update the map with the new/updated email
+            existingEmails.set(message.id, dbEmail);
+
+            itemsProcessed++;
+            if (existing) {
+              itemsUpdated++;
+            } else {
+              itemsCreated++;
+            }
+          } catch (messageError: any) {
+            errors.push(`Email ${message.id}: ${messageError.message}`);
+          }
+        }
+
+        nextLink = response["@odata.nextLink"];
+        if (response["@odata.deltaLink"]) {
+          newDeltaToken = response["@odata.deltaLink"];
+        }
+      } while (nextLink);
+
+      await storage.upsertUserSyncState({
+        userId,
+        resourceType: "email",
+        lastSyncedAt: new Date(),
+        status: "completed",
+        itemCount: itemsProcessed,
+        deltaToken: newDeltaToken || null,
+      });
+
+      await storage.updateSyncJob(job.id, {
+        status: "completed",
+        completedAt: new Date(),
+        itemsProcessed,
+      });
+
+      return {
+        success: true,
+        itemsProcessed,
+        itemsCreated,
+        itemsUpdated,
+        errors,
+        deltaToken: newDeltaToken,
+      };
+    } catch (error: any) {
+      await storage.updateSyncJob(job.id, {
+        status: "failed",
+        completedAt: new Date(),
+        errorMessage: error.message,
+      });
+      throw error;
+    }
+  } catch (error: any) {
+    if (isPermissionError(error)) {
+      return {
+        success: false,
+        itemsProcessed: 0,
+        itemsCreated: 0,
+        itemsUpdated: 0,
+        errors: [formatPermissionError("email", error)],
+        permissionError: true,
+      };
+    }
+    return {
+      success: false,
+      itemsProcessed: 0,
+      itemsCreated: 0,
+      itemsUpdated: 0,
+      errors: [error.message || "Unknown error during email sync"],
+    };
+  }
+}
+
 export async function extractActionItemsFromCalendar(
   userId: string,
   options: { daysBack?: number; daysForward?: number } = {}
@@ -1560,6 +1768,7 @@ export async function syncAllResources(
     includeTodo?: boolean;
     includeChat?: boolean;
     includePresence?: boolean;
+    includeEmail?: boolean;
   } = {}
 ): Promise<{
   success: boolean;
@@ -1573,6 +1782,7 @@ export async function syncAllResources(
     includeTodo = true,
     includeChat = true,
     includePresence = true,
+    includeEmail = true,
   } = options;
 
   const results: Record<string, SyncResult> = {};
@@ -1622,6 +1832,14 @@ export async function syncAllResources(
     syncPromises.push(
       syncPresence(userId).then((r) => {
         results.presence = r;
+      })
+    );
+  }
+
+  if (includeEmail) {
+    syncPromises.push(
+      syncEmails(userId).then((r) => {
+        results.email = r;
       })
     );
   }
