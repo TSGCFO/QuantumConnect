@@ -385,16 +385,15 @@ export class DatabaseStorage implements IStorage {
         target: emails.outlookId,
         set: {
           subject: emailData.subject,
-          bodyPreview: emailData.bodyPreview,
-          sender: emailData.sender,
-          recipients: emailData.recipients,
+          from: emailData.from,
+          to: emailData.to,
+          cc: emailData.cc,
+          body: emailData.body,
           receivedAt: emailData.receivedAt,
           isRead: emailData.isRead,
           importance: emailData.importance,
           hasAttachments: emailData.hasAttachments,
-          internetMessageId: emailData.internetMessageId,
           conversationId: emailData.conversationId,
-          parentFolderId: emailData.parentFolderId,
         },
       })
       .returning();

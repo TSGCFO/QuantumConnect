@@ -7,13 +7,14 @@ import {
   syncTodoLists,
   syncChatThreads,
   syncPresence,
+  syncEmails,
   SyncResult,
 } from "./sync";
 
 export interface SyncJob {
   id: string;
   userId: string;
-  resourceType: "presence" | "calendar" | "contacts" | "drive" | "todo" | "chat";
+  resourceType: "presence" | "calendar" | "contacts" | "drive" | "todo" | "chat" | "email";
   priority: number;
   retryCount: number;
   scheduledAt: Date;
@@ -69,7 +70,7 @@ export function enqueueSync(
   resourceType: string,
   priority: number = 5
 ): void {
-  const validTypes = ["presence", "calendar", "contacts", "drive", "todo", "chat"];
+  const validTypes = ["presence", "calendar", "contacts", "drive", "todo", "chat", "email"];
   if (!validTypes.includes(resourceType)) {
     log(`Invalid resource type: ${resourceType}`, "error");
     return;
@@ -158,6 +159,9 @@ async function executeSyncJob(job: SyncJob): Promise<SyncResult> {
       break;
     case "chat":
       result = await syncChatThreads(job.userId);
+      break;
+    case "email":
+      result = await syncEmails(job.userId, { useDelta: true });
       break;
     default:
       throw new Error(`Unknown resource type: ${job.resourceType}`);
@@ -310,6 +314,7 @@ export async function manualSyncUser(
     "drive",
     "todo",
     "chat",
+    "email",
   ];
 
   const resourcesToSync = resources
@@ -348,14 +353,15 @@ export function startScheduler(): void {
   });
   cronJobs.push(presenceJob);
 
-  const calendarChatTodoJob = cron.schedule("*/30 * * * *", async () => {
+  const calendarChatTodoEmailJob = cron.schedule("*/30 * * * *", async () => {
     if (isShuttingDown) return;
-    log("Cron triggered: Calendar/Chat/ToDo sync (every 30 minutes)");
+    log("Cron triggered: Calendar/Chat/ToDo/Email sync (every 30 minutes)");
     await enqueueSyncForAllUsers("calendar");
     await enqueueSyncForAllUsers("chat");
     await enqueueSyncForAllUsers("todo");
+    await enqueueSyncForAllUsers("email");
   });
-  cronJobs.push(calendarChatTodoJob);
+  cronJobs.push(calendarChatTodoEmailJob);
 
   const filesContactsJob = cron.schedule("0 */2 * * *", async () => {
     if (isShuttingDown) return;
@@ -367,7 +373,7 @@ export function startScheduler(): void {
 
   log("Sync scheduler started with the following schedules:");
   log("  - Presence: Every 5 minutes (*/5 * * * *)");
-  log("  - Calendar/Chat/ToDo: Every 30 minutes (*/30 * * * *)");
+  log("  - Calendar/Chat/ToDo/Email: Every 30 minutes (*/30 * * * *)");
   log("  - Files/Contacts: Every 2 hours (0 */2 * * *)");
 }
 

@@ -1285,41 +1285,36 @@ export async function syncEmails(
             // Use O(1) Map lookup instead of re-querying the database
             const existing = existingEmails.get(message.id);
 
-            // Extract recipients
-            const recipients = [
-              ...(message.toRecipients || []).map((r: any) => ({
-                type: "to",
-                email: r.emailAddress?.address,
-                name: r.emailAddress?.name,
-              })),
-              ...(message.ccRecipients || []).map((r: any) => ({
-                type: "cc",
-                email: r.emailAddress?.address,
-                name: r.emailAddress?.name,
-              })),
-            ];
+            // Extract recipients as email strings for the to/cc arrays
+            const toEmails = (message.toRecipients || [])
+              .map((r: any) => r.emailAddress?.address)
+              .filter(Boolean);
+            const ccEmails = (message.ccRecipients || [])
+              .map((r: any) => r.emailAddress?.address)
+              .filter(Boolean);
+
+            // Format sender as text string (email or name <email>)
+            const senderEmail = message.from?.emailAddress?.address || "";
+            const senderName = message.from?.emailAddress?.name || "";
+            const fromText = senderName && senderEmail
+              ? `${senderName} <${senderEmail}>`
+              : senderEmail || "Unknown";
 
             const dbEmail = await storage.upsertEmail({
               userId,
               outlookId: message.id,
               subject: message.subject || "(No Subject)",
-              bodyPreview: message.bodyPreview || null,
-              sender: message.from?.emailAddress
-                ? {
-                    email: message.from.emailAddress.address,
-                    name: message.from.emailAddress.name,
-                  }
-                : null,
-              recipients: recipients.length > 0 ? recipients : null,
+              from: fromText,
+              to: toEmails.length > 0 ? toEmails : null,
+              cc: ccEmails.length > 0 ? ccEmails : null,
+              body: message.bodyPreview || null,
               receivedAt: message.receivedDateTime
                 ? new Date(message.receivedDateTime)
                 : new Date(),
               isRead: message.isRead || false,
               importance: message.importance || "normal",
               hasAttachments: message.hasAttachments || false,
-              internetMessageId: message.internetMessageId || null,
               conversationId: message.conversationId || null,
-              parentFolderId: message.parentFolderId || null,
             });
 
             // Update the map with the new/updated email
