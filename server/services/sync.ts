@@ -15,6 +15,7 @@ import {
   getUserProfile,
   getMessagesDelta,
 } from "../integrations/microsoft-graph";
+import { processNewEmail } from "./meetingEmailLink";
 import OpenAI from "openai";
 
 export interface SyncResult {
@@ -1325,6 +1326,15 @@ export async function syncEmails(
 
             // Update the map with the new/updated email
             existingEmails.set(message.id, dbEmail);
+
+            // Automatically process for meeting summary linking (Otter.ai, MS Recap detection)
+            // This runs safely without blocking sync and doesn't duplicate linking logic
+            try {
+              await processNewEmail(dbEmail);
+            } catch (linkError: any) {
+              // Log but don't fail sync for linking errors
+              console.warn(`[EmailSync] Meeting link detection failed for ${dbEmail.id}: ${linkError.message}`);
+            }
 
             itemsProcessed++;
             if (existing) {
