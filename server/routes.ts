@@ -194,7 +194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { userId } = req.params;
-      const { msUserId, displayName, mail, jobTitle, department, officeLocation } = req.body;
+      const { msUserId, userPrincipalName, displayName, mail, jobTitle, department, officeLocation } = req.body;
 
       if (!msUserId) {
         return res.status(400).json({ message: "Microsoft 365 user ID is required" });
@@ -214,10 +214,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Create or update the MS user profile
+      // Create or update the MS user profile with all fields including UPN for Graph API calls
       const profile = await storage.upsertMsUserProfile({
         userId,
         msUserId,
+        userPrincipalName: userPrincipalName || null, // Canonical UPN for Graph API calls
+        displayName: displayName || null,
+        mail: mail || null,
         jobTitle: jobTitle || null,
         department: department || null,
         officeLocation: officeLocation || null,
@@ -624,10 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   try {
                     const transcriptContent = await getMeetingTranscript(meeting.id, trans.id, userPrincipalName);
                     if (transcriptContent) {
-                      // Convert stream to text if needed
-                      transcript = typeof transcriptContent === 'string' 
-                        ? transcriptContent 
-                        : transcriptContent.toString();
+                      transcript = transcriptContent;
                       break;
                     }
                   } catch (err) {
@@ -896,10 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             try {
               const transcriptContent = await getMeetingTranscript(meeting.id, trans.id, userPrincipalName);
               if (transcriptContent) {
-                // Convert stream to text if needed
-                transcript = typeof transcriptContent === 'string' 
-                  ? transcriptContent 
-                  : transcriptContent.toString();
+                transcript = transcriptContent;
                 break;
               }
             } catch (err) {
@@ -1027,10 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                       meeting.organizerUpn || meeting.calendarOwnerEmail || meeting.organizerEmail
                     );
                     if (transcriptContent) {
-                      // Convert stream to text if needed
-                      transcript = typeof transcriptContent === 'string' 
-                        ? transcriptContent 
-                        : transcriptContent.toString();
+                      transcript = transcriptContent;
                       break;
                     }
                   } catch (err) {
