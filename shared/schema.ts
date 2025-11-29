@@ -47,6 +47,43 @@ export const upsertUserSchema = createInsertSchema(users);
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Catalog of Microsoft Graph API permissions
+export const graphPermissions = pgTable(
+  "graph_permissions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    displayName: text("display_name"),
+    permissionId: varchar("permission_id"),
+    type: varchar("type"), // Delegated, Application
+    scope: varchar("scope"),
+    adminConsentRequired: boolean("admin_consent_required")
+      .notNull()
+      .default(false),
+    assignedDate: timestamp("assigned_date"),
+    description: text("description"),
+    riskLevel: varchar("risk_level"),
+    useCases: jsonb("use_cases").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    sourceFile: text("source_file"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("graph_permissions_name_idx").on(table.name),
+    uniqueIndex("graph_permissions_permission_id_idx").on(table.permissionId),
+  ],
+);
+
+export const insertGraphPermissionSchema = createInsertSchema(graphPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermission = z.infer<typeof insertGraphPermissionSchema>;
+export type GraphPermission = typeof graphPermissions.$inferSelect;
+
 // Documents in the knowledge hub
 export const documents = pgTable("documents", {
   id: varchar("id")

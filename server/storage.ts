@@ -24,6 +24,7 @@ import {
   aiReminders,
   aiNotifications,
   aiInsights,
+  graphPermissions,
   type User,
   type UpsertUser,
   type Document,
@@ -74,6 +75,8 @@ import {
   type InsertAiNotification,
   type AiInsight,
   type InsertAiInsight,
+  type GraphPermission,
+  type InsertGraphPermission,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql, or, ilike } from "drizzle-orm";
@@ -140,6 +143,11 @@ export interface IStorage {
   getTaskStats(timeRange: string): Promise<any>;
   getDepartmentStats(timeRange: string): Promise<any[]>;
   getUserPerformance(timeRange: string): Promise<any[]>;
+
+  // Graph permission catalog
+  upsertGraphPermission(permission: InsertGraphPermission): Promise<GraphPermission>;
+  getGraphPermissionByName(name: string): Promise<GraphPermission | undefined>;
+  getGraphPermissions(): Promise<GraphPermission[]>;
 
   // MS User Profiles
   getMsUserProfile(userId: string): Promise<MsUserProfile | undefined>;
@@ -741,6 +749,50 @@ export class DatabaseStorage implements IStorage {
       userId,
       ...stats,
     }));
+  }
+
+  // Graph permission catalog
+  async upsertGraphPermission(
+    permission: InsertGraphPermission,
+  ): Promise<GraphPermission> {
+    const [result] = await db
+      .insert(graphPermissions)
+      .values({ ...permission, updatedAt: new Date() })
+      .onConflictDoUpdate({
+        target: graphPermissions.name,
+        set: {
+          displayName: permission.displayName,
+          permissionId: permission.permissionId,
+          type: permission.type,
+          scope: permission.scope,
+          adminConsentRequired: permission.adminConsentRequired,
+          assignedDate: permission.assignedDate,
+          description: permission.description,
+          riskLevel: permission.riskLevel,
+          useCases: permission.useCases,
+          sourceFile: permission.sourceFile,
+          updatedAt: sql`NOW()`,
+        },
+      })
+      .returning();
+    return result;
+  }
+
+  async getGraphPermissionByName(
+    name: string,
+  ): Promise<GraphPermission | undefined> {
+    const [permission] = await db
+      .select()
+      .from(graphPermissions)
+      .where(eq(graphPermissions.name, name));
+    return permission || undefined;
+  }
+
+  async getGraphPermissions(): Promise<GraphPermission[]> {
+    return await db
+      .select()
+      .from(graphPermissions)
+      .orderBy(graphPermissions.name);
   }
 
   // MS User Profiles
