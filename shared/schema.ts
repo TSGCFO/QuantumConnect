@@ -43,6 +43,194 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Catalog of Microsoft Graph permission categories
+export const graphPermissionCategories = pgTable(
+  "graph_permission_categories",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    slug: varchar("slug").notNull(),
+    description: text("description"),
+    sourcePath: text("source_path"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [uniqueIndex("graph_permission_categories_slug_idx").on(table.slug)],
+);
+
+// Catalog of Microsoft Graph permissions with risk and consent metadata
+export const graphPermissions = pgTable(
+  "graph_permissions",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    name: varchar("name").notNull(),
+    displayName: text("display_name"),
+    permissionId: varchar("permission_id").notNull(),
+    type: varchar("type"),
+    scope: varchar("scope"),
+    adminConsentRequired: boolean("admin_consent_required").default(false),
+    riskLevel: varchar("risk_level"),
+    riskLabel: varchar("risk_label"),
+    description: text("description"),
+    categoryId: varchar("category_id").references(
+      () => graphPermissionCategories.id,
+    ),
+    assignedDate: timestamp("assigned_date"),
+    docPath: text("doc_path"),
+    useCases: text("use_cases").array(),
+    requiredActions: text("required_actions").array(),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("graph_permissions_name_idx").on(table.name),
+    uniqueIndex("graph_permissions_permission_id_idx").on(table.permissionId),
+    index("graph_permissions_category_idx").on(table.categoryId),
+    index("graph_permissions_risk_idx").on(table.riskLevel),
+  ],
+);
+
+// API endpoints that correspond to permissions
+export const graphPermissionEndpoints = pgTable(
+  "graph_permission_endpoints",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    permissionId: varchar("permission_id")
+      .references(() => graphPermissions.id)
+      .notNull(),
+    method: varchar("method").notNull(),
+    path: text("path").notNull(),
+    description: text("description"),
+    source: varchar("source"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("graph_permission_endpoints_unique_idx").on(
+      table.permissionId,
+      table.method,
+      table.path,
+    ),
+    index("graph_permission_endpoints_method_idx").on(table.method),
+  ],
+);
+
+export const graphPermissionEndpointsRelations = relations(
+  graphPermissionEndpoints,
+  ({ one }) => ({
+    permission: one(graphPermissions, {
+      fields: [graphPermissionEndpoints.permissionId],
+      references: [graphPermissions.id],
+    }),
+  }),
+);
+
+// Grants that connect permissions to users or groups for auditability
+export const graphPermissionAssignments = pgTable(
+  "graph_permission_assignments",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    permissionId: varchar("permission_id")
+      .references(() => graphPermissions.id)
+      .notNull(),
+    assigneeType: varchar("assignee_type").notNull(), // user, group
+    userId: varchar("user_id").references(() => users.id),
+    groupId: varchar("group_id"),
+    grantType: varchar("grant_type").notNull(), // application, delegated
+    scopeResource: varchar("scope_resource"),
+    grantedAt: timestamp("granted_at").defaultNow(),
+    expiresAt: timestamp("expires_at"),
+    grantedBy: varchar("granted_by"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [
+    index("graph_permission_assignments_permission_idx").on(table.permissionId),
+    index("graph_permission_assignments_user_idx").on(table.userId),
+    uniqueIndex("graph_permission_assignments_unique_idx").on(
+      table.permissionId,
+      table.assigneeType,
+      table.userId,
+      table.groupId,
+      table.grantType,
+    ),
+  ],
+);
+
+export const graphPermissionsRelations = relations(
+  graphPermissions,
+  ({ one, many }) => ({
+    category: one(graphPermissionCategories, {
+      fields: [graphPermissions.categoryId],
+      references: [graphPermissionCategories.id],
+    }),
+    endpoints: many(graphPermissionEndpoints),
+    assignments: many(graphPermissionAssignments),
+  }),
+);
+
+export const graphPermissionCategoriesRelations = relations(
+  graphPermissionCategories,
+  ({ many }) => ({
+    permissions: many(graphPermissions),
+  }),
+);
+
+export const insertGraphPermissionCategorySchema = createInsertSchema(
+  graphPermissionCategories,
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermissionCategory = z.infer<
+  typeof insertGraphPermissionCategorySchema
+>;
+export type GraphPermissionCategory = typeof graphPermissionCategories.$inferSelect;
+
+export const insertGraphPermissionSchema = createInsertSchema(graphPermissions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermission = z.infer<typeof insertGraphPermissionSchema>;
+export type GraphPermission = typeof graphPermissions.$inferSelect;
+
+export const insertGraphPermissionEndpointSchema = createInsertSchema(
+  graphPermissionEndpoints,
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermissionEndpoint = z.infer<
+  typeof insertGraphPermissionEndpointSchema
+>;
+export type GraphPermissionEndpoint = typeof graphPermissionEndpoints.$inferSelect;
+
+export const insertGraphPermissionAssignmentSchema = createInsertSchema(
+  graphPermissionAssignments,
+).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertGraphPermissionAssignment = z.infer<
+  typeof insertGraphPermissionAssignmentSchema
+>;
+export type GraphPermissionAssignment =
+  typeof graphPermissionAssignments.$inferSelect;
+
 export const upsertUserSchema = createInsertSchema(users);
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;

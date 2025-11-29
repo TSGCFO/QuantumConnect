@@ -24,6 +24,10 @@ import {
   aiReminders,
   aiNotifications,
   aiInsights,
+  graphPermissionCategories,
+  graphPermissions,
+  graphPermissionEndpoints,
+  graphPermissionAssignments,
   type User,
   type UpsertUser,
   type Document,
@@ -74,6 +78,14 @@ import {
   type InsertAiNotification,
   type AiInsight,
   type InsertAiInsight,
+  type GraphPermissionCategory,
+  type InsertGraphPermissionCategory,
+  type GraphPermission,
+  type InsertGraphPermission,
+  type GraphPermissionEndpoint,
+  type InsertGraphPermissionEndpoint,
+  type GraphPermissionAssignment,
+  type InsertGraphPermissionAssignment,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, sql, or, ilike } from "drizzle-orm";
@@ -84,6 +96,28 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, data: Partial<User>): Promise<User>;
+
+  // Graph permission catalog
+  upsertGraphPermissionCategory(
+    category: InsertGraphPermissionCategory,
+  ): Promise<GraphPermissionCategory>;
+  getGraphPermissionCategories(): Promise<GraphPermissionCategory[]>;
+  upsertGraphPermission(permission: InsertGraphPermission): Promise<GraphPermission>;
+  getGraphPermissionByName(name: string): Promise<GraphPermission | undefined>;
+  getGraphPermissions(): Promise<GraphPermission[]>;
+  upsertGraphPermissionEndpoint(
+    endpoint: InsertGraphPermissionEndpoint,
+  ): Promise<GraphPermissionEndpoint>;
+  deleteGraphPermissionEndpoints(
+    permissionId: string,
+    source?: string,
+  ): Promise<void>;
+  upsertGraphPermissionAssignment(
+    assignment: InsertGraphPermissionAssignment,
+  ): Promise<GraphPermissionAssignment>;
+  getGraphPermissionAssignments(
+    userId?: string,
+  ): Promise<GraphPermissionAssignment[]>;
 
   // Document operations
   createDocument(doc: InsertDocument): Promise<Document>;
@@ -256,6 +290,124 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  // Graph permission catalog
+  async upsertGraphPermissionCategory(
+    categoryData: InsertGraphPermissionCategory,
+  ): Promise<GraphPermissionCategory> {
+    const [category] = await db
+      .insert(graphPermissionCategories)
+      .values(categoryData)
+      .onConflictDoUpdate({
+        target: graphPermissionCategories.slug,
+        set: { ...categoryData, updatedAt: new Date() },
+      })
+      .returning();
+    return category;
+  }
+
+  async getGraphPermissionCategories(): Promise<GraphPermissionCategory[]> {
+    return await db
+      .select()
+      .from(graphPermissionCategories)
+      .orderBy(graphPermissionCategories.name);
+  }
+
+  async upsertGraphPermission(
+    permissionData: InsertGraphPermission,
+  ): Promise<GraphPermission> {
+    const [permission] = await db
+      .insert(graphPermissions)
+      .values(permissionData)
+      .onConflictDoUpdate({
+        target: graphPermissions.permissionId,
+        set: { ...permissionData, updatedAt: new Date() },
+      })
+      .returning();
+    return permission;
+  }
+
+  async getGraphPermissionByName(
+    name: string,
+  ): Promise<GraphPermission | undefined> {
+    const [permission] = await db
+      .select()
+      .from(graphPermissions)
+      .where(eq(graphPermissions.name, name));
+    return permission || undefined;
+  }
+
+  async getGraphPermissions(): Promise<GraphPermission[]> {
+    return await db
+      .select()
+      .from(graphPermissions)
+      .orderBy(graphPermissions.name);
+  }
+
+  async upsertGraphPermissionEndpoint(
+    endpointData: InsertGraphPermissionEndpoint,
+  ): Promise<GraphPermissionEndpoint> {
+    const [endpoint] = await db
+      .insert(graphPermissionEndpoints)
+      .values(endpointData)
+      .onConflictDoUpdate({
+        target: [
+          graphPermissionEndpoints.permissionId,
+          graphPermissionEndpoints.method,
+          graphPermissionEndpoints.path,
+        ],
+        set: { ...endpointData, updatedAt: new Date() },
+      })
+      .returning();
+    return endpoint;
+  }
+
+  async deleteGraphPermissionEndpoints(
+    permissionId: string,
+    source?: string,
+  ): Promise<void> {
+    const baseCondition = eq(graphPermissionEndpoints.permissionId, permissionId);
+    const whereCondition = source
+      ? and(baseCondition, eq(graphPermissionEndpoints.source, source))
+      : baseCondition;
+    await db.delete(graphPermissionEndpoints).where(whereCondition);
+  }
+
+  async upsertGraphPermissionAssignment(
+    assignmentData: InsertGraphPermissionAssignment,
+  ): Promise<GraphPermissionAssignment> {
+    const [assignment] = await db
+      .insert(graphPermissionAssignments)
+      .values(assignmentData)
+      .onConflictDoUpdate({
+        target: [
+          graphPermissionAssignments.permissionId,
+          graphPermissionAssignments.assigneeType,
+          graphPermissionAssignments.userId,
+          graphPermissionAssignments.groupId,
+          graphPermissionAssignments.grantType,
+        ],
+        set: { ...assignmentData, updatedAt: new Date() },
+      })
+      .returning();
+    return assignment;
+  }
+
+  async getGraphPermissionAssignments(
+    userId?: string,
+  ): Promise<GraphPermissionAssignment[]> {
+    if (userId) {
+      return await db
+        .select()
+        .from(graphPermissionAssignments)
+        .where(eq(graphPermissionAssignments.userId, userId))
+        .orderBy(desc(graphPermissionAssignments.grantedAt));
+    }
+    return await db
+      .select()
+      .from(graphPermissionAssignments)
+      .orderBy(desc(graphPermissionAssignments.grantedAt));
   }
 
   // Document operations
